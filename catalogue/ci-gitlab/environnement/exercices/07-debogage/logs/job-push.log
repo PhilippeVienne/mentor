@@ -1,0 +1,5 @@
+$ docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+Login Succeeded
+$ docker build -t ":main" .
+invalid argument ":main" for "-t, --tag" flag: invalid reference format
+ERROR: Job failed: exit code 125

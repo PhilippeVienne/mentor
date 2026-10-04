@@ -1,0 +1,27 @@
+stages:
+  - build
+  - deploy
+  - notify
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DEPLOY_TOKEN: "FAUX-jeton-de-demonstration-1234"
+
+build:
+  stage: build
+  image: alpine:3.20
+  script:
+    - echo "Construction de l'application"
+
+deploy:
+  stage: deploy
+  image: curlimages/curl:8.8.0
+  script:
+    - 'curl --fail --header "PRIVATE-TOKEN: $DEPLOY_TOKEN" "$DEPLOY_URL"'
+
+notify:
+  stage: notify
+  image: alpine:3.20
+  script:
+    - echo "Déploiement terminé"
+    - echo "Jeton utilisé $DEPLOY_TOKEN"

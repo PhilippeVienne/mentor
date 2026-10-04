@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="t d" font-family="Inter, system-ui, sans-serif">
+  <title id="t">Règle 3-2-1</title>
+  <desc id="d">Trois copies des données : l'original et une sauvegarde sur le cluster, une deuxième sauvegarde sur un autre support, située hors site.</desc>
+  <rect x="1" y="1" width="718" height="278" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <rect x="30" y="80" width="190" height="110" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="125" y="125" text-anchor="middle" font-size="18" font-weight="700" fill="#e2e8f0">Original</text>
+  <text x="125" y="155" text-anchor="middle" font-size="15" fill="#94a3b8">volume du cluster</text>
+  <rect x="265" y="80" width="190" height="110" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="360" y="125" text-anchor="middle" font-size="18" font-weight="700" fill="#e2e8f0">Copie 2</text>
+  <text x="360" y="155" text-anchor="middle" font-size="15" fill="#94a3b8">stockage objet (S3)</text>
+  <rect x="500" y="80" width="190" height="110" rx="12" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+  <text x="595" y="125" text-anchor="middle" font-size="18" font-weight="700" fill="#e2e8f0">Copie 3</text>
+  <text x="595" y="155" text-anchor="middle" font-size="15" fill="#94a3b8">hors site</text>
+  <path d="M220 135H262M455 135H497" stroke="#6366F1" stroke-width="3"/>
+  <text x="360" y="40" text-anchor="middle" font-size="18" fill="#e2e8f0">3 copies · 2 supports · 1 hors site</text>
+  <text x="360" y="240" text-anchor="middle" font-size="15" fill="#94a3b8">Deux sauvegardes + l'original</text>
+</svg>

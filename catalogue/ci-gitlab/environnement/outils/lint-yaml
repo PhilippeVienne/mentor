@@ -1,0 +1,3 @@
+#!/bin/sh
+# Lance yamllint avec les réglages du parcours : lint-yaml fichier.yml
+exec yamllint -c /opt/outils/yamllint.yml "$@"

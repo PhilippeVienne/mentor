@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 330" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<title id="t">Volume nommé et bind mount</title><desc id="d">Un volume nommé est géré par Docker et monté dans le conteneur sur /data. Un bind mount relie directement un dossier de ta machine à un chemin du conteneur.</desc>
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#22c55e"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f59e0b"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker>
+</defs>
+<rect x="1" y="1" width="798" height="328" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+<text x="400" y="36" font-size="18" fill="#e2e8f0" font-weight="700" text-anchor="middle">Deux façons de persister des données</text>
+<text x="200" y="74" font-size="15" fill="#2496ED" font-weight="700" text-anchor="middle">Volume nommé</text>
+<text x="600" y="74" font-size="15" fill="#f59e0b" font-weight="700" text-anchor="middle">Bind mount</text>
+<rect x="40" y="90" width="320" height="110" rx="10" fill="#111c33" stroke="#2496ED" stroke-width="2"/>
+<text x="200" y="112" font-size="12" fill="#94a3b8" font-weight="700" text-anchor="middle">Conteneur</text>
+<rect x="60" y="126" width="280" height="56" rx="10" fill="#111c33" stroke="#2496ED" stroke-width="2"/>
+<text x="200.0" y="150" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">/data</text>
+<text x="200.0" y="170" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">chemin dans le conteneur</text>
+<rect x="40" y="232" width="320" height="60" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="200.0" y="256" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">Volume « donnees »</text>
+<text x="200.0" y="276" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">géré par Docker</text>
+<line x1="200" y1="184" x2="200" y2="230" stroke="#22c55e" stroke-width="2.4" marker-end="url(#ag)" marker-start="url(#ag)"/>
+<rect x="210.0" y="196" width="140" height="24" rx="12" fill="#0b1220" stroke="#22c55e" stroke-width="1.5"/>
+<text x="280" y="212" font-size="11" fill="#22c55e" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">-v donnees:/data</text>
+<rect x="440" y="90" width="320" height="110" rx="10" fill="#111c33" stroke="#f59e0b" stroke-width="2"/>
+<text x="600" y="112" font-size="12" fill="#94a3b8" font-weight="700" text-anchor="middle">Conteneur</text>
+<rect x="460" y="126" width="280" height="56" rx="10" fill="#111c33" stroke="#f59e0b" stroke-width="2"/>
+<text x="600.0" y="150" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">/usr/share/nginx/html</text>
+<text x="600.0" y="170" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">chemin dans le conteneur</text>
+<rect x="440" y="232" width="320" height="60" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="600.0" y="256" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">./site  (ton dossier)</text>
+<text x="600.0" y="276" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">sur ta machine</text>
+<line x1="600" y1="184" x2="600" y2="230" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#am)" marker-start="url(#am)"/>
+<rect x="608.0" y="196" width="140" height="24" rx="12" fill="#0b1220" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="678" y="212" font-size="11" fill="#f59e0b" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">-v $(pwd):/usr/…</text>
+<line x1="400" y1="60" x2="400" y2="300" stroke="#1e293b" stroke-width="2" stroke-dasharray="4 6"/><text x="200" y="314" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">données : bases, uploads</text>
+<text x="600" y="314" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">développement : édition en direct</text>
+
+</svg>

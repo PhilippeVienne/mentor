@@ -1,0 +1,627 @@
+#!/usr/bin/env python3
+"""Vérifications des labos du parcours « Maintenir du code hérité » (lecture seule, dans /opt/outils).
+
+Pourquoi un outil ? Une vérification qui se contente de chercher un mot dans TON fichier se contente d'un commentaire
+ou d'un test vide. Ces contrôles regardent ce que ton travail FAIT :
+  * les tests que tu écris sont analysés (AST Python) puis lancés sur le code d'origine ET sur des versions
+    volontairement cassées (« mutations ») : un bon test doit échouer sur celles-ci ;
+  * les tests fournis sont rejoués depuis /opt/exercices (tu ne peux pas les modifier) sur ton code ;
+  * le code et les fichiers de configuration sont lus par un analyseur (Python, JSON, JavaScript, HTML, Markdown) qui
+    ignore les commentaires ;
+  * un rapport (couverture, sortie d'une commande) doit être celui que la commande produit vraiment.
+
+Usage (voir chaque fonction) :
+  verifier-legacy sortie [--inchange] <fichier> <référence>   (références : voir REFERENCES)
+  verifier-legacy couverture <fichier> [--minimum N] [--avec-tests]
+  verifier-legacy tests <2|3|4> [nombre-de-tests-minimum]
+  verifier-legacy palier <django31|django32|django42|django52> [--erreurs-deprecation] [--migrations]
+  verifier-legacy code <auto-field|urls|textes-depreces|utc|requirements-32|requirements-52>
+  verifier-legacy react <scripts|deps|vite|index-html|renommage|variable>
+  verifier-legacy renovate <1|2|3|4|5>
+  verifier-legacy doc <journal|readme|readme-requirements>
+"""
+import ast
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from html.parser import HTMLParser
+from pathlib import Path
+
+OPT = Path("/opt/exercices")
+VENVS = Path("/opt/venvs")
+PROJET = OPT / "projet-legacy"
+REFERENCE = OPT / "tests-de-reference.py"
+
+
+def echec(message, code=1):
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
+def ok(message="Bien."):
+    print(message)
+
+
+def lire(chemin, quoi=None):
+    chemin = Path(chemin)
+    if not chemin.is_file():
+        echec(f"Le fichier {chemin} n'existe pas.")
+    return chemin.read_text(encoding="utf-8", errors="replace")
+
+
+def env_propre(tmp):
+    return {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "HOME": str(tmp), "LANG": "C.UTF-8",
+            "PYTHONDONTWRITEBYTECODE": "1"}
+
+
+IGNORER = shutil.ignore_patterns("__pycache__", ".git", "db.sqlite3", ".coverage")
+
+
+# ── 1. Sortie d'une commande ─────────────────────────────────────────────────────────────────────────────────────
+def normaliser(ligne):
+    """Retire les chemins de dossiers (`/x/y/fichier.py` -> `fichier.py`) : seuls le contenu et le nom comptent."""
+    ligne = re.sub(r"(?:[\w.\-]+)?(?:/[\w.\-]+)+/([\w.\-]+)", r"\1", ligne)
+    return re.sub(r"\s+", " ", ligne).strip()
+
+
+PY52 = "/opt/venvs/django52/bin/python"
+# Commandes de référence, rejouées sur les fichiers d'origine (/opt/exercices/<dossier>) : (dossier, flux, commande).
+REFERENCES = {
+    "ligne-django": ("01-etat-des-lieux", "out", "grep '^Django' requirements.txt"),
+    "ligne-from": ("01-etat-des-lieux", "out", "grep '^FROM' Dockerfile"),
+    "suspect": ("01-etat-des-lieux", "out", "grep -n 'django-rest-framework==' requirements.txt"),
+    "avertissements": ("01-etat-des-lieux", "err", f"{PY52} -W default demo_warn.py"),
+    "chemin": ("01-etat-des-lieux", "out", "python3 paliers.py 3.1 5.2"),
+    "python-requis": ("01-etat-des-lieux", "out",
+                      f"{PY52} -c \"import importlib.metadata as m; print(m.metadata('Django')['Requires-Python'])\""),
+    "verification": ("06-passer-la-main", "out", f"{PY52} verifier_env.py"),
+    "pip-check": ("06-passer-la-main", "tout", f"{PY52} -m pip check"),
+}
+
+
+def cmd_sortie(args):
+    inchange = "--inchange" in args
+    args = [a for a in args if a != "--inchange"]
+    if len(args) != 2 or args[1] not in REFERENCES:
+        echec(__doc__)
+    fichier = args[0]
+    dossier, flux, commande = REFERENCES[args[1]]
+    ref = OPT / dossier
+    contenu = lire(fichier)
+    with tempfile.TemporaryDirectory() as tmp:
+        res = subprocess.run(["sh", "-c", commande], cwd=ref, env=env_propre(tmp), capture_output=True, text=True,
+                             timeout=20)
+    attendu = {"out": res.stdout, "err": res.stderr, "tout": res.stdout + res.stderr}[flux]
+    lignes = {normaliser(l) for l in contenu.splitlines() if l.strip()}
+    manquantes = [l for l in attendu.splitlines() if l.strip() and normaliser(l) not in lignes]
+    if not attendu.strip():
+        echec("La commande de référence n'a rien produit : vérification impossible.", 2)
+    if manquantes:
+        echec(f"{fichier} ne contient pas la sortie réelle de la commande. Il manque par exemple la ligne :\n  "
+              + manquantes[0] + "\nLance la commande et redirige sa sortie (> ou 2>) vers le fichier.")
+    if inchange:
+        for source in ref.rglob("*"):
+            if source.is_file() and "__pycache__" not in source.parts:
+                cible = Path(source.relative_to(ref))
+                if not cible.is_file() or cible.read_bytes() != source.read_bytes():
+                    echec(f"Le fichier {cible} du projet a été modifié ou supprimé : l'état des lieux se fait sans "
+                          "rien changer au projet.")
+    ok()
+
+
+# ── 2. Couverture ────────────────────────────────────────────────────────────────────────────────────────────────
+def python_venv(nom):
+    return str(VENVS / nom / "bin" / "python")
+
+
+def copie_projet(tmp, tests=None):
+    copie = Path(tmp) / "p"
+    shutil.copytree(PROJET, copie, ignore=IGNORER)
+    if tests is not None:
+        shutil.copy2(tests, copie / "adherents" / "tests.py")
+    return copie
+
+
+def rapport_couverture(copie, tmp, venv="django31"):
+    env = env_propre(tmp)
+    py = python_venv(venv)
+    subprocess.run([py, "-s", "-E", "-m", "coverage", "run", "manage.py", "test"], cwd=copie, env=env,
+                   capture_output=True, text=True, timeout=60)
+    res = subprocess.run([py, "-s", "-E", "-m", "coverage", "report"], cwd=copie, env=env, capture_output=True, text=True,
+                         timeout=30)
+    return res.stdout
+
+
+LIGNE_COUV = re.compile(r"^(\S+)\s+(\d+)\s+(\d+)\s+(\d+)%\s*$", re.M)
+
+
+def tableau(texte):
+    return {m.group(1): tuple(int(m.group(i)) for i in (2, 3, 4)) for m in LIGNE_COUV.finditer(texte)}
+
+
+def cmd_couverture(args):
+    avec_tests = "--avec-tests" in args
+    minimum = None
+    if "--minimum" in args:
+        minimum = int(args[args.index("--minimum") + 1])
+    fichier = [a for a in args if not a.startswith("--") and not a.isdigit()][0]
+    appris = tableau(lire(fichier))
+    with tempfile.TemporaryDirectory() as tmp:
+        if avec_tests:
+            travail = Path("adherents/tests.py")
+            if not travail.is_file():
+                echec("adherents/tests.py est introuvable.")
+            copie = copie_projet(tmp, travail)
+        else:
+            copie = copie_projet(tmp)
+        reference = tableau(rapport_couverture(copie, tmp))
+    if not reference or "TOTAL" not in reference:
+        echec("Impossible de produire la couverture de référence.", 2)
+    if set(appris) != set(reference):
+        echec("Le rapport ne ressemble pas à la sortie de `coverage report` pour ce projet : relance la commande "
+              "et redirige sa sortie avec `>`.")
+    for nom, (stmts, manque, cover) in appris.items():
+        if stmts != reference[nom][0]:
+            echec(f"Le nombre de lignes de {nom} ({stmts}) ne correspond pas au projet : rapport recopié ou périmé ?")
+        if manque > stmts or abs(cover - ((stmts - manque) * 100 / stmts if stmts else 100)) > 1:
+            echec(f"Les chiffres de la ligne {nom} ne sont pas cohérents : ce n'est pas la sortie de coverage.")
+    total = appris["TOTAL"]
+    somme = [sum(v[i] for k, v in appris.items() if k != "TOTAL") for i in (0, 1)]
+    if [total[0], total[1]] != somme:
+        echec("La ligne TOTAL ne correspond pas à la somme des fichiers.")
+    if minimum is not None:
+        if total[2] < minimum:
+            echec(f"La couverture du rapport est de {total[2]} % : il en faut au moins {minimum} %.")
+        if reference["TOTAL"][2] < minimum:
+            echec(f"Avec tes tests, la couverture rejouée est de {reference['TOTAL'][2]} % : il en faut au moins "
+                  f"{minimum} %.")
+    ok()
+
+
+# ── 3. Tests écrits par l'apprenant·e : AST + mutations ─────────────────────────────────────────────────────────
+def trivial(expr):
+    return isinstance(expr, ast.Constant)
+
+
+def assertions_reelles(methode):
+    n = 0
+    for noeud in ast.walk(methode):
+        if isinstance(noeud, ast.Assert) and not trivial(noeud.test):
+            n += 1
+        elif (isinstance(noeud, ast.Call) and isinstance(noeud.func, ast.Attribute)
+              and noeud.func.attr.startswith("assert") and isinstance(noeud.func.value, ast.Name)
+              and noeud.func.value.id == "self"):
+            if noeud.args and all(trivial(a) for a in noeud.args):
+                continue  # assertTrue(True), assertEqual(1, 1)…
+            n += 1
+    return n
+
+
+def appels_client(methode):
+    """Chemins passés à self.client.get(...)."""
+    chemins = []
+    for noeud in ast.walk(methode):
+        if (isinstance(noeud, ast.Call) and isinstance(noeud.func, ast.Attribute) and noeud.func.attr == "get"
+                and isinstance(noeud.func.value, ast.Attribute) and noeud.func.value.attr == "client"
+                and noeud.args and isinstance(noeud.args[0], ast.Constant) and isinstance(noeud.args[0].value, str)):
+            chemins.append(noeud.args[0].value)
+    return chemins
+
+
+def utilise_patch(methode):
+    for noeud in ast.walk(methode):
+        if isinstance(noeud, ast.Call):
+            f = noeud.func
+            if (isinstance(f, ast.Name) and f.id == "patch") or (isinstance(f, ast.Attribute) and (
+                    f.attr == "patch" or (isinstance(f.value, ast.Attribute) and f.value.attr == "patch"))):
+                return True
+    return False
+
+
+def appelle(methode, nom):
+    return any(isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == nom
+               for n in ast.walk(methode))
+
+
+MODELS = "adherents/models.py"
+VIEWS = "adherents/views.py"
+ETAPES_TESTS = {
+    "2": {
+        "cible": lambda m: appelle(m, "nom_complet"),
+        "manque": "un test qui appelle `nom_complet()` sur un adhérent (adherent.nom_complet())",
+        "mutations": [(MODELS, "return self.nom.strip().title()", "return self.nom.strip().upper()"),
+                      (MODELS, "return self.nom.strip().title()", "return self.nom.strip()")],
+    },
+    "3": {
+        "cible": lambda m: any(c.startswith("/adherents/") and not c.startswith("/adherents/prive")
+                               for c in appels_client(m)),
+        "manque": 'un test qui appelle `self.client.get("/adherents/")`',
+        "mutations": [(VIEWS, 'noms = [etiquette(a) for a in Adherent.objects.order_by("nom")]', "noms = []"),
+                      (VIEWS, 'return JsonResponse({"adherents": noms})',
+                       'return JsonResponse({"adherents": noms}, status=201)')],
+    },
+    "4": {
+        "cible": lambda m: utilise_patch(m) and any(c.startswith("/adherents/prive") for c in appels_client(m)),
+        "manque": 'un test décoré avec `patch(...)` qui appelle `self.client.get("/adherents/prive/")`',
+        "mutations": [(VIEWS, '{"nombre": Adherent.objects.count()}', '{"nombre": 0}')],
+    },
+}
+
+
+def lancer_tests(copie, tmp, venv, cible=None, erreurs=False):
+    cmd = [python_venv(venv), "-s", "-E"]
+    if erreurs:
+        cmd += ["-W", "error::DeprecationWarning"]
+    cmd += ["manage.py", "test"] + ([cible] if cible else [])
+    res = subprocess.run(cmd, cwd=copie, env=env_propre(tmp), capture_output=True, text=True, timeout=60)
+    sortie = res.stdout + res.stderr
+    m = re.search(r"Ran (\d+) tests?", sortie)
+    return res.returncode == 0 and "\nOK" in sortie, int(m.group(1)) if m else 0, sortie
+
+
+def cmd_tests(args):
+    etape = args[0] if args else ""
+    minimum = int(args[1]) if len(args) > 1 else 1
+    if etape not in ETAPES_TESTS:
+        echec(__doc__)
+    cfg = ETAPES_TESTS[etape]
+    fichier = Path("adherents/tests.py")
+    try:
+        arbre = ast.parse(lire(fichier))
+    except SyntaxError as exc:
+        echec(f"adherents/tests.py contient une erreur de syntaxe : {exc}")
+    candidats = []
+    for classe in [n for n in ast.walk(arbre) if isinstance(n, ast.ClassDef)]:
+        for m in classe.body:
+            if isinstance(m, ast.FunctionDef) and m.name.startswith("test") and cfg["cible"](m):
+                if any(isinstance(n, ast.Attribute) and n.attr == "fail" for n in ast.walk(m)):
+                    continue
+                candidats.append((classe.name, m))
+    if not candidats:
+        echec(f"Il manque {cfg['manque']}.")
+    avec_assertion = [(c, m) for c, m in candidats if assertions_reelles(m)]
+    if not avec_assertion:
+        echec("Ton test n'a aucune vraie assertion : ajoute un `self.assertEqual(...)` qui compare le résultat obtenu "
+              "à ce que tu attends (pas `pass`, pas `assertTrue(True)`).")
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = copie_projet(tmp, fichier)
+        bon, nombre, sortie = lancer_tests(copie, tmp, "django31")
+        if not bon or nombre < minimum:
+            print("\n".join(sortie.strip().splitlines()[-15:]))
+            echec(f"Il faut que `manage.py test` réussisse avec au moins {minimum} test(s) (il en a lancé {nombre}).")
+        for nom_classe, methode in avec_assertion:
+            identifiant = f"adherents.tests.{nom_classe}.{methode.name}"
+            bon, nombre, sortie = lancer_tests(copie, tmp, "django31", identifiant)
+            if not bon or nombre != 1:
+                continue
+            detecte = True
+            for relatif, ancien, nouveau in cfg["mutations"]:
+                cible = copie / relatif
+                texte = cible.read_text(encoding="utf-8")
+                if ancien not in texte:
+                    echec(f"Mutation inapplicable ({relatif} a changé ?).", 2)
+                cible.write_text(texte.replace(ancien, nouveau), encoding="utf-8")
+                tient, _, _ = lancer_tests(copie, tmp, "django31", identifiant)
+                cible.write_text(texte, encoding="utf-8")
+                if tient:
+                    detecte = False
+                    break
+            if detecte:
+                ok(f"Bien : {identifiant} passe sur le code d'origine et échoue sur le code cassé.")
+                return
+    echec("Ton test passe aussi quand le code est cassé volontairement : il ne vérifie pas assez. "
+          "Compare le résultat à une valeur précise (le nom complet attendu, le code 200, le contenu renvoyé).")
+
+
+# ── 4. Tests de référence rejoués sur le code de l'apprenant·e ──────────────────────────────────────────────────
+def cmd_palier(args):
+    venv = args[0] if args else ""
+    if venv not in {"django31", "django32", "django42", "django52"}:
+        echec(__doc__)
+    erreurs = "--erreurs-deprecation" in args
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = Path(tmp) / "p"
+        shutil.copytree(Path.cwd(), copie, ignore=IGNORER)
+        for chemin in list(copie.rglob("*.py")):
+            if re.fullmatch(r"tests?(_\w+)?\.py|test_\w+\.py", chemin.name) and "migrations" not in chemin.parts:
+                chemin.unlink()
+        shutil.copy2(REFERENCE, copie / "adherents" / "tests.py")
+        shutil.copy2(PROJET / "manage.py", copie / "manage.py")
+        bon, nombre, sortie = lancer_tests(copie, tmp, venv, erreurs=erreurs)
+        if not bon or nombre != 4:
+            print("\n".join(sortie.strip().splitlines()[-20:]))
+            echec(f"Les 4 tests de référence doivent réussir sur ton code avec Django ({venv}) : "
+                  f"{nombre} test(s) lancé(s).")
+        if "--migrations" in args:
+            res = subprocess.run([python_venv(venv), "-s", "-E", "manage.py", "makemigrations", "--check", "--dry-run"],
+                                 cwd=copie, env=env_propre(tmp), capture_output=True, text=True, timeout=30)
+            if res.returncode != 0:
+                print(res.stdout + res.stderr)
+                echec("`makemigrations --check --dry-run` propose encore des migrations.")
+    ok(f"Bien : les 4 tests de référence passent sur ton code avec Django ({venv}).")
+
+
+# ── 5. Code Python lu par l'AST ──────────────────────────────────────────────────────────────────────────────────
+def arbre(chemin):
+    try:
+        return ast.parse(lire(chemin))
+    except SyntaxError as exc:
+        echec(f"{chemin} contient une erreur de syntaxe : {exc}")
+
+
+def fichiers_py(*dossiers):
+    for d in dossiers:
+        for p in sorted(Path(d).rglob("*.py")):
+            if "migrations" not in p.parts:
+                yield p
+
+
+def cmd_code(args):
+    mode = args[0] if args else ""
+    if mode == "auto-field":
+        valeur = None
+        for n in arbre("config/settings.py").body:
+            if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "DEFAULT_AUTO_FIELD"
+                                                for t in n.targets) and isinstance(n.value, ast.Constant):
+                valeur = n.value.value
+        if not (isinstance(valeur, str) and re.fullmatch(r"django\.db\.models\.(Big|Small)?AutoField", valeur)):
+            echec('config/settings.py doit contenir une vraie ligne DEFAULT_AUTO_FIELD = "django.db.models.AutoField" '
+                  "(pas dans un commentaire).")
+    elif mode == "urls":
+        a = arbre("config/urls.py")
+        importe = {(n.module, x.name) for n in ast.walk(a) if isinstance(n, ast.ImportFrom) for x in n.names}
+        if ("django.urls", "re_path") not in importe:
+            echec("config/urls.py doit importer `re_path` depuis `django.urls`.")
+        if any(m == "django.conf.urls" for m, _ in importe):
+            echec("config/urls.py importe encore `django.conf.urls` : retire `url`.")
+        appels = [n.func.id for n in ast.walk(a) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
+        if "re_path" not in appels or "url" in appels:
+            echec("Les routes de config/urls.py doivent utiliser `re_path(...)` à la place de `url(...)`.")
+    elif mode == "textes-depreces":
+        interdits = {"force_text", "ugettext", "ugettext_lazy", "ugettext_noop", "ungettext"}
+        for p in fichiers_py("adherents", "config"):
+            for n in ast.walk(arbre(p)):
+                noms = set()
+                if isinstance(n, ast.Name):
+                    noms.add(n.id)
+                elif isinstance(n, ast.Attribute):
+                    noms.add(n.attr)
+                elif isinstance(n, (ast.ImportFrom, ast.Import)):
+                    noms |= {x.name.split(".")[-1] for x in n.names}
+                if noms & interdits:
+                    echec(f"{p} utilise encore {', '.join(sorted(noms & interdits))}.")
+        utils, modeles = arbre("adherents/utils.py"), arbre("adherents/models.py")
+        if not any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "force_str"
+                   for n in ast.walk(utils)):
+            echec("adherents/utils.py doit appeler `force_str(...)`.")
+        if not any(isinstance(n, ast.ImportFrom) and n.module == "django.utils.translation"
+                   and any(x.name == "gettext_lazy" for x in n.names) for n in ast.walk(modeles)):
+            echec("adherents/models.py doit importer `gettext_lazy` depuis `django.utils.translation`.")
+    elif mode == "utc":
+        a = arbre("adherents/utils.py")
+        for n in ast.walk(a):
+            if isinstance(n, ast.ImportFrom) and n.module and n.module.startswith("django.utils.timezone"):
+                echec("adherents/utils.py importe encore `django.utils.timezone`.")
+            if isinstance(n, ast.ImportFrom) and n.module == "django.utils" and any(x.name == "timezone" for x in n.names):
+                echec("adherents/utils.py importe encore `timezone` de Django.")
+        if not any(isinstance(n, ast.ImportFrom) and n.module == "datetime" and any(x.name == "timezone" for x in n.names)
+                   for n in ast.walk(a)) and not any(isinstance(n, ast.Attribute) and n.attr == "utc"
+                                                       and isinstance(n.value, ast.Attribute) and n.value.attr == "timezone"
+                                                       for n in ast.walk(a)):
+            echec("adherents/utils.py doit utiliser `datetime.timezone.utc` (import depuis `datetime`).")
+        if not any(isinstance(n, ast.Attribute) and n.attr == "utc" for n in ast.walk(a)):
+            echec("adherents/utils.py doit utiliser `timezone.utc` (celui de `datetime`).")
+    elif mode in {"requirements-32", "requirements-52"}:
+        motif = r"Django==(3|4|5)\.2\.\d+" if mode == "requirements-32" else r"Django==5\.2\.\d+"
+        lignes = [re.sub(r"\s*#.*$", "", l).strip() for l in lire("requirements.txt").splitlines()]
+        django = [l for l in lignes if re.match(r"(?i)django\s*[=<>~!]", l)]
+        if len(django) != 1 or not re.fullmatch(motif, django[0]):
+            echec(f"requirements.txt doit contenir une seule ligne Django, de la forme {motif} (trouvé : {django}).")
+    else:
+        echec(__doc__)
+    ok()
+
+
+# ── 6. React / Vite : fichiers lus sans leurs commentaires ──────────────────────────────────────────────────────
+def sans_commentaires_js(texte):
+    """Retire // et /* */ en respectant les chaînes de caractères."""
+    sortie, i, n = [], 0, len(texte)
+    while i < n:
+        c = texte[i]
+        if c in "\"'`":
+            j = i + 1
+            while j < n and texte[j] != c:
+                j += 2 if texte[j] == "\\" else 1
+            sortie.append(texte[i:j + 1])
+            i = j + 1
+        elif texte.startswith("//", i):
+            while i < n and texte[i] != "\n":
+                i += 1
+        elif texte.startswith("/*", i):
+            j = texte.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        else:
+            sortie.append(c)
+            i += 1
+    return "".join(sortie)
+
+
+def code_normalise(texte):
+    return re.sub(r"\s+", " ", sans_commentaires_js(texte)).strip()
+
+
+def charger_json(chemin):
+    try:
+        return json.loads(lire(chemin))
+    except ValueError as exc:
+        echec(f"{chemin} n'est pas un JSON valide : {exc}")
+
+
+def verifier_package_intact(d):
+    for cle, attendu in (("name", "planning-js"), ("version", "0.1.0")):
+        if d.get(cle) != attendu:
+            echec(f"package.json : la clé « {cle} » doit rester « {attendu} ».")
+    for dep in ("react", "react-dom", "@material-ui/core"):
+        if dep not in d.get("dependencies", {}):
+            echec(f"package.json : `{dep}` doit rester dans `dependencies`.")
+
+
+class Scripts(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.scripts, self.racine = [], False
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "script":
+            self.scripts.append(attrs)
+        if tag == "div" and attrs.get("id") == "root":
+            self.racine = True
+
+
+def cmd_react(args):
+    mode = args[0] if args else ""
+    if mode == "scripts":
+        d = charger_json("package.json")
+        verifier_package_intact(d)
+        s = d.get("scripts", {})
+        if s.get("start") != "vite" or s.get("build") != "vite build" or "test" in s:
+            echec('Les scripts doivent être : "start": "vite", "build": "vite build", et pas de script "test".')
+    elif mode == "deps":
+        d = charger_json("package.json")
+        verifier_package_intact(d)
+        if "react-scripts" in d.get("dependencies", {}):
+            echec("`react-scripts` est encore dans `dependencies`.")
+        dev = d.get("devDependencies", {})
+        for dep in ("vite", "@vitejs/plugin-react"):
+            if not (isinstance(dev.get(dep), str) and re.search(r"\d", dev[dep])):
+                echec(f"`{dep}` doit être dans `devDependencies` avec un numéro de version (ex. \"^6.0.0\").")
+    elif mode == "vite":
+        code = code_normalise(lire("vite.config.js"))
+        regles = [
+            (r'import \{ ?defineConfig ?\} from ["\']vite["\'];?', "l'import `defineConfig` depuis \"vite\""),
+            (r'import react from ["\']@vitejs/plugin-react["\'];?', "l'import `react` depuis \"@vitejs/plugin-react\""),
+            (r"export default defineConfig\(\{", "`export default defineConfig({ ... })`"),
+            (r"plugins: ?\[ ?react\(\) ?\]", "`plugins: [react()]`"),
+            (r'build: ?\{ ?outDir: ?["\']build["\'] ?,? ?\}', 'le dossier de sortie : `build: { outDir: "build" }`'),
+        ]
+        for motif, nom in regles:
+            if not re.search(motif, code):
+                echec(f"vite.config.js doit contenir {nom} (hors commentaires).")
+    elif mode == "index-html":
+        if Path("public/index.html").exists():
+            echec("public/index.html existe encore : déplace-le à la racine du projet.")
+        p = Scripts()
+        p.feed(lire("index.html"))
+        if not p.racine:
+            echec('index.html doit garder la balise <div id="root">.')
+        if not any(a.get("type") == "module" and a.get("src") == "/src/index.jsx" for a in p.scripts):
+            echec('index.html doit charger `/src/index.jsx` avec <script type="module" src="/src/index.jsx"></script> '
+                  "(une balise en commentaire ne compte pas).")
+    elif mode in {"renommage", "variable"}:
+        index_ref = (OPT / "04-react/src/index.js").read_text(encoding="utf-8")
+        app_ref = (OPT / "04-react/src/App.js").read_text(encoding="utf-8")
+        app_vite = app_ref.replace("process.env.REACT_APP_API_URL", "import.meta.env.VITE_API_URL")
+        for ancien in ("src/index.js", "src/App.js"):
+            if Path(ancien).exists():
+                echec(f"{ancien} existe encore : renomme-le en .jsx.")
+        if code_normalise(lire("src/index.jsx")) != code_normalise(index_ref):
+            echec("src/index.jsx doit être l'ancien src/index.js renommé, sans autre changement.")
+        app = code_normalise(lire("src/App.jsx"))
+        if mode == "renommage":
+            if app not in (code_normalise(app_ref), code_normalise(app_vite)):
+                echec("src/App.jsx doit être l'ancien src/App.js renommé (seule la variable d'environnement a le droit "
+                      "de changer).")
+        else:
+            if app != code_normalise(app_vite):
+                echec("src/App.jsx doit lire `import.meta.env.VITE_API_URL` à la place de "
+                      "`process.env.REACT_APP_API_URL`, sans autre changement.")
+            for p in Path("src").rglob("*"):
+                if p.is_file() and "REACT_APP" in p.read_text(encoding="utf-8", errors="replace"):
+                    echec(f"{p} contient encore REACT_APP.")
+    else:
+        echec(__doc__)
+    ok()
+
+
+# ── 7. Renovate ──────────────────────────────────────────────────────────────────────────────────────────────────
+def cmd_renovate(args):
+    etape = args[0] if args else ""
+    d = charger_json("renovate.json")
+    origine = json.loads((OPT / "05-renovate/renovate.json").read_text(encoding="utf-8"))
+    for cle in ("labels", "vulnerabilityAlerts"):
+        if d.get(cle) != origine[cle]:
+            echec(f"renovate.json : la clé « {cle} » doit rester inchangée.")
+    regles = d.get("packageRules", [])
+    if etape == "1":
+        ext = d.get("extends")
+        if not (isinstance(ext, list) and "config:recommended" in ext and "config:base" not in ext):
+            echec('`extends` doit contenir "config:recommended" à la place de "config:base".')
+    elif etape == "2":
+        if d.get("dependencyDashboard") is not True or d.get("dependencyDashboardApproval") is not True \
+                or "masterIssue" in d or "masterIssueApproval" in d:
+            echec("Renomme masterIssue en dependencyDashboard et masterIssueApproval en dependencyDashboardApproval "
+                  "(valeur true).")
+    elif etape in {"3", "4", "5"}:
+        plafonds = [r for r in regles if r.get("matchPackageNames") == ["django"]]
+        if etape == "3" and not any(r.get("allowedVersions") in ("<3.3", "<4.3") for r in plafonds):
+            echec('Ajoute une règle { "matchPackageNames": ["django"], "allowedVersions": "<3.3" }.')
+        lot = [r for r in regles if r.get("groupName") == "dépendances Django"]
+        if etape in {"4", "5"} and not any(set(r.get("matchPackageNames", [])) == {"djangorestframework",
+                                                                                   "django-import-export"} for r in lot):
+            echec('Ajoute une règle qui regroupe djangorestframework et django-import-export dans le lot '
+                  '"dépendances Django".')
+        if etape == "5":
+            if len(regles) != 2 or not any(r.get("allowedVersions") == "<4.3" for r in plafonds):
+                echec('Il doit rester deux règles, dont celle qui plafonne django à "<4.3".')
+            if any(r.get("allowedVersions") == "<3.3" for r in regles):
+                echec('Le plafond "<3.3" doit avoir disparu.')
+    else:
+        echec(__doc__)
+    ok()
+
+
+# ── 8. Documents Markdown : commentaires ignorés ─────────────────────────────────────────────────────────────────
+def markdown_utile(chemin):
+    return re.sub(r"<!--.*?-->", "", lire(chemin), flags=re.S)
+
+
+def cmd_doc(args):
+    mode = args[0] if args else ""
+    if mode == "journal":
+        texte = markdown_utile("docs/montees-de-version.md")
+        m = re.search(r"(?m)^##\s+Django 3\.1 vers 3\.2\b.*$", texte)
+        if not m:
+            echec("Il manque le titre `## Django 3.1 vers 3.2`.")
+        corps = re.split(r"(?m)^##\s", texte[m.end():], maxsplit=1)[0]
+        for rubrique in ("Pourquoi", "Laissé de côté", "Retour arrière"):
+            ligne = re.search(rf"(?m)^[-*]\s+{rubrique}\s*[: ]+\s*(.+)$", corps)
+            if not ligne or len(re.findall(r"\w{2,}", ligne.group(1))) < 3:
+                echec(f"Complète la ligne `- {rubrique} : ...` avec une vraie phrase (au moins trois mots).")
+    elif mode == "readme":
+        texte = markdown_utile("README.md")
+        for motif, nom in ((r"Python 3\.10", "Python 3.10"), (r"Django 5\.2", "Django 5.2"),
+                           (r"manage\.py test", "python manage.py test")):
+            if not re.search(motif, texte):
+                echec(f"README.md doit mentionner « {nom} » (hors commentaires).")
+    elif mode == "readme-requirements":
+        if not re.search(r"requirements\.txt", markdown_utile("README.md")):
+            echec("README.md doit citer `requirements.txt` (hors commentaires) pour dire qu'il fait foi.")
+        if Path("requirements-old.txt").exists():
+            echec("requirements-old.txt existe encore : supprime-le.")
+    else:
+        echec(__doc__)
+    ok()
+
+
+COMMANDES = {"sortie": cmd_sortie, "couverture": cmd_couverture, "tests": cmd_tests, "palier": cmd_palier,
+             "code": cmd_code, "react": cmd_react, "renovate": cmd_renovate, "doc": cmd_doc}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] not in COMMANDES:
+        echec(__doc__, 2)
+    COMMANDES[sys.argv[1]](sys.argv[2:])

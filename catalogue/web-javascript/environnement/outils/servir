@@ -1,0 +1,3 @@
+#!/bin/sh
+# Raccourci : « servir [dossier] » publie un dossier sur le port 8000 (pour l'ouvrir avec ton propre VS Code).
+exec node /opt/outils/servir.js "$@"

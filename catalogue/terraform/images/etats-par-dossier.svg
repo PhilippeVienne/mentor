@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-labelledby="t d">
+  <title id="t">Un état distant par dossier</title>
+  <desc id="d">Quatre dossiers du dépôt (ingress, kubedb, minio, keycloak) pointent chacun vers son propre état dans le backend distant.</desc>
+  <rect x="1" y="1" width="718" height="258" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g font-family="Inter, system-ui, sans-serif" font-size="16" fill="#e2e8f0" text-anchor="middle">
+    <text x="360" y="34" font-size="18" font-weight="600">Chaque dossier, son état</text>
+    <g fill="#1e293b" stroke="#334155">
+      <rect x="30" y="60" width="140" height="50" rx="10"/><rect x="200" y="60" width="140" height="50" rx="10"/>
+      <rect x="370" y="60" width="140" height="50" rx="10"/><rect x="540" y="60" width="140" height="50" rx="10"/>
+    </g>
+    <text x="100" y="91">ingress/</text><text x="270" y="91">kubedb/</text><text x="440" y="91">minio/</text><text x="610" y="91">keycloak/</text>
+    <g stroke="#6366F1" stroke-width="2" fill="none"><path d="M100 110V160M270 110V160M440 110V160M610 110V160"/></g>
+    <g fill="#1e293b" stroke="#7B42BC" stroke-width="2">
+      <rect x="30" y="160" width="140" height="56" rx="10"/><rect x="200" y="160" width="140" height="56" rx="10"/>
+      <rect x="370" y="160" width="140" height="56" rx="10"/><rect x="540" y="160" width="140" height="56" rx="10"/>
+    </g>
+    <text x="100" y="184" font-size="14">ingress-</text><text x="100" y="204" font-size="14" fill="#94a3b8">production</text>
+    <text x="270" y="184" font-size="14">kubedb-</text><text x="270" y="204" font-size="14" fill="#94a3b8">production</text>
+    <text x="440" y="184" font-size="14">cluster-minio-</text><text x="440" y="204" font-size="14" fill="#94a3b8">production</text>
+    <text x="610" y="184" font-size="14">keycloak-</text><text x="610" y="204" font-size="14" fill="#94a3b8">production</text>
+    <text x="360" y="244" font-size="14" fill="#94a3b8">Backend distant : organisation equipe</text>
+  </g>
+</svg>

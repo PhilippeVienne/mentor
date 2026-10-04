@@ -1,0 +1,34 @@
+// Environnement réel du parcours TypeScript (voir catalogue/README.md §15 et doc/environnements.md).
+// Node.js 24 sur Debian, TypeScript, tsx, ESLint et Prettier préinstallés ; chaque labo copie son exercice dans /workspace.
+{
+    "name": "TypeScript de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "768mb",
+        "storage": "512mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        },
+        "vscode": {
+            // Installées au build depuis Open VSX (le conteneur n'a pas de réseau) ; versions ÉPINGLÉES.
+            "extensions": ["dbaeumer.vscode-eslint@3.0.34", "esbenp.prettier-vscode@12.4.0"],
+            "settings": {
+                "typescript.tsdk": "/opt/outils/node_modules/typescript/lib",
+                "editor.defaultFormatter": "esbenp.prettier-vscode"
+            }
+        }
+    }
+}

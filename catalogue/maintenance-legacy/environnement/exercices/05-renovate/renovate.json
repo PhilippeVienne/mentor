@@ -1,0 +1,9 @@
+{
+  "extends": ["config:base"],
+  "labels": ["Dependencies", "Maintenance", "Merge request::Needs review"],
+  "vulnerabilityAlerts": {
+    "labels": ["Priority::Critical"]
+  },
+  "masterIssue": true,
+  "masterIssueApproval": true
+}

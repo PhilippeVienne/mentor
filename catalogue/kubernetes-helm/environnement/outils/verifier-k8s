@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+"""Contrôles de cohérence entre objets Kubernetes, SANS cluster (outil de formation de l'équipe).
+
+Un vrai cluster vérifie ces liens tout seul ; ici, ce petit outil lit les fichiers YAML et fait le même raisonnement.
+
+  verifier-k8s selecteur FICHIER...     chaque Service trouve-t-il au moins un pod d'un Deployment (labels) ?
+  verifier-k8s references FICHIER...    chaque ConfigMap, Secret, PVC et Service cité existe-t-il dans les fichiers ?
+  verifier-k8s champ [options] FICHIER...
+                                        interroge la STRUCTURE lue du YAML (jamais le texte : un commentaire ou une
+                                        valeur écrite dans une chaîne ne compte pas), voir « verifier-k8s champ --aide »
+  verifier-k8s lignes FICHIER --exactement MOT...
+                                        le fichier texte contient exactement ces lignes (ordre libre, lignes vides ignorées)
+  verifier-k8s paires FICHIER --cle NOM --valeur MOT
+                                        le fichier texte contient des lignes « nom: valeur » ; pour NOM, il y en a au
+                                        moins une et toutes disent MOT
+
+FICHIER peut être « - » (entrée standard), par exemple : helm template demo ./chart | verifier-k8s references -
+Code de sortie : 0 si tout est cohérent, 1 sinon, 2 si un fichier est illisible.
+"""
+import argparse
+import base64
+import binascii
+import re
+import sys
+
+import yaml
+
+WORKLOADS = {"Deployment", "StatefulSet", "DaemonSet", "Job", "ReplicaSet"}
+
+
+def charger(chemins, tous=False):
+    objets = []
+    for chemin in chemins:
+        try:
+            texte = sys.stdin.read() if chemin == "-" else open(chemin, encoding="utf-8").read()
+            docs = list(yaml.safe_load_all(texte))
+        except (OSError, yaml.YAMLError) as erreur:
+            print(f"Fichier illisible ({chemin}) : {erreur}")
+            sys.exit(2)
+        objets += [d for d in docs if isinstance(d, dict) and (tous or d.get("kind"))]
+    return objets
+
+
+def modele_pod(objet):
+    """Le modèle de pod d'un objet : Pod lui-même, ou spec.template (Deployment…), ou jobTemplate (CronJob)."""
+    spec = objet.get("spec") or {}
+    if objet["kind"] == "Pod":
+        return objet
+    if objet["kind"] == "CronJob":
+        spec = ((spec.get("jobTemplate") or {}).get("spec")) or {}
+    return spec.get("template") or None
+
+
+def nom(objet):
+    return (objet.get("metadata") or {}).get("name")
+
+
+def selecteur(objets):
+    pods = []
+    for objet in objets:
+        modele = modele_pod(objet)
+        if modele is not None and objet["kind"] in WORKLOADS | {"Pod"}:
+            pods.append((nom(objet), (modele.get("metadata") or {}).get("labels") or {}))
+    services = [o for o in objets if o["kind"] == "Service"]
+    if not services:
+        print("Aucun Service trouvé dans les fichiers.")
+        return 1
+    ok = True
+    for service in services:
+        voulu = (service.get("spec") or {}).get("selector") or {}
+        trouves = [n for n, labels in pods if voulu and all(labels.get(k) == v for k, v in voulu.items())]
+        if trouves:
+            print(f"OK : le service {nom(service)} (selector {voulu}) trouve les pods de {', '.join(trouves)}.")
+        else:
+            ok = False
+            print(f"ERREUR : le service {nom(service)} (selector {voulu}) ne correspond aux labels d'aucun pod : "
+                  f"il n'aurait AUCUN point de terminaison.")
+            for n, labels in pods:
+                print(f"  labels des pods de {n} : {labels}")
+    return 0 if ok else 1
+
+
+def noms_cites(objets):
+    """Liste de (genre cité, nom, où) pour chaque référence trouvée."""
+    cites = []
+
+    def parcourir(noeud, ou):
+        if isinstance(noeud, dict):
+            for cle, valeur in noeud.items():
+                if cle in ("configMapRef", "configMapKeyRef") and isinstance(valeur, dict):
+                    cites.append(("ConfigMap", valeur.get("name"), ou))
+                elif cle in ("secretRef", "secretKeyRef") and isinstance(valeur, dict):
+                    cites.append(("Secret", valeur.get("name"), ou))
+                elif cle == "volumes" and isinstance(valeur, list):
+                    for volume in valeur:
+                        if not isinstance(volume, dict):
+                            continue
+                        if isinstance(volume.get("configMap"), dict):
+                            cites.append(("ConfigMap", volume["configMap"].get("name"), ou))
+                        if isinstance(volume.get("secret"), dict):
+                            cites.append(("Secret", volume["secret"].get("secretName"), ou))
+                        if isinstance(volume.get("persistentVolumeClaim"), dict):
+                            cites.append(("PersistentVolumeClaim", volume["persistentVolumeClaim"].get("claimName"), ou))
+                else:
+                    parcourir(valeur, ou)
+        elif isinstance(noeud, list):
+            for element in noeud:
+                parcourir(element, ou)
+
+    for objet in objets:
+        ou = f"{objet['kind']} {nom(objet)}"
+        if objet["kind"] == "Ingress":
+            spec = objet.get("spec") or {}
+            fonds = [(spec.get("defaultBackend") or {})]
+            for regle in spec.get("rules") or []:
+                for chemin in ((regle.get("http") or {}).get("paths")) or []:
+                    fonds.append(chemin.get("backend") or {})
+            for fond in fonds:
+                service = fond.get("service")
+                if isinstance(service, dict):
+                    cites.append(("Service", service.get("name"), ou))
+        elif objet["kind"] in WORKLOADS | {"Pod", "CronJob"}:
+            parcourir(modele_pod(objet) or {}, ou)
+    return cites
+
+
+def references(objets):
+    definis = {(o["kind"], nom(o)) for o in objets}
+    cites = noms_cites(objets)
+    if not cites:
+        print("Aucune référence trouvée (ConfigMap, Secret, PVC ou Service cité par un autre objet).")
+        return 1
+    ok = True
+    for genre, cible, ou in cites:
+        if (genre, cible) in definis:
+            print(f"OK : {ou} cite {genre} {cible}, qui est défini.")
+        else:
+            ok = False
+            print(f"ERREUR : {ou} cite {genre} {cible}, mais aucun fichier ne le définit.")
+    return 0 if ok else 1
+
+
+# ── Interrogation de la structure ───────────────────────────────────────────────────────────────────────────
+AIDE_CHAMP = """verifier-k8s champ [--kind GENRE] [--nom NOM] [--chemin CHEMIN] TEST FICHIER...
+
+Sélectionne les objets du genre (kind) et du nom (metadata.name) donnés dans les fichiers (ou « - » pour l'entrée
+standard, par exemple la sortie de `helm template`), puis teste un champ de leur structure YAML. Un commentaire,
+une clé au mauvais niveau, un autre objet ou une valeur cachée dans une chaîne ne valident rien.
+
+CHEMIN : des clés séparées par des points ; [N] choisit un élément de liste (à partir de 0), [cle=valeur] l'élément
+         dont `cle` vaut `valeur`, [*] n'importe quel élément ; [texte] après un nom désigne une clé qui contient des
+         points ou des barres, par exemple  metadata.annotations[cert-manager.io/cluster-issuer]
+         Sans CHEMIN, on teste l'objet lui-même.
+TEST   : --existe | --absent | --egal VALEUR (valeur YAML : 2, true, '[]'…, le type compte) |
+         --texte TEXTE (le champ est ce texte exactement) | --contient TEXTE (élément de liste, ou morceau de texte)
+         Avec --decode-base64, le champ est d'abord décodé (Secret). --fichier F : le champ est le contenu de F.
+Au moins un objet doit être trouvé ; tous les objets trouvés doivent satisfaire le test.
+Code de sortie : 0 si le test réussit, 1 sinon, 2 si un fichier est illisible."""
+JETON = re.compile(r"\[([^\]]*)\]|([^.\[\]]+)")
+
+
+def decouper_chemin(chemin):
+    """'a.b[0].c[nom=x]' -> ['a', 'b', 0, 'c', ('nom', 'x')] ; [*] -> '*' ; [texte] -> clé (textuelle)."""
+    pas = []
+    reste = chemin.replace("].", "]").lstrip(".")
+    for m in JETON.finditer(chemin):
+        crochet, nu = m.group(1), m.group(2)
+        if nu is not None:
+            pas.append(nu)
+        elif crochet == "*":
+            pas.append("*")
+        elif re.fullmatch(r"\d+", crochet):
+            pas.append(int(crochet))
+        elif "=" in crochet:
+            cle, _, valeur = crochet.partition("=")
+            pas.append((cle, valeur))
+        else:
+            pas.append(crochet)
+    return pas
+
+
+def valeurs_au_chemin(racine, pas):
+    """Toutes les valeurs atteintes par le chemin (liste vide si le chemin n'existe pas)."""
+    courants = [racine]
+    for p in pas:
+        suivants = []
+        for v in courants:
+            if isinstance(p, int):
+                if isinstance(v, list) and p < len(v):
+                    suivants.append(v[p])
+            elif p == "*":
+                if isinstance(v, list):
+                    suivants.extend(v)
+            elif isinstance(p, tuple):
+                if isinstance(v, list):
+                    suivants.extend(e for e in v if isinstance(e, dict) and str(e.get(p[0])) == p[1])
+            elif isinstance(v, dict) and p in v:
+                suivants.append(v[p])
+        courants = suivants
+    return courants
+
+
+def en_texte(valeur):
+    if isinstance(valeur, bool):
+        return "true" if valeur else "false"
+    return str(valeur)
+
+
+def meme_valeur(a, b):
+    return type(a) is type(b) and a == b if isinstance(a, (bool, int, float)) or isinstance(b, (bool, int, float)) else a == b
+
+
+def satisfait(valeur, args, contenu_fichier):
+    if args.decode_base64:
+        if not isinstance(valeur, str):
+            return False
+        try:
+            valeur = base64.b64decode(valeur, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            return False
+    if args.fichier is not None:
+        return isinstance(valeur, str) and valeur.rstrip("\n") == contenu_fichier.rstrip("\n")
+    if args.egal is not None:
+        return meme_valeur(valeur, yaml.safe_load(args.egal))
+    if args.texte is not None:
+        return not isinstance(valeur, (dict, list)) and en_texte(valeur) == args.texte
+    if args.contient is not None:
+        if isinstance(valeur, list):
+            return any(not isinstance(e, (dict, list)) and en_texte(e) == args.contient for e in valeur)
+        return isinstance(valeur, str) and args.contient in valeur
+    return True  # --existe : le chemin existe déjà
+
+
+def champ(argv):
+    ap = argparse.ArgumentParser(prog="verifier-k8s champ", add_help=False)
+    ap.add_argument("--kind")
+    ap.add_argument("--nom")
+    ap.add_argument("--chemin")
+    ap.add_argument("--existe", action="store_true")
+    ap.add_argument("--absent", action="store_true")
+    ap.add_argument("--egal")
+    ap.add_argument("--texte")
+    ap.add_argument("--contient")
+    ap.add_argument("--decode-base64", action="store_true")
+    ap.add_argument("--fichier")
+    ap.add_argument("--aide", action="store_true")
+    ap.add_argument("fichiers", nargs="*")
+    args = ap.parse_args(argv)
+    if args.aide or not args.fichiers:
+        print(AIDE_CHAMP)
+        return 2
+    tests = [t for t in (args.existe, args.absent, args.egal is not None, args.texte is not None,
+                         args.contient is not None, args.fichier is not None) if t]
+    if len(tests) != 1:
+        print("Choisis exactement un test : --existe, --absent, --egal, --texte, --contient ou --fichier.")
+        return 2
+    contenu_fichier = ""
+    if args.fichier is not None:
+        try:
+            contenu_fichier = open(args.fichier, encoding="utf-8").read()
+        except OSError as erreur:
+            print(f"Fichier illisible ({args.fichier}) : {erreur}")
+            return 2
+    objets = charger(args.fichiers, tous=not args.kind)
+    choisis = [o for o in objets if (not args.kind or o.get("kind") == args.kind) and (not args.nom or nom(o) == args.nom)]
+    cible = " ".join(x for x in (args.kind, args.nom) if x) or "objet"
+    if args.chemin is None:
+        if args.absent:
+            if choisis:
+                print(f"ERREUR : {cible} existe, alors qu'il ne devrait pas.")
+                return 1
+            print(f"OK : aucun objet {cible}.")
+            return 0
+        if choisis:
+            print(f"OK : {cible} trouvé.")
+            return 0
+        print(f"ERREUR : aucun objet {cible} dans les fichiers.")
+        return 1
+    if not choisis:
+        print(f"ERREUR : aucun objet {cible} dans les fichiers.")
+        return 1
+    pas = decouper_chemin(args.chemin)
+    for objet in choisis:
+        valeurs = valeurs_au_chemin(objet, pas)
+        etiquette = f"{objet.get('kind', 'document')} {nom(objet) or ''}".strip()
+        if args.absent:
+            if valeurs:
+                print(f"ERREUR : {etiquette} contient {args.chemin}, qui devrait être absent.")
+                return 1
+        elif not valeurs:
+            print(f"ERREUR : {etiquette} n'a pas de champ {args.chemin}.")
+            return 1
+        elif not args.existe and not any(satisfait(v, args, contenu_fichier) for v in valeurs):
+            vu = ", ".join(repr(v) for v in valeurs)[:200]
+            print(f"ERREUR : {etiquette}, champ {args.chemin} : valeur {vu}, ce n'est pas celle qui est attendue.")
+            return 1
+    print(f"OK : {args.chemin} est conforme.")
+    return 0
+
+
+def lire_lignes(chemin):
+    try:
+        with open(chemin, encoding="utf-8") as f:
+            return [l.strip() for l in f.read().splitlines() if l.strip() and not l.strip().startswith("#")]
+    except OSError as erreur:
+        print(f"Fichier illisible ({chemin}) : {erreur}")
+        sys.exit(2)
+
+
+def lignes(argv):
+    ap = argparse.ArgumentParser(prog="verifier-k8s lignes")
+    ap.add_argument("fichier")
+    ap.add_argument("--exactement", nargs="+", required=True)
+    args = ap.parse_args(argv)
+    trouvees = lire_lignes(args.fichier)
+    manque = sorted(set(args.exactement) - set(trouvees))
+    en_trop = sorted(set(trouvees) - set(args.exactement))
+    if manque or en_trop or len(trouvees) != len(set(trouvees)):
+        if manque:
+            print("Il manque : " + ", ".join(manque))
+        if en_trop:
+            print("En trop : " + ", ".join(en_trop))
+        if len(trouvees) != len(set(trouvees)):
+            print("Une ligne est écrite plusieurs fois.")
+        return 1
+    print(f"OK : {len(trouvees)} ligne(s), exactement celles qui sont attendues.")
+    return 0
+
+
+def paires(argv):
+    ap = argparse.ArgumentParser(prog="verifier-k8s paires")
+    ap.add_argument("fichier")
+    ap.add_argument("--cle", required=True)
+    ap.add_argument("--valeur", required=True)
+    args = ap.parse_args(argv)
+    valeurs = []
+    for ligne in lire_lignes(args.fichier):
+        cle, sep, valeur = ligne.partition(":")
+        if sep and cle.strip() == args.cle:
+            valeurs.append(valeur.strip())
+    if not valeurs:
+        print(f"Aucune ligne « {args.cle}: … » dans {args.fichier}.")
+        return 1
+    if any(v != args.valeur for v in valeurs):
+        print(f"Pour {args.cle}, il faut une seule cause : {args.valeur}. Trouvé : {', '.join(valeurs)}.")
+        return 1
+    print(f"OK : {args.cle}: {args.valeur}")
+    return 0
+
+
+def main(argv):
+    if len(argv) >= 2 and argv[1] == "champ":
+        return champ(argv[2:])
+    if len(argv) >= 2 and argv[1] == "lignes":
+        return lignes(argv[2:])
+    if len(argv) >= 2 and argv[1] == "paires":
+        return paires(argv[2:])
+    if len(argv) < 3 or argv[1] not in ("selecteur", "references"):
+        print(__doc__)
+        return 2
+    objets = charger(argv[2:])
+    return selecteur(objets) if argv[1] == "selecteur" else references(objets)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

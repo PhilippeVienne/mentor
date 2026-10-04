@@ -1,0 +1,39 @@
+# Extrait simplifié de la CI de MiniShop (projet Next.js d'une association étudiante) : trois contrôles de qualité, puis la construction.
+stages:
+  - quality
+  - build
+  - cron
+
+lint:
+  stage: quality
+  image: node:24-alpine
+  script:
+    - npm ci
+    - npm run lint
+
+ts-check:
+  stage: quality
+  image: node:24-alpine
+  script:
+    - npm ci
+    - npx tsc --noEmit
+
+prettier:
+  stage: quality
+  image: node:24-alpine
+  script:
+    - npm ci
+    - npx prettier --check .
+
+build:
+  stage: build
+  image: node:24-alpine
+  script:
+    - npm ci
+    - npm run build
+
+sync-shop-purchases:
+  stage: cron
+  image: node:24-alpine
+  script:
+    - npm run sync

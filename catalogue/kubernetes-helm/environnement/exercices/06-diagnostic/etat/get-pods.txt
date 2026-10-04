@@ -1,0 +1,6 @@
+NAME                            READY   STATUS             RESTARTS   AGE
+vitrine-web-6d8f7c9b5-abcde   1/2     Running            0          3m
+adhesion-backend-7f9c-xyz12     0/2     CrashLoopBackOff   5          4m
+keycloak-dev-0                  0/1     Pending            0          6m
+mediafiles-test-5c4d-qwert      0/1     ImagePullBackOff   0          2m
+adhesion-front-5b7d-mnopq       2/2     Running            0          4m

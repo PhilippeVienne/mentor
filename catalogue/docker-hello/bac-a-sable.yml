@@ -1,0 +1,30 @@
+# Scénarios proposés dans le bac à sable Docker (voir catalogue/README.md).
+scenarios:
+  vide:
+    titre: Aucun conteneur
+    indice: "Commence par : docker run hello-world"
+  web:
+    titre: Un nginx déjà lancé
+    commandes:
+      - docker run -d --name web -p 8080:80 nginx
+    indice: "Essaie : curl localhost:8080 puis docker logs web"
+  site:
+    titre: Un site à servir (index.html)
+    fichiers:
+      index.html: |
+        <h1>Mon site Mentor</h1>
+    indice: "Essaie : docker run -d -p 8081:80 -v $(pwd):/usr/share/nginx/html nginx"
+  compose:
+    titre: Un projet Compose (web + base)
+    fichiers:
+      compose.yml: |
+        services:
+          web:
+            image: nginx
+            ports:
+              - "8080:80"
+          db:
+            image: postgres:16-alpine
+            environment:
+              POSTGRES_PASSWORD: secret
+    indice: "Essaie : docker compose up -d puis docker compose ps"

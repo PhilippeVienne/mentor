@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">Parcours React et Next.js</title>
+  <desc id="d">Bannière du parcours React et Next.js : titre sur fond sombre avec un grand pictogramme.</desc>
+  <rect x="1" y="1" width="1198" height="398" rx="24" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g opacity=".12" stroke="#61DAFB" stroke-width="1">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200"/><path d="M240 0V400M480 0V400M720 0V400M960 0V400"/>
+  </g>
+  <rect x="800" y="70" width="280" height="260" rx="32" fill="#61DAFB" opacity=".18" stroke="#61DAFB" stroke-width="2"/>
+  <text x="940" y="238" text-anchor="middle" font-size="130">⚛️</text>
+  <text x="80" y="190" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="#e2e8f0">React et Next.js</text>
+  <text x="84" y="250" font-family="Inter, system-ui, sans-serif" font-size="26" fill="#94a3b8">Composants, état, routage, rendu serveur : le frontend…</text>
+</svg>

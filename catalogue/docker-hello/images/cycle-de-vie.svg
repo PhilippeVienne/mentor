@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<title id="t">Cycle de vie d&#x27;un conteneur</title><desc id="d">Un conteneur est créé, puis en cours d&#x27;exécution, puis arrêté. Il peut être redémarré, ou supprimé définitivement avec docker rm.</desc>
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#22c55e"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f59e0b"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker>
+</defs>
+<rect x="1" y="1" width="798" height="318" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+<text x="400" y="36" font-size="18" fill="#e2e8f0" font-weight="700" text-anchor="middle">Le cycle de vie d&#x27;un conteneur</text>
+<rect x="40" y="120" width="100" height="56" rx="28" fill="#111c33" stroke="#94a3b8" stroke-width="2.5"/><text x="90" y="154" font-size="14" fill="#94a3b8" font-weight="700" text-anchor="middle">created</text>
+<rect x="250" y="120" width="100" height="56" rx="28" fill="#111c33" stroke="#22c55e" stroke-width="2.5"/><text x="300" y="154" font-size="14" fill="#22c55e" font-weight="700" text-anchor="middle">running</text>
+<rect x="460" y="120" width="100" height="56" rx="28" fill="#111c33" stroke="#f59e0b" stroke-width="2.5"/><text x="510" y="154" font-size="14" fill="#f59e0b" font-weight="700" text-anchor="middle">exited</text>
+<rect x="670" y="120" width="100" height="56" rx="28" fill="#111c33" stroke="#6366F1" stroke-width="2.5"/><text x="720" y="154" font-size="14" fill="#6366F1" font-weight="700" text-anchor="middle">supprimé</text>
+<line x1="140" y1="148" x2="248" y2="148" stroke="#2496ED" stroke-width="2.4" marker-end="url(#ab)"/>
+<rect x="166.0" y="114" width="56" height="24" rx="12" fill="#0b1220" stroke="#2496ED" stroke-width="1.5"/>
+<text x="194" y="130" font-size="12" fill="#2496ED" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">start</text>
+<line x1="350" y1="148" x2="458" y2="148" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#am)"/>
+<rect x="379.0" y="114" width="50" height="24" rx="12" fill="#0b1220" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="404" y="130" font-size="12" fill="#f59e0b" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">stop</text>
+<line x1="560" y1="148" x2="668" y2="148" stroke="#6366F1" stroke-width="2.4" marker-end="url(#ar)"/>
+<rect x="594.0" y="114" width="40" height="24" rx="12" fill="#0b1220" stroke="#6366F1" stroke-width="1.5"/>
+<text x="614" y="130" font-size="12" fill="#6366F1" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">rm</text>
+<path d="M 480 178 C 480 240, 300 240, 300 180" fill="none" stroke="#2496ED" stroke-width="2.4" marker-end="url(#ab)"/><rect x="330.0" y="220" width="120" height="24" rx="12" fill="#0b1220" stroke="#2496ED" stroke-width="1.5"/>
+<text x="390" y="236" font-size="12" fill="#2496ED" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">start / restart</text>
+<text x="510" y="206" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">processus terminé → exited</text>
+<path d="M 90 118 C 90 70, 230 62, 262 116" fill="none" stroke="#22c55e" stroke-width="2.4" marker-end="url(#ag)"/><rect x="71.0" y="54" width="94" height="24" rx="12" fill="#0b1220" stroke="#22c55e" stroke-width="1.5"/>
+<text x="118" y="70" font-size="12" fill="#22c55e" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">docker run</text>
+<text x="400" y="288" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">docker run = create + start  ·  docker rm -f = stop + rm  ·  --rm : suppression automatique à l&#x27;arrêt</text>
+
+</svg>

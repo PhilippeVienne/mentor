@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+// contient : cherche un motif (expression régulière JavaScript, drapeau « m ») dans un fichier APRÈS en avoir retiré les
+// commentaires : un motif écrit dans un commentaire ne compte donc pas.
+// Usage : contient FICHIER MOTIF        code de retour 0 si le motif est présent
+//         contient -v FICHIER MOTIF     code de retour 0 si le motif est ABSENT
+//         contient -d FICHIER MOTIF     le motif doit se trouver tout au début du fichier (directive « use client »)
+const fs = require("node:fs");
+const { sansCommentaires } = require("./sans-commentaires.js");
+
+let args = process.argv.slice(2);
+const absent = args[0] === "-v";
+const debut = args[0] === "-d";
+if (absent || debut) args = args.slice(1);
+const [fichier, motif] = args;
+if (!fichier || motif === undefined) {
+  console.error("Usage : contient [-v] FICHIER MOTIF");
+  process.exit(2);
+}
+let texte;
+try {
+  texte = fs.readFileSync(fichier, "utf8");
+} catch {
+  console.error(`Fichier introuvable : ${fichier}`);
+  process.exit(1);
+}
+const code = sansCommentaires(texte, fichier);
+const trouve = debut ? new RegExp("^(?:" + motif + ")").test(code.trimStart()) : new RegExp(motif, "m").test(code);
+if (trouve === absent) {
+  console.error(absent ? `Motif interdit présent dans ${fichier} (hors commentaires).` : `Motif absent de ${fichier} (hors commentaires).`);
+  process.exit(1);
+}

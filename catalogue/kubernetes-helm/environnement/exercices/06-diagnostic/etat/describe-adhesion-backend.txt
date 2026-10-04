@@ -1,0 +1,17 @@
+Name:             adhesion-backend-7f9c-xyz12
+Namespace:        default
+Status:           Running
+Containers:
+  backend:
+    Image:          registry.example.org/equipe/adhesion-backend:master
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+    Restart Count:  5
+Events:
+  Type     Reason   Age                From     Message
+  ----     ------   ----               ----     -------
+  Normal   Pulled   4m                 kubelet  Container image already present on machine
+  Warning  BackOff  1m (x12 over 4m)   kubelet  Back-off restarting failed container backend

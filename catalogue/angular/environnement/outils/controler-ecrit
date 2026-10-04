@@ -1,0 +1,56 @@
+#!/bin/bash
+# controler-ecrit : contrôle un fichier de test écrit par la personne qui apprend (il n'existe pas dans l'exercice d'origine).
+# Usage : controler-ecrit FICHIER.spec.ts SOURCE-D-ORIGINE.ts DOSSIER-DE-MUTANTS
+#   1. le test contient de vraies vérifications (au moins deux `it(` et deux `expect(` avec un comparateur) et rien qui le
+#      désactive ou masque les erreurs (it.skip, xit, todo, @ts-nocheck, @ts-ignore, expect.anything...) ;
+#   2. il réussit (au moins 2 tests) avec le code d'origine, copié depuis /opt/exercices (en lecture seule) ;
+#   3. il ÉCHOUE sur chacune des versions volontairement cassées du code (les « mutants ») : un test qui ne repère aucune
+#      erreur ne teste rien.
+exec 2>&1
+outils=/opt/angular
+spec=$1
+source=$2
+mutants=$3
+if [ ! -f "$spec" ]; then
+    echo "Le fichier de test $spec n'existe pas."
+    exit 1
+fi
+if ! node $outils/analyse-spec.js "$spec"; then
+    exit 1
+fi
+tmp=$(mktemp -d /tmp/ecrit.XXXXXX) || exit 1
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/src"
+ln -s $outils/node_modules "$tmp/node_modules"
+cat >"$tmp/vitest.config.mjs" <<'CONF'
+import os from 'node:os';
+import path from 'node:path';
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  cacheDir: path.join(os.tmpdir(), 'vite-demo'),
+  test: { environment: 'node', globals: true, include: ['src/**/*.spec.ts'], pool: 'forks' },
+});
+CONF
+cp "$spec" "$tmp/src/$(basename "$spec")"
+lancer() {
+    cp "$1" "$tmp/src/$(basename "$source")"
+    (cd "$tmp" && $outils/node_modules/.bin/vitest run --configLoader runner --config vitest.config.mjs --root "$tmp" --reporter=json --outputFile.json="$tmp/res.json" >"$tmp/log.txt" 2>&1)
+    code=$?
+    passes=$(node -e 'try{console.log(require(process.argv[1]).numPassedTests)}catch{console.log(0)}' "$tmp/res.json")
+    rm -f "$tmp/res.json"
+}
+lancer "$source"
+if [ "$code" -ne 0 ] || [ "$passes" -lt 2 ]; then
+    echo "Ton test ne réussit pas avec le vrai code (au moins 2 tests réussis attendus, $passes réussi(s)) :"
+    tail -n 25 "$tmp/log.txt"
+    exit 1
+fi
+for mutant in "$mutants"/*.ts; do
+    lancer "$mutant"
+    if [ "$code" -eq 0 ]; then
+        echo "Ton test ne repère pas une erreur : il réussit même avec un code volontairement cassé ($(head -n 1 "$mutant" | sed 's|^// ||'))."
+        echo "Ajoute des vérifications précises avec expect(...).toBe(...) sur des listes différentes."
+        exit 1
+    fi
+done
+echo "Ton test réussit avec le vrai code et échoue sur chaque version cassée : bien joué."

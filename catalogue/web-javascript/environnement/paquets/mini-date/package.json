@@ -1,0 +1,7 @@
+{
+  "name": "mini-date",
+  "version": "1.0.0",
+  "description": "Un tout petit paquet local pour s'entraîner à npm install sans réseau.",
+  "main": "index.js",
+  "license": "MIT"
+}

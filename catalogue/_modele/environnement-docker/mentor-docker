@@ -1,0 +1,24 @@
+#!/bin/sh
+# Démarre le moteur Docker « rootless » de l'apprenant·e (uid non-root) dans l'environnement réel.
+# Lancé par postStartCommand ; relançable à la main (« mentor-docker ») s'il s'est arrêté.
+set -eu
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DOCKERD_ROOTLESS_ROOTLESSKIT_NET=slirp4netns
+data="$HOME/.local/share/docker"
+mkdir -p "$data"
+if docker info >/dev/null 2>&1; then
+    echo "Docker est déjà démarré."
+    exit 0
+fi
+nohup dockerd-rootless.sh --data-root "$data" >"$HOME/.local/share/dockerd.log" 2>&1 &
+i=0
+while [ "$i" -lt 30 ]; do
+    if docker info >/dev/null 2>&1; then
+        echo "Docker est prêt."
+        exit 0
+    fi
+    i=$((i + 1))
+    sleep 1
+done
+echo "Docker n'a pas démarré : consulte ~/.local/share/dockerd.log" >&2
+exit 1

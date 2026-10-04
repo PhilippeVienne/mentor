@@ -1,0 +1,24 @@
+#!/bin/sh
+# Prépare le scénario de la leçon « Tester une restauration » (rejouable sans danger) : le bucket « sauvegardes »
+# est versionné et contient DEUX versions de backup.tgz (« version A » puis « version B », à deux secondes d'écart)
+# ainsi qu'un dump PostgreSQL asso.dump.
+set -e
+demarrer-minio
+demarrer-postgres
+mc mb --ignore-existing labo/sauvegardes > /dev/null
+aws s3api put-bucket-versioning --bucket sauvegardes --versioning-configuration Status=Enabled
+if [ "$(aws s3api list-object-versions --bucket sauvegardes --prefix backup.tgz --query 'length(Versions || `[]`)')" = "0" ]; then
+    tmp=$(mktemp -d)
+    mkdir "$tmp/data"
+    echo "version A : première sauvegarde" > "$tmp/data/notes.txt"
+    backup.py -c sauvegardes "$tmp/data/" backup.tgz
+    sleep 2
+    echo "version B : sauvegarde la plus récente" > "$tmp/data/notes.txt"
+    backup.py -c sauvegardes "$tmp/data/" backup.tgz
+    rm -rf "$tmp"
+fi
+if ! mc stat labo/sauvegardes/asso.dump > /dev/null 2>&1; then
+    pg_dump -Fc -f /tmp/asso-scenario.dump
+    aws s3 cp --only-show-errors /tmp/asso-scenario.dump s3://sauvegardes/asso.dump
+    rm -f /tmp/asso-scenario.dump
+fi

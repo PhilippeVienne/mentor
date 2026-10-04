@@ -1,0 +1,27 @@
+#!/bin/sh
+# Démarre le serveur MinIO SANS root, sur localhost uniquement (rejouable sans danger : s'il tourne déjà, ne fait rien).
+#   - les objets vivent dans ~/minio-data ; le journal est ~/minio.log ;
+#   - les identifiants sont ceux, factices, de /opt/outils/mentor-labo.sh.
+set -e
+. /opt/outils/mentor-labo.sh
+pret() {
+    python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/minio/health/ready', timeout=2)" 2> /dev/null
+}
+if pret; then
+    exit 0
+fi
+mkdir -p "$HOME/minio-data"
+MINIO_ROOT_USER="$ACCESSKEY" MINIO_ROOT_PASSWORD="$SECRETKEY" MINIO_BROWSER=off MINIO_CI_CD=1 \
+    MINIO_UPDATE=off GOMEMLIMIT=160MiB \
+    setsid nohup minio server "$HOME/minio-data" --address 127.0.0.1:9000 --console-address 127.0.0.1:9001 \
+    > "$HOME/minio.log" 2>&1 < /dev/null &
+i=0
+while [ "$i" -lt 60 ]; do
+    if pret; then
+        exit 0
+    fi
+    i=$((i + 1))
+    sleep 1
+done
+echo "MinIO n'a pas démarré : voir ~/minio.log" >&2
+exit 1

@@ -1,0 +1,72 @@
+#!/bin/bash
+# controler : contrôle ton travail sur une COPIE du dossier de travail où tout ce que l'exercice fournit (tests, configuration,
+# modèles de données, faux modules...) est remis tel quel par-dessus tes fichiers. Seuls tes fichiers de travail sont gardés
+# (liste dans /opt/outils/a-ecrire). Modifier, vider ou remplacer un test fourni ne change donc rien.
+#
+# Usage : controler tests EXERCICE [partie-du-nom-de-fichier ...]   joue les tests d'origine (tous, ou ceux dont le nom de fichier
+#                                                                   contient l'un des filtres) : aucun échec, aucun test ignoré,
+#                                                                   au moins un test réussi dans chaque fichier concerné
+#         controler types EXERCICE                                  `tsc --noEmit` sur la copie
+#         controler executer EXERCICE commande...                   lance la commande dans la copie
+exec 2>&1
+outils=/opt/outils
+mode=$1
+exercice=$2
+if [ -z "$mode" ] || [ -z "$exercice" ] || [ ! -d "/opt/exercices/$exercice" ]; then
+    echo "Usage : controler (tests|types|executer) EXERCICE [...]"
+    exit 2
+fi
+shift 2
+racine=$PWD
+modele=/opt/exercices/$exercice
+liste_ecrire=$outils/a-ecrire/$exercice.txt
+
+tmp=$(mktemp -d /tmp/controle.XXXXXX) || exit 1
+trap 'rm -rf "$tmp"' EXIT
+# 1. Copie du dossier de travail (sans node_modules ni caches), sans les fichiers de test : seuls ceux d'origine seront joués.
+tar -C "$racine" --exclude=./node_modules --exclude=./.next --exclude=./.git -cf - . | tar -C "$tmp" -xf -
+find "$tmp" -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' \) -delete
+ln -s $outils/node_modules "$tmp/node_modules"
+
+# 2. Les fichiers fournis par l'exercice (et la configuration commune) sont remis par-dessus, sauf tes fichiers de travail.
+cp -R /opt/exercices/commun/. "$tmp/"
+originaux=()
+while IFS= read -r source; do
+    rel=${source#"$modele"/}
+    case "$rel" in *.test.ts | *.test.tsx) originaux+=("$rel") ;; esac
+    if ! grep -qxF -- "$rel" "$liste_ecrire"; then
+        mkdir -p "$tmp/$(dirname "$rel")"
+        cp "$source" "$tmp/$rel"
+    fi
+done < <(find "$modele" -type f | sort)
+
+# 3. Les directives qui désactivent la vérification de TypeScript sont refusées.
+if find "$tmp" -path "$tmp/node_modules" -prune -o \( -name '*.ts' -o -name '*.tsx' \) -type f -print0 | xargs -0 grep -nE '@ts-(nocheck|ignore|expect-error)'; then
+    echo "Les commentaires @ts-nocheck, @ts-ignore et @ts-expect-error masquent les erreurs au lieu de les corriger : retire-les."
+    exit 1
+fi
+
+cd "$tmp" || exit 1
+case "$mode" in
+    types)
+        if ! $outils/node_modules/.bin/tsc --noEmit; then
+            echo "TypeScript signale des erreurs : corrige-les."
+            exit 1
+        fi
+        echo "TypeScript ne signale aucune erreur."
+        ;;
+    executer)
+        exec "$@"
+        ;;
+    tests)
+        json=$tmp/resultat.json
+        if ! $outils/node_modules/.bin/vitest run "$@" --reporter=default --reporter=json --outputFile.json="$json"; then
+            exit 1
+        fi
+        node $outils/verdict.js "$json" "$(IFS=,; echo "${originaux[*]}")" "$@"
+        ;;
+    *)
+        echo "Mode inconnu : $mode"
+        exit 2
+        ;;
+esac

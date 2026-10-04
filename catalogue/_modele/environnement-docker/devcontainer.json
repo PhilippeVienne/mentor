@@ -1,0 +1,22 @@
+// Environnement réel « Docker » du parcours modèle : Docker-in-Docker SANS root ni --privileged.
+// Exige le runtime Sysbox sur le serveur (sinon le démarrage est refusé). Voir doc/environnements.md §4.3.
+{
+    "name": "Debian avec Docker (rootless sous Sysbox)",
+    "build": { "dockerfile": "Dockerfile" },
+    "containerUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "DOCKER_HOST": "unix:///run/user/1000/docker.sock"
+    },
+    // Démarre le moteur Docker rootless de l'apprenant·e (uid 1000) à chaque démarrage.
+    "postStartCommand": "mentor-docker",
+    "hostRequirements": {
+        "cpus": 2,
+        "memory": "3gb",
+        "storage": "2gb"
+    },
+    "customizations": {
+        "mentor": { "dockerInDocker": true },
+        "vscode": { "extensions": ["ms-azuretools.vscode-docker"] }
+    }
+}

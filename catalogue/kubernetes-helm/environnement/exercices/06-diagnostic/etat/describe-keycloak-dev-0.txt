@@ -1,0 +1,17 @@
+Name:             keycloak-dev-0
+Namespace:        keycloak
+Status:           Pending
+Containers:
+  keycloak:
+    Image:          docker.io/jboss/keycloak:11.0.3
+    State:          Waiting
+      Reason:       PodInitializing
+Volumes:
+  data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  keycloak-h2db-pvc
+    ReadOnly:   false
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  6m    default-scheduler  0/1 nodes are available: pod has unbound immediate PersistentVolumeClaims.

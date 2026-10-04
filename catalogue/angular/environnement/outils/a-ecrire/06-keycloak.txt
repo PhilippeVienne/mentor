@@ -1,0 +1,4 @@
+src/app/acces.ts
+src/app/jeton.interceptor.ts
+src/app/keycloak.config.ts
+src/app/routes.ts

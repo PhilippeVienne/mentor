@@ -1,0 +1,20 @@
+# Configuration du lint du catalogue (manage.py lint_catalogue ; job CI `catalogue-lint`).
+# Tout est facultatif. Documentation : doc/createurs/relecture-et-merge-request.md (« Le lint des formations »).
+#
+# Une règle désactivée ou une exception demande TOUJOURS une justification, relue en merge request.
+#
+# seuils:                      # voir DEFAULT_THRESHOLDS dans formation/training/lint.py
+#   quiz_min: 3
+# regles:
+#   CAT072:
+#     actif: false
+#     justification: "Pourquoi cette règle ne s'applique pas."
+#   CAT020:
+#     severite: error          # info | warning | error
+# exceptions:                  # glob relatif à catalogue/
+#   - regle: CAT020
+#     fichier: "git-basics/01-*.md"
+#     justification: "Pourquoi cette exception est légitime."
+seuils: {}
+regles: {}
+exceptions: []

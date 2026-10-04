@@ -1,0 +1,29 @@
+// Environnement réel du parcours « Sauvegardes et stockage objet » (voir catalogue/README.md §15 et
+// doc/environnements.md). MinIO, mc, AWS CLI, boto3 et PostgreSQL sur Debian ; tout est lancé sans root par les
+// commandes de démarrage de chaque labo.
+{
+    "name": "Sauvegardes et S3 de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        "LANG": "C.UTF-8",
+        "PAGER": "cat"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "512mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

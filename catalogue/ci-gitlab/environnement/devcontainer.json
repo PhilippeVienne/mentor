@@ -1,0 +1,29 @@
+// Environnement réel du parcours CI/CD avec GitLab (voir catalogue/README.md §15 et doc/environnements.md).
+// Python 3.13 sur Debian, avec verifier-ci, verifier-renovate et yamllint. Il n'y a pas de réseau à l'exécution
+// et pas de runner GitLab : les outils contrôlent la structure des fichiers, ils n'exécutent aucun job.
+{
+    "name": "CI/CD GitLab de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUTF8": "1"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

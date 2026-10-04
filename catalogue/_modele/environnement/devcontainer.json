@@ -1,0 +1,33 @@
+// Environnement réel du parcours modèle (voir catalogue/README.md §15 et doc/environnements.md §6).
+// Format : spécification Dev Containers (JSON avec commentaires) ; seul un sous-ensemble sûr est accepté.
+{
+    "name": "Debian avec Git",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    // Ports redirigés vers le poste de l'apprenant·e par le tunnel SSH (VS Code), entre 1024 et 65535.
+    "forwardPorts": [8000],
+    "portsAttributes": {
+        "8000": { "label": "Serveur de développement" }
+    },
+    // Lancé dans le conteneur, en non-root, au démarrage de chaque environnement.
+    "postCreateCommand": "git config --global user.name 'Apprenant·e Mentor' && git config --global user.email apprenant@mentor && git config --global init.defaultBranch main",
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": ["eamodio.gitlens"]
+        }
+    },
+}

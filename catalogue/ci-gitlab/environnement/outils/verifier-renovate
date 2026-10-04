@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""verifier-renovate : vérifie un fichier renovate.json, hors ligne.
+
+Ce n'est PAS Renovate : l'outil lit le JSON et contrôle les erreurs que Renovate signalerait en ouvrant la merge
+request de configuration (JSON mal formé, option inconnue ou mal typée, règle sans effet, jeton en clair).
+Il résume ensuite ce que la configuration demande. Sa liste d'options est partielle : en cas de doute, la
+documentation de Renovate fait foi.
+
+Usage : verifier-renovate [FICHIER] [--strict]      (FICHIER vaut renovate.json par défaut)
+Code de sortie : 0 = aucune erreur, 1 = au moins une erreur (ou un avertissement avec --strict), 2 = fichier introuvable.
+"""
+
+import argparse
+import difflib
+import json
+import os
+import re
+import sys
+
+OPTIONS_RACINE = {
+    "$schema", "extends", "description", "labels", "addLabels", "assignees", "reviewers", "schedule", "timezone",
+    "packageRules", "vulnerabilityAlerts", "dependencyDashboard", "dependencyDashboardApproval",
+    "dependencyDashboardTitle", "dependencyDashboardLabels", "masterIssue", "masterIssueApproval", "automerge",
+    "automergeType", "platformAutomerge", "prConcurrentLimit", "prHourlyLimit", "baseBranches", "enabledManagers",
+    "ignoreDeps", "ignorePaths", "ignorePresets", "rangeStrategy", "separateMajorMinor", "separateMinorPatch",
+    "semanticCommits", "commitMessagePrefix", "commitMessageAction", "branchPrefix", "rebaseWhen",
+    "lockFileMaintenance", "hostRules", "platform", "endpoint", "token", "repositories", "onboarding", "enabled",
+    "major", "minor", "patch", "pin", "digest", "pinDigests", "gitAuthor", "fileMatch", "includePaths",
+    "minimumReleaseAge", "stabilityDays", "prCreation", "recreateWhen", "allowedVersions", "versioning",
+    "customManagers", "regexManagers", "npm", "pip_requirements", "pipenv", "dockerfile", "docker", "helm-values",
+    "kubernetes", "gitlabci", "terraform", "postUpdateOptions", "configMigration", "prBodyNote", "commitBody",
+    "groupName", "groupSlug", "branchTopic", "ignoreTests", "ignoreUnstable", "respectLatest", "encrypted",
+    "dependencyDashboardAutoclose", "dependencyDashboardHeader", "dependencyDashboardFooter", "prPriority",
+    "draftPR", "suppressNotifications", "updateNotScheduled", "skipInstalls", "constraints", "osvVulnerabilityAlerts",
+}
+OPTIONS_ALERTES = {
+    "labels", "addLabels", "assignees", "reviewers", "schedule", "enabled", "automerge", "groupName", "prPriority",
+    "commitMessageSuffix", "branchTopic", "prCreation", "rangeStrategy", "dependencyDashboardApproval", "minimumReleaseAge",
+}
+CRITERES_REGLE = {
+    "matchPackageNames", "matchPackagePatterns", "matchPackagePrefixes", "matchManagers", "matchUpdateTypes",
+    "matchDepTypes", "matchFileNames", "matchCurrentVersion", "matchDatasources", "matchBaseBranches",
+    "matchCategories", "matchSourceUrls", "excludePackageNames", "excludePackagePatterns", "excludePackagePrefixes",
+    "matchCurrentValue", "matchNewValue", "matchRepositories", "matchDepNames", "matchConfidence", "matchCurrentAge",
+}
+EFFETS_REGLE = {
+    "enabled", "automerge", "automergeType", "groupName", "groupSlug", "labels", "addLabels", "schedule", "reviewers",
+    "assignees", "allowedVersions", "versioning", "prPriority", "dependencyDashboardApproval", "minimumReleaseAge",
+    "stabilityDays", "commitMessagePrefix", "semanticCommitType", "rangeStrategy", "pinDigests", "separateMajorMinor",
+    "separateMinorPatch", "ignoreUnstable", "respectLatest", "prCreation", "branchTopic", "platformAutomerge",
+    "postUpdateOptions", "followTag", "registryUrls", "fetchChangeLogs", "commitMessageExtra", "commitMessageSuffix",
+    "automergeStrategy", "draftPR", "description", "recreateWhen", "rebaseWhen", "prBodyNotes", "changelogUrl",
+}
+TYPES_MISE_A_JOUR = {"major", "minor", "patch", "pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"}
+OBSOLETES = {
+    "masterIssue": "dependencyDashboard",
+    "masterIssueApproval": "dependencyDashboardApproval",
+    "stabilityDays": "minimumReleaseAge",
+    "regexManagers": "customManagers",
+}
+JETONS_RE = re.compile(r"glpat-[A-Za-z0-9_\-]{12,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}")
+PRESET_RE = re.compile(r"^(config:|:|group:|helpers:|schedule:|default:|replacements:|workarounds:|security:|monorepo:|local>|github>|gitlab>)\S+$")
+AIDES_JSON = {
+    "Illegal trailing comma": "supprime la virgule juste avant la `}` ou le `]` : JSON n'accepte pas de virgule après le dernier élément",
+    "Expecting property name enclosed in double quotes": "une virgule en trop avant `}` ou `]` ? ou un nom de clé sans guillemets doubles ?",
+    "Expecting ',' delimiter": "une virgule manque entre deux éléments, ou un guillemet n'est pas fermé",
+    "Expecting value": "une valeur manque (virgule en trop avant `]` ou `}` ? guillemets simples au lieu de guillemets doubles ?)",
+    "Expecting ':' delimiter": "il manque un `:` entre une clé et sa valeur",
+    "Extra data": "du texte suit la fin de l'objet JSON (accolade `}` en trop ?)",
+    "Unterminated string": "un guillemet n'est pas refermé",
+    "Invalid control character": "retour à la ligne ou tabulation dans un texte",
+}
+
+
+def proche(nom, candidats, cutoff=0.7):
+    trouve = difflib.get_close_matches(str(nom), sorted(candidats), n=1, cutoff=cutoff)
+    return trouve[0] if trouve else None
+
+
+class Verifieur:
+    def __init__(self):
+        self.erreurs, self.avertissements = [], []
+
+    def e(self, message):
+        self.erreurs.append(message)
+
+    def w(self, message):
+        self.avertissements.append(message)
+
+    def liste_de_textes(self, valeur, chemin, vide_ok=True):
+        if not isinstance(valeur, list) or not all(isinstance(x, str) and x.strip() for x in valeur):
+            self.e(f"`{chemin}` doit être une liste de textes non vides, par exemple [\"dependencies\"]")
+            return False
+        return True
+
+    def verifier(self, conf):
+        for cle in conf:
+            if cle not in OPTIONS_RACINE:
+                proposition = proche(cle, OPTIONS_RACINE, 0.7)
+                if proposition:
+                    self.e(f"l'option « {cle} » n'existe pas : tu voulais écrire « {proposition} » ?")
+                else:
+                    self.w(f"l'option « {cle} » est inconnue de verifier-renovate (liste partielle) : vérifie son nom dans la documentation de Renovate")
+            if cle in OBSOLETES:
+                self.w(f"`{cle}` est obsolète : Renovate l'a renommée `{OBSOLETES[cle]}`")
+        if "extends" in conf:
+            extends = conf["extends"]
+            if not isinstance(extends, list) or not extends:
+                self.e("`extends` doit être une liste non vide de configurations prêtes à l'emploi, par exemple [\"config:recommended\"]")
+            else:
+                for preset in extends:
+                    if not isinstance(preset, str) or not PRESET_RE.match(preset):
+                        self.e(f"`extends` : « {preset} » n'est pas une configuration prête à l'emploi valide (forme attendue : « config:recommended », « :dependencyDashboard », « group:monorepos »…)")
+                    elif preset == "config:base":
+                        self.w("`config:base` est l'ancien nom de `config:recommended`")
+        for cle in ("labels", "addLabels", "assignees", "reviewers", "ignoreDeps", "ignorePaths", "enabledManagers", "baseBranches"):
+            if cle in conf:
+                self.liste_de_textes(conf[cle], cle)
+        if "schedule" in conf and not (isinstance(conf["schedule"], str) or (isinstance(conf["schedule"], list) and all(isinstance(s, str) for s in conf["schedule"]))):
+            self.e("`schedule` doit être un texte ou une liste de textes, par exemple [\"before 6am on monday\"]")
+        if "timezone" in conf and not (isinstance(conf["timezone"], str) and "/" in conf["timezone"]):
+            self.e("`timezone` doit ressembler à « Europe/Paris »")
+        for cle in ("dependencyDashboard", "dependencyDashboardApproval", "masterIssue", "masterIssueApproval", "automerge", "enabled", "platformAutomerge"):
+            if cle in conf and not isinstance(conf[cle], bool):
+                self.e(f"`{cle}` vaut `true` ou `false` (sans guillemets)")
+        for cle in ("prConcurrentLimit", "prHourlyLimit"):
+            if cle in conf and (not isinstance(conf[cle], int) or isinstance(conf[cle], bool) or conf[cle] < 0):
+                self.e(f"`{cle}` doit être un entier positif ou nul (0 = pas de limite)")
+        if "vulnerabilityAlerts" in conf:
+            alertes = conf["vulnerabilityAlerts"]
+            if not isinstance(alertes, dict):
+                self.e("`vulnerabilityAlerts` doit être un bloc { … }, par exemple {\"labels\": [\"Priority::Critical\"]}")
+            else:
+                for cle in alertes:
+                    if cle not in OPTIONS_ALERTES:
+                        self.e(f"`vulnerabilityAlerts` : l'option « {cle} » n'existe pas" + (f" (« {proche(cle, OPTIONS_ALERTES)} » ?)" if proche(cle, OPTIONS_ALERTES) else ""))
+                for cle in ("labels", "addLabels"):
+                    if cle in alertes:
+                        self.liste_de_textes(alertes[cle], f"vulnerabilityAlerts.{cle}")
+        if "packageRules" in conf:
+            self.regles(conf["packageRules"])
+        self.secrets(conf)
+
+    def regles(self, regles):
+        if not isinstance(regles, list):
+            self.e("`packageRules` doit être une liste de règles")
+            return
+        for i, regle in enumerate(regles, start=1):
+            nom = f"packageRules[{i}]"
+            if not isinstance(regle, dict):
+                self.e(f"`{nom}` doit être un bloc { '{…}' }")
+                continue
+            criteres = [k for k in regle if k in CRITERES_REGLE]
+            effets = [k for k in regle if k in EFFETS_REGLE]
+            for cle in regle:
+                if cle not in CRITERES_REGLE and cle not in EFFETS_REGLE:
+                    proposition = proche(cle, CRITERES_REGLE | EFFETS_REGLE, 0.7)
+                    self.e(f"`{nom}` : l'option « {cle} » n'existe pas" + (f" : tu voulais écrire « {proposition} » ?" if proposition else ""))
+            if not criteres:
+                self.w(f"`{nom}` n'a aucun critère `match…` : elle s'applique à TOUTES les dépendances")
+            if criteres and not effets:
+                self.e(f"`{nom}` choisit des dépendances (`{criteres[0]}`) mais ne fait rien d'elles : ajoute un effet (`labels`, `groupName`, `automerge`, `enabled`, `dependencyDashboardApproval`…)")
+            types = regle.get("matchUpdateTypes")
+            if types is not None:
+                if not isinstance(types, list) or not all(isinstance(t, str) for t in types):
+                    self.e(f"`{nom}.matchUpdateTypes` doit être une liste de textes")
+                else:
+                    for t in types:
+                        if t not in TYPES_MISE_A_JOUR:
+                            self.e(f"`{nom}.matchUpdateTypes` : « {t} » n'existe pas ; valeurs possibles : {', '.join(sorted(TYPES_MISE_A_JOUR))}")
+            for cle in ("labels", "addLabels"):
+                if cle in regle:
+                    self.liste_de_textes(regle[cle], f"{nom}.{cle}")
+
+    def secrets(self, conf):
+        def texte(v):
+            if isinstance(v, str):
+                yield v
+            elif isinstance(v, dict):
+                for x in v.values():
+                    yield from texte(x)
+            elif isinstance(v, list):
+                for x in v:
+                    yield from texte(x)
+
+        if any(JETONS_RE.search(t) for t in texte(conf)):
+            self.e("un jeton d'accès est écrit en clair (glpat-…, ghp_…, AKIA…). Révoque-le, puis donne-le à Renovate par une variable du robot ou chiffré avec sa clé publique")
+        clairs = []
+        if isinstance(conf.get("token"), str):
+            clairs.append("token")
+        for i, regle in enumerate(conf.get("hostRules") or [], start=1):
+            if isinstance(regle, dict):
+                for cle in ("token", "password"):
+                    if isinstance(regle.get(cle), str) and regle[cle]:
+                        clairs.append(f"hostRules[{i}].{cle}")
+        for chemin in clairs:
+            self.e(f"`{chemin}` contient une valeur en clair dans un fichier versionné : un secret ne s'écrit jamais ici (sous `encrypted`, il faut une valeur chiffrée avec la clé publique de Renovate)")
+
+    def resume(self, conf):
+        lignes = []
+        if "extends" in conf and isinstance(conf["extends"], list):
+            lignes.append("extends : " + ", ".join(map(str, conf["extends"])))
+        if isinstance(conf.get("labels"), list):
+            lignes.append("labels : " + ", ".join(map(str, conf["labels"])))
+        alertes = conf.get("vulnerabilityAlerts")
+        if isinstance(alertes, dict) and isinstance(alertes.get("labels"), list):
+            lignes.append("alertes de vulnérabilité : labels " + ", ".join(map(str, alertes["labels"])))
+        tableau = conf.get("dependencyDashboard", conf.get("masterIssue"))
+        if tableau is not None:
+            lignes.append(f"tableau de bord des dépendances : {'oui' if tableau else 'non'}")
+        approbation = conf.get("dependencyDashboardApproval", conf.get("masterIssueApproval"))
+        if approbation is not None:
+            lignes.append(f"approbation par case à cocher : {'oui' if approbation else 'non'}")
+        if "schedule" in conf:
+            lignes.append("calendrier : " + (conf["schedule"] if isinstance(conf["schedule"], str) else ", ".join(map(str, conf["schedule"]))))
+        regles = conf.get("packageRules")
+        if isinstance(regles, list):
+            lignes.append(f"règles de paquets : {len(regles)}")
+            for i, regle in enumerate(regles, start=1):
+                if isinstance(regle, dict):
+                    cibles = regle.get("matchUpdateTypes") or regle.get("matchManagers") or regle.get("matchPackageNames") or ["toutes"]
+                    effets = [k for k in regle if k in EFFETS_REGLE]
+                    lignes.append(f"  règle {i} : {', '.join(map(str, cibles))} -> {', '.join(effets) or 'aucun effet'}")
+        return lignes
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="verifier-renovate", description="Vérifie un renovate.json (hors ligne ; ce n'est pas Renovate).")
+    ap.add_argument("fichier", nargs="?", default="renovate.json")
+    ap.add_argument("--strict", action="store_true", help="les avertissements font aussi échouer")
+    args = ap.parse_args(argv)
+    if not os.path.isfile(args.fichier):
+        print(f"Fichier introuvable : {args.fichier}. Crée-le à la racine du dépôt (le fichier s'appelle renovate.json).")
+        return 2
+    with open(args.fichier, encoding="utf-8") as f:
+        texte = f.read()
+    print(f"verifier-renovate : {args.fichier}")
+    try:
+        conf = json.loads(texte)
+    except json.JSONDecodeError as exc:
+        aide = next((a for motif, a in AIDES_JSON.items() if motif in exc.msg), "")
+        print(f"ERREUR (ligne {exc.lineno}, colonne {exc.colno}) : JSON invalide : {exc.msg}" + (f". Piste : {aide}" if aide else ""))
+        print("ÉCHEC : le JSON est mal formé, Renovate ne pourrait pas lire le fichier.")
+        return 1
+    if not isinstance(conf, dict):
+        print("ERREUR : la racine du fichier doit être un objet { … }")
+        print("ÉCHEC : 1 erreur(s).")
+        return 1
+    v = Verifieur()
+    v.verifier(conf)
+    for m in v.erreurs:
+        print(f"ERREUR : {m}")
+    for m in v.avertissements:
+        print(f"AVERTISSEMENT : {m}")
+    if v.erreurs or (args.strict and v.avertissements):
+        print(f"ÉCHEC : {len(v.erreurs)} erreur(s), {len(v.avertissements)} avertissement(s).")
+        return 1
+    for ligne in v.resume(conf):
+        print(ligne)
+    print("OK : configuration valide. (Rappel : verifier-renovate lit le fichier, il ne lance pas Renovate.)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,39 @@
+// Environnement réel du parcours Go (voir catalogue/README.md §15 et doc/environnements.md).
+// Go 1.25 sur Debian, modules des leçons préinstallés ; chaque labo copie son exercice dans /workspace.
+{
+    "name": "Go 1.25 de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        // Hors réseau : modules lus dans le cache préinstallé, aucun téléchargement de chaîne d'outils ni de télémétrie.
+        "GOROOT": "/usr/local/go",
+        "GOMODCACHE": "/opt/gomodcache",
+        // Cache de compilation : dans le dossier de travail (plus de place que le dossier personnel).
+        "GOCACHE": "/workspace/.gocache",
+        "GOPROXY": "off",
+        "GOSUMDB": "off",
+        "GOTOOLCHAIN": "local",
+        "GOTELEMETRY": "off",
+        "GOFLAGS": "-mod=mod",
+        "CGO_ENABLED": "0"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "1gb",
+        "storage": "512mb"
+    },
+    "customizations": {
+        // VS Code dans le navigateur (si le portail l'active : ENVIRONMENTS_VSCODE_WEB). python3 est dans l'image (pont du portail).
+        // Aucune extension Go : elle téléchargerait des outils (gopls…) dont le conteneur, sans réseau, ne dispose pas.
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

@@ -1,0 +1,9 @@
+Running with gitlab-runner 17.0.0 (c72a09b6)
+Preparing the "docker" executor
+Using Docker executor with image python:3.13 ...
+Pulling docker image python:3.13 ...
+Executing "step_script" stage of the job script
+$ npm ci
+/bin/sh: eval: line 142: npm: not found
+Cleaning up project directory and file based variables
+ERROR: Job failed: exit code 127

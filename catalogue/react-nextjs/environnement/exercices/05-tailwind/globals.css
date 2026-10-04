@@ -1,0 +1,7 @@
+/* Le fichier d'entrée de Tailwind CSS 4 : cette ligne charge tout le framework. */
+@import "tailwindcss";
+
+/* Tailwind lit tous les fichiers du dossier pour y trouver des noms de classes.
+   On l'empêche de lire les tests (qui citent des classes) et les fichiers CSS (dont celui qu'il génère). */
+@source not "./**/*.test.tsx";
+@source not "./**/*.css";

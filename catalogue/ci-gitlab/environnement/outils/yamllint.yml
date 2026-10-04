@@ -1,0 +1,13 @@
+# Réglages de yamllint pour le parcours CI/CD : on contrôle la forme du YAML (indentation, espaces, clés en double),
+# pas la longueur des lignes ni la présence de « --- » en tête, que les fichiers .gitlab-ci.yml n'utilisent pas.
+extends: default
+rules:
+  document-start: disable
+  line-length:
+    max: 140
+    level: warning
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable

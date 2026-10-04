@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" role="img" aria-labelledby="t d">
+  <title id="t">Schéma modèle : de l'idée au commit</title>
+  <desc id="d">Trois cases reliées par des flèches : modifier un fichier, l'ajouter à l'index avec git add, puis le valider avec git commit.</desc>
+  <!-- Modèle de schéma : panneau sombre #0b1220, bordure #1e293b, texte #e2e8f0, accent #6366F1. -->
+  <rect x="1" y="1" width="638" height="218" rx="18" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g font-family="Inter, system-ui, sans-serif" text-anchor="middle" fill="#e2e8f0">
+    <rect x="30" y="70" width="150" height="80" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <text x="105" y="105" font-size="18" font-weight="600">Dossier de travail</text>
+    <text x="105" y="130" font-size="14" fill="#94a3b8">tes fichiers</text>
+    <rect x="245" y="70" width="150" height="80" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <text x="320" y="105" font-size="18" font-weight="600">Index</text>
+    <text x="320" y="130" font-size="14" fill="#94a3b8">salle d'attente</text>
+    <rect x="460" y="70" width="150" height="80" rx="12" fill="#6366F1" fill-opacity=".2" stroke="#6366F1" stroke-width="2"/>
+    <text x="535" y="105" font-size="18" font-weight="600">Dépôt</text>
+    <text x="535" y="130" font-size="14" fill="#94a3b8">l'historique</text>
+    <text x="212" y="55" font-size="15" font-family="ui-monospace, monospace" fill="#fca5a5">git add</text>
+    <text x="427" y="55" font-size="15" font-family="ui-monospace, monospace" fill="#fca5a5">git commit</text>
+  </g>
+  <g stroke="#6366F1" stroke-width="3" fill="#6366F1" stroke-linecap="round">
+    <path d="M184 110H233" fill="none"/><path d="M243 110l-12-7v14z" stroke="none"/>
+    <path d="M399 110H448" fill="none"/><path d="M458 110l-12-7v14z" stroke="none"/>
+  </g>
+</svg>

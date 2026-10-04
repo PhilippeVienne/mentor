@@ -1,0 +1,18 @@
+#!/bin/sh
+# Démarre PostgreSQL SANS root et crée la base « asso » (rejouable sans danger).
+#   - les données vivent dans ~/pgdata (le dossier personnel de l'apprenant·e) ;
+#   - le serveur n'écoute aucun port réseau : il n'accepte que la socket Unix /tmp/pgsock.
+set -e
+BIN=$(ls -d /usr/lib/postgresql/*/bin | head -n 1)
+DATA="$HOME/pgdata"
+SOCK=/tmp/pgsock
+mkdir -p "$SOCK"
+if [ ! -f "$DATA/PG_VERSION" ]; then
+    "$BIN/initdb" -D "$DATA" -U "$(id -un)" --auth=trust --encoding=UTF8 --locale=C.UTF-8 > /dev/null
+fi
+if ! "$BIN/pg_isready" -q -h "$SOCK"; then
+    "$BIN/pg_ctl" -D "$DATA" -l "$HOME/postgres.log" -w -s start \
+        -o "-c listen_addresses= -c unix_socket_directories=$SOCK -c shared_buffers=32MB -c max_connections=20 -c fsync=off -c timezone=Europe/Paris"
+fi
+"$BIN/psql" -h "$SOCK" -d postgres -Atc "SELECT 1 FROM pg_database WHERE datname = 'asso'" | grep -q 1 \
+    || "$BIN/createdb" -h "$SOCK" asso

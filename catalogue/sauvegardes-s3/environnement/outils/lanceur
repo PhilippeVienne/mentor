@@ -1,0 +1,15 @@
+#!/bin/sh
+# Lanceur : ce fichier est appelé sous plusieurs noms (aws, mc, psql, pg_dump, backup.py…). Il charge les réglages du
+# labo puis exécute le vrai programme du même nom. Les vérifications du serveur ne reçoivent que PATH, HOME, USER et
+# LANG : c'est ici que les outils retrouvent leur point d'accès et leurs identifiants factices.
+. /opt/outils/mentor-labo.sh
+nom=$(basename "$0")
+case "$nom" in
+    aws) exec /usr/bin/aws "$@" ;;
+    mc) exec /opt/minio/mc "$@" ;;
+    backup.py | restore.py | test_connection_s3.py) exec python3 "/opt/backups3/$nom" "$@" ;;
+    *)
+        BIN=$(ls -d /usr/lib/postgresql/*/bin | head -n 1)
+        exec "$BIN/$nom" "$@"
+        ;;
+esac

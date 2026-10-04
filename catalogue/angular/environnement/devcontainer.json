@@ -1,0 +1,35 @@
+// Environnement réel du parcours « Angular » (voir catalogue/README.md §15 et doc/environnements.md).
+// Node.js 24 sur Debian, Angular 20 préinstallé (pas de navigateur dans le conteneur), nano et un serveur SSH pour VS Code.
+{
+    "name": "Angular de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "node",
+    "remoteUser": "node",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        // Pas de message de mise à jour ni de statistiques (le conteneur n'a pas de réseau).
+        "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+        "NG_CLI_ANALYTICS": "false"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        },
+        "vscode": {
+            "settings": {
+                "editor.tabSize": 2,
+                "editor.formatOnSave": false
+            }
+        }
+    }
+}

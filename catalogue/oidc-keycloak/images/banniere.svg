@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">Parcours OIDC avec Keycloak</title>
+  <desc id="d">Bannière du parcours OIDC avec Keycloak, bientôt disponible : une application, un serveur SSO et un navigateur reliés par des flèches.</desc>
+  <rect x="1" y="1" width="1198" height="398" rx="24" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g opacity=".12" stroke="#6366F1" stroke-width="1">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200"/><path d="M240 0V400M480 0V400M720 0V400M960 0V400"/>
+  </g>
+  <g font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="600" fill="#e2e8f0" text-anchor="middle">
+    <rect x="760" y="70" width="150" height="70" rx="14" fill="#1e293b" stroke="#4D4D4D" stroke-width="2"/><text x="835" y="112">Navigateur</text>
+    <rect x="1000" y="70" width="150" height="70" rx="14" fill="#6366F1" fill-opacity=".25" stroke="#6366F1" stroke-width="2"/><text x="1075" y="112">Keycloak</text>
+    <rect x="880" y="250" width="150" height="70" rx="14" fill="#1e293b" stroke="#4D4D4D" stroke-width="2"/><text x="955" y="292">Application</text>
+  </g>
+  <g stroke="#6366F1" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M915 105H995"/><path d="M1075 145V215Q1075 285 1035 285"/><path d="M835 145V215Q835 285 875 285"/>
+  </g>
+  <g fill="#6366F1"><path d="M996 105l-14-9v18z"/><path d="M876 285l-14-9v18z" transform="rotate(180 869 285)"/><path d="M1030 285l14-9v18z" transform="rotate(180 1037 285)"/></g>
+  <text x="80" y="170" font-family="Inter, system-ui, sans-serif" font-size="76" font-weight="700" fill="#e2e8f0">OIDC avec</text>
+  <text x="80" y="250" font-family="Inter, system-ui, sans-serif" font-size="76" font-weight="700" fill="#e2e8f0">Keycloak</text>
+  <rect x="80" y="288" width="150" height="46" rx="23" fill="#6366F1" opacity=".22" stroke="#6366F1"/>
+  <text x="155" y="319" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600" fill="#e2e8f0">Bientôt</text>
+  <text x="270" y="319" font-family="Inter, system-ui, sans-serif" font-size="24" fill="#94a3b8">Le SSO de l'équipe</text>
+</svg>

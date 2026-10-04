@@ -1,0 +1,33 @@
+// Environnement réel du parcours « React et Next.js » (voir catalogue/README.md §15 et doc/environnements.md).
+// Node.js 24 sur Debian, React, Next.js, TypeScript, Vitest, Testing Library, jsdom et Tailwind préinstallés ;
+// chaque labo copie son exercice dans /workspace.
+{
+    "name": "React et Next.js de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "768mb",
+        "storage": "512mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        },
+        "vscode": {
+            "settings": {
+                "typescript.tsdk": "/opt/outils/node_modules/typescript/lib",
+                "editor.tabSize": 2
+            }
+        }
+    }
+}

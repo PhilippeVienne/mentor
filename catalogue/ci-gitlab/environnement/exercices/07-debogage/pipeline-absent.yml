@@ -1,0 +1,17 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  image: alpine:3.20
+  script:
+    - echo "Construction"
+
+deploiement:
+  stage: deploy
+  image: alpine:3.20
+  script:
+    - echo "Déploiement"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'

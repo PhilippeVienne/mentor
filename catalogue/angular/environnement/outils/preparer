@@ -1,0 +1,4 @@
+#!/bin/sh
+# preparer : relie le dossier courant aux bibliothèques Angular installées dans l'image (/opt/angular/node_modules,
+# en lecture seule). Un lien symbolique évite de recopier 275 Mo dans le dossier de travail, qui est en mémoire.
+exec ln -sfn /opt/angular/node_modules node_modules

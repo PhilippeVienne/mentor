@@ -1,0 +1,30 @@
+// Environnement réel du parcours « Maintenir du code hérité » (voir catalogue/README.md §15 et doc/environnements.md).
+// Python 3.10 avec Django 3.1, 3.2, 4.2 et 5.2 dans des environnements virtuels séparés ; les exercices sont copiés
+// dans /workspace par chaque labo.
+{
+    "name": "Code hérité : Django 3.1 à 5.2",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        // Pas de dossiers __pycache__ dans le dossier de travail : il reste lisible.
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUTF8": "1"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

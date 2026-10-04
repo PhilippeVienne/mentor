@@ -1,0 +1,5 @@
+src/Badge.tsx
+src/Bouton.tsx
+src/Carte.tsx
+src/GrilleCategories.tsx
+src/Pastille.tsx

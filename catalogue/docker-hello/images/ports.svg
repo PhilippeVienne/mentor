@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<title id="t">Publication d&#x27;un port</title><desc id="d">Avec l&#x27;option -p 8080:80, le port 8080 de la machine hôte est redirigé vers le port 80 du conteneur où nginx écoute.</desc>
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#22c55e"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f59e0b"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker>
+</defs>
+<rect x="1" y="1" width="798" height="318" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+<text x="400" y="36" font-size="18" fill="#e2e8f0" font-weight="700" text-anchor="middle">Publier un port : -p 8080:80</text>
+<rect x="24" y="70" width="752" height="220" rx="14" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="44" y="96" font-size="13" fill="#94a3b8" font-weight="700" text-anchor="start">Ta machine (l&#x27;hôte)</text>
+<rect x="50" y="130" width="170" height="90" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="135.0" y="170" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">Terminal</text>
+<text x="135" y="196" font-size="12" fill="#22c55e" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">curl localhost:8080</text>
+<rect x="300" y="130" width="110" height="90" rx="10" fill="#111c33" stroke="#f59e0b" stroke-width="2"/>
+<text x="355.0" y="165" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">port</text>
+<text x="355" y="196" font-size="22" fill="#f59e0b" font-weight="700" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">8080</text>
+<rect x="470" y="100" width="280" height="170" rx="10" fill="#111c33" stroke="#2496ED" stroke-width="2"/>
+<text x="610" y="126" font-size="14" fill="#2496ED" font-weight="700" text-anchor="middle">Conteneur « web »</text>
+<rect x="500" y="150" width="110" height="70" rx="10" fill="#111c33" stroke="#f59e0b" stroke-width="2"/>
+<text x="555.0" y="180" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">port</text>
+<text x="555" y="208" font-size="22" fill="#f59e0b" font-weight="700" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">80</text>
+<rect x="630" y="150" width="100" height="70" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="680.0" y="190" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">nginx</text>
+<line x1="220" y1="175" x2="298" y2="175" stroke="#22c55e" stroke-width="2.4" marker-end="url(#ag)"/>
+<line x1="410" y1="175" x2="498" y2="185" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#am)"/>
+<line x1="610" y1="185" x2="628" y2="185" stroke="#2496ED" stroke-width="2.4" marker-end="url(#ab)"/>
+<text x="610" y="250" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">Sans -p, le port 80 reste invisible de l&#x27;hôte</text>
+<rect x="303.0" y="96" width="104" height="24" rx="12" fill="#0b1220" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="355" y="112" font-size="12" fill="#f59e0b" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">-p 8080:80</text>
+
+</svg>

@@ -1,0 +1,15 @@
+stages:
+  - test
+  - build
+
+tests:
+  stage: test
+  image: python:3.13
+  script:
+    - python3 -B -m unittest discover -s app
+
+build:
+  stage: build
+  image: docker:27
+  script:
+    - docker build -t mon-image .

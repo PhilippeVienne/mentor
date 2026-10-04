@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-labelledby="t d" font-family="Inter, system-ui, sans-serif">
+  <title id="t">MinIO sur le cluster</title>
+  <desc id="d">Un secret Kubernetes contient les clés d'accès, un volume persistant stocke les données, et le service MinIO expose l'API S3 aux clients.</desc>
+  <rect x="1" y="1" width="718" height="258" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <rect x="30" y="50" width="180" height="70" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="120" y="92" text-anchor="middle" font-size="16" fill="#e2e8f0">Secret minio-admin</text>
+  <rect x="30" y="150" width="180" height="70" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="120" y="192" text-anchor="middle" font-size="16" fill="#e2e8f0">Volume persistant</text>
+  <rect x="270" y="90" width="170" height="90" rx="12" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+  <text x="355" y="142" text-anchor="middle" font-size="18" font-weight="700" fill="#e2e8f0">MinIO</text>
+  <rect x="510" y="90" width="180" height="90" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="600" y="130" text-anchor="middle" font-size="16" fill="#e2e8f0">Clients S3</text>
+  <text x="600" y="155" text-anchor="middle" font-size="14" fill="#94a3b8">mc, aws, boto3</text>
+  <path d="M210 85L270 120M210 185L270 150M440 135H508" stroke="#6366F1" stroke-width="3"/>
+</svg>

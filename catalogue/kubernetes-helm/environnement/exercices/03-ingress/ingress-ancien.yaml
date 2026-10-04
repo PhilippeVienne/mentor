@@ -1,0 +1,14 @@
+# Ingress écrit à l'ancienne mode (API retirée de Kubernetes depuis la version 1.22).
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: vitrine-ingress
+spec:
+  rules:
+    - host: portail.example.org
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: vitrine-nginx-svc
+              servicePort: 80

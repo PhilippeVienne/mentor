@@ -1,0 +1,2 @@
+Penser à relire les journaux (voir TODO dans le dépôt).
+TODO : archiver les vieux journaux.

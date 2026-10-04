@@ -1,0 +1,9 @@
+{
+  "extends": ["config:recommended"],
+  "hostRules": [
+    {
+      "matchHost": "gitlab.example.org",
+      "token": "glpat-FAUXJETONPOURLEXERCICE1"
+    }
+  ]
+}

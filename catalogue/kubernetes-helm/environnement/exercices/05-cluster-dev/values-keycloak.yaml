@@ -1,0 +1,11 @@
+# Extrait de values-keycloak.yaml (leçon 4) : l'Ingress de Keycloak pour le cluster de dev.
+ingress:
+  enabled: true
+  rules:
+    - host: sso.exemple.invalid
+      paths:
+        - /
+  tls:
+    - hosts:
+        - sso.exemple.invalid
+      secretName: sso-tls

@@ -1,0 +1,40 @@
+// Environnement réel du parcours Python (voir catalogue/README.md §15 et doc/environnements.md).
+// Python 3.13 sur Debian, pytest préinstallé, les exercices des leçons sont copiés dans /workspace par chaque labo.
+{
+    "name": "Python 3.13 de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        // Pas de dossiers __pycache__ dans le dossier de travail : il reste lisible.
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUTF8": "1"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        // VS Code dans le navigateur (si le portail l'active : ENVIRONMENTS_VSCODE_WEB) : la leçon et les étapes
+        // du labo s'affichent dans le panneau « Mentor ». python3 est déjà dans l'image (pont du portail).
+        "mentor": {
+            "vscodeWeb": true
+        },
+        "vscode": {
+            // Installées au build depuis Open VSX (le conteneur n'a pas de réseau) ; versions ÉPINGLÉES, dépendances d'abord
+            // pour qu'aucune version plus récente ne soit tirée. À mettre à jour ensemble, puis `build_environments --force`.
+            "extensions": ["ms-python.debugpy@2026.6.0", "ms-python.vscode-python-envs@1.38.0", "ms-python.python@2026.4.0"],
+            "settings": {
+                "python.testing.pytestEnabled": true,
+                "python.testing.pytestArgs": ["-q"]
+            }
+        }
+    }
+}

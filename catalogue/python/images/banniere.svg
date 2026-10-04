@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">Parcours Python</title>
+  <desc id="d">Bannière du parcours Python : deux formes entrelacées stylisées en bleu et jaune sur fond sombre, avec la mention « Labos dans un vrai terminal ».</desc>
+  <rect x="1" y="1" width="1198" height="398" rx="24" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g opacity=".12" stroke="#3776AB" stroke-width="1">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200"/><path d="M240 0V400M480 0V400M720 0V400M960 0V400"/>
+  </g>
+  <g transform="translate(820 70)">
+    <path d="M60 20h120a40 40 0 0 1 40 40v60a40 40 0 0 1-40 40H100a40 40 0 0 0-40 40v40" fill="none" stroke="#3776AB" stroke-width="34" stroke-linecap="round"/>
+    <path d="M240 280H120a40 40 0 0 1-40-40v-60a40 40 0 0 1 40-40h80a40 40 0 0 0 40-40V60" fill="none" stroke="#FFD43B" stroke-width="34" stroke-linecap="round" opacity=".9" transform="translate(0 0) scale(.72) translate(62 70)"/>
+    <circle cx="150" cy="60" r="9" fill="#e2e8f0"/>
+  </g>
+  <text x="80" y="190" font-family="Inter, system-ui, sans-serif" font-size="84" font-weight="700" fill="#e2e8f0">Python</text>
+  <text x="84" y="250" font-family="Inter, system-ui, sans-serif" font-size="30" fill="#94a3b8">Les bases du langage, dans un vrai terminal</text>
+  <rect x="80" y="288" width="372" height="46" rx="23" fill="#3776AB" opacity=".22" stroke="#3776AB"/>
+  <text x="266" y="319" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#e2e8f0">Labos dans un vrai terminal</text>
+</svg>

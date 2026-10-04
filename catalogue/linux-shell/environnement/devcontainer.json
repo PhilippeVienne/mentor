@@ -1,0 +1,21 @@
+// Environnement réel du parcours « Linux et shell » (voir catalogue/README.md §15 et doc/environnements.md).
+// Debian avec les outils des leçons ; les fichiers d'entraînement sont copiés dans /workspace par chaque labo.
+{
+    "name": "Linux et shell de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    }
+}

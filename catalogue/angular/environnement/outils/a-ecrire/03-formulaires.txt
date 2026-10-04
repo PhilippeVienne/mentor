@@ -1,0 +1,2 @@
+src/app/inscription.html
+src/app/inscription.ts

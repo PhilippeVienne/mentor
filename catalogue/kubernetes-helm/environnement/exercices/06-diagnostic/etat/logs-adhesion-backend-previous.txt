@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/app/manage.py", line 22, in <module>
+    main()
+django.db.utils.OperationalError: could not translate host name "adhesion-db" to address: Name or service not known

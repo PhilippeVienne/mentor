@@ -1,0 +1,26 @@
+// Environnement réel du parcours « Git basics » (voir catalogue/README.md §15 et doc/environnements.md).
+// Debian avec Git ; un « GitLab » local est créé par les labos des leçons 6 et 7.
+{
+    "name": "Git basics de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

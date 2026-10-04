@@ -1,0 +1,18 @@
+Name:             vitrine-web-6d8f7c9b5-abcde
+Namespace:        default
+Status:           Running
+Containers:
+  web:
+    Image:          registry.example.org/equipe/vitrine:master
+    Port:           8000/TCP
+    State:          Running
+    Ready:          False
+    Readiness:      http-get http://:80/ delay=60s timeout=1s period=5s #success=1 #failure=3
+  nginx:
+    Image:          nginx
+    State:          Running
+    Ready:          True
+Events:
+  Type     Reason     Age                From     Message
+  ----     ------     ----               ----     -------
+  Warning  Unhealthy  10s (x20 over 2m)  kubelet  Readiness probe failed: Get "http://10.42.0.15:80/": dial tcp 10.42.0.15:80: connect: connection refused

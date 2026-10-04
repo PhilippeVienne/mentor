@@ -1,0 +1,5 @@
+#!/bin/sh
+# ng : la commande d'Angular. Dans ce conteneur (512 Mo de mémoire, pas de réseau), on limite ses processus
+# pour que `ng version` ou `ng generate` passent ; `ng build` peut manquer de mémoire (voir la leçon 7).
+export NG_CLI_ANALYTICS=false NG_BUILD_MAX_WORKERS=1 GOMAXPROCS=1
+exec /opt/angular/node_modules/.bin/ng "$@"

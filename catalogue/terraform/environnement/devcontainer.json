@@ -1,0 +1,22 @@
+// Environnement réel du parcours Terraform (voir catalogue/README.md §15 et doc/environnements.md).
+// Debian avec le binaire `terraform` et un miroir local de fournisseurs (local, random, null, time) :
+// les labos manipulent des fichiers locaux, jamais un vrai cluster.
+{
+    "name": "Terraform de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "512mb"
+    }
+}

@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""Vérifie qu'un test que TU as écrit (leçon 7) détecte vraiment un défaut.
+
+Usage : verifier-mutation <mutation> <mot-clé-du-test> [<constante-attendue> ...] [--compte]
+        verifier-mutation suite      (les cinq tests ensemble : tous analysés, tous verts)
+
+On travaille dans une copie temporaire où le code de l'API (agenda/, projet/, helpers, conftest) est remplacé par la
+version d'origine de /opt/exercices : seul TON fichier test_agenda_api.py est pris en compte. Contrôles :
+  1. le fichier est analysé (AST Python) : un seul test porte ce mot-clé, il n'appelle pas `self.fail`, il envoie une
+     requête avec `self.client` et contient une vraie assertion (`assertEqual`, `assertIn`, `assert`…, jamais
+     `pass` ni `assertTrue(True)`) qui compare le code de statut annoncé par le nom du test (401, 403, 201, 400) ;
+     chaque <constante-attendue> (ex. 40, places) doit apparaître dans le test ; avec --compte, il doit aussi
+     appeler `Evenement.objects.count()` ;
+  2. le test passe sur l'API d'origine ;
+  3. on casse volontairement l'API (la « mutation ») et le même test doit alors ÉCHOUER : sinon il ne teste rien.
+"""
+import ast
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+OPT = Path("/opt/exercices")
+FICHIER = "test_agenda_api.py"
+
+MUTATIONS = {
+    # nom : [(fichier, ancien texte, nouveau texte)]
+    "sans-authentification": [  # l'API devient publique : plus de 401
+        ("projet/settings.py", '"rest_framework.permissions.IsAuthenticated"', '"rest_framework.permissions.AllowAny"'),
+        ("agenda/views.py", "permission_classes = [IsAuthenticated, HasRoleStaffOrReadOnly]", "permission_classes = []"),
+    ],
+    "sans-controle-du-role": [  # tout le monde peut écrire : plus de 403
+        ("agenda/permissions.py", "return request.method in SAFE_METHODS or super().has_permission(request, view)",
+         "return True"),
+    ],
+    "staff-refuse": [  # même le rôle staff est refusé : plus de 201
+        ("agenda/permissions.py", "return request.method in SAFE_METHODS or super().has_permission(request, view)",
+         "return request.method in SAFE_METHODS"),
+    ],
+    "sans-validation": [("agenda/serializers.py", "if value < 1:", "if False:")],  # 0 place accepté : plus de 400
+    "sans-signature": [  # la signature du jeton n'est plus vérifiée
+        ("agenda/auth.py", 'algorithms=["RS256"],', 'algorithms=["RS256"], options={"verify_signature": False},'),
+    ],
+}
+
+
+def echec(message, code=1):
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
+def analyser(chemin, mot, constantes, compte):
+    try:
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+    except (SyntaxError, ValueError) as exc:
+        echec(f"Le fichier {FICHIER} contient une erreur de syntaxe : {exc}")
+    fonctions = [n for n in ast.walk(arbre) if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")
+                 and mot in n.name]
+    if len(fonctions) != 1:
+        echec(f"Il doit y avoir exactement un test dont le nom contient « {mot} » (il y en a {len(fonctions)}).")
+    f = fonctions[0]
+    appels = [n for n in ast.walk(f) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)]
+    if any(a.func.attr == "fail" for a in appels):
+        echec(f"Le test {f.name} appelle encore self.fail(...) : remplace-le par ton vrai test.")
+    if not any(isinstance(a.func.value, ast.Attribute) and a.func.value.attr == "client"
+               and a.func.attr in {"get", "post", "put", "patch", "delete", "options"} for a in appels):
+        echec(f"Le test {f.name} doit envoyer une requête à l'API avec self.client.get(...) / self.client.post(...).")
+
+    def trivial(expr):
+        return isinstance(expr, ast.Constant) and bool(expr.value)
+
+    assertions = []
+    for n in ast.walk(f):
+        if isinstance(n, ast.Assert) and not trivial(n.test):
+            assertions.append(n)
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr.startswith("assert") \
+                and isinstance(n.func.value, ast.Name) and n.func.value.id == "self":
+            if n.func.attr in {"assertTrue", "assertFalse"} and n.args and trivial(n.args[0]):
+                continue
+            assertions.append(n)
+    if not assertions:
+        echec(f"Le test {f.name} ne contient aucune vraie assertion (self.assertEqual(reponse.status_code, ...)).")
+    valeurs = {n.value for a in assertions for n in ast.walk(a) if isinstance(n, ast.Constant)}
+    attendu = re.search(r"_(\d{3})$", f.name)
+    if attendu and int(attendu.group(1)) not in valeurs:
+        echec(f"Le test {f.name} doit comparer le code de statut à {attendu.group(1)} dans une assertion.")
+    toutes = {n.value for n in ast.walk(f) if isinstance(n, ast.Constant)}
+    for c in constantes:
+        if c not in {str(v) for v in toutes}:
+            echec(f"Le test {f.name} doit contenir « {c} » (valeur ou clé à vérifier).")
+    if compte and not any(a.func.attr == "count" and isinstance(a.func.value, ast.Attribute)
+                          and a.func.value.attr == "objects" for a in appels):
+        echec(f"Le test {f.name} doit vérifier le nombre d'événements avec Evenement.objects.count().")
+
+
+def lancer(copie, mot, env):
+    return subprocess.run([sys.executable, "-I", "-m", "pytest", "-q", "-p", "no:cacheprovider", FICHIER, "-k", mot],
+                          cwd=copie, env=env, capture_output=True, text=True, timeout=40)
+
+
+SUITE = [("sans_identification", [], False), ("creation_interdite", [], True), ("role_staff", ["places_restantes", "40"], False),
+         ("donnees_invalides", ["places"], False), ("autre_cle", [], False)]
+
+
+def copie_pristine(tmp, travail):
+    copie = Path(tmp) / "w"
+    # Code d'origine (base + exercice 7) ; seul le fichier de test vient de l'apprenant·e.
+    shutil.copytree(OPT / "base", copie, ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(OPT / "07-tests-api", copie, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copy2(travail, copie / FICHIER)
+    return copie
+
+
+def verifier_suite(travail):
+    for mot, constantes, compte in SUITE:
+        analyser(travail, mot, constantes, compte)
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = copie_pristine(tmp, travail)
+        env = {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "HOME": tmp, "LANG": "C.UTF-8",
+               "PYTHONDONTWRITEBYTECODE": "1"}
+        res = subprocess.run([sys.executable, "-I", "-m", "pytest", "-q", "-p", "no:cacheprovider", FICHIER],
+                             cwd=copie, env=env, capture_output=True, text=True, timeout=40)
+    if res.returncode != 0 or not re.search(r"\b5 passed\b", res.stdout):
+        print("\n".join((res.stdout + res.stderr).strip().splitlines()[-20:]))
+        echec("Les cinq tests ne sont pas tous verts sur l'API d'origine.")
+    print("Bien : les cinq tests sont analysés et verts.")
+
+
+def main():
+    if sys.argv[1:] == ["suite"]:
+        if not (Path.cwd() / FICHIER).is_file():
+            echec(f"Le fichier {FICHIER} est introuvable dans le dossier courant.")
+        return verifier_suite(Path.cwd() / FICHIER)
+    args = [a for a in sys.argv[1:] if a != "--compte"]
+    compte = "--compte" in sys.argv
+    if len(args) < 2 or args[0] not in MUTATIONS:
+        echec("Usage : verifier-mutation <mutation> <mot-clé> [constante ...] [--compte]\n"
+              "Mutations : " + ", ".join(MUTATIONS), 2)
+    mutation, mot, constantes = args[0], args[1], args[2:]
+    travail = Path.cwd() / FICHIER
+    if not travail.is_file():
+        echec(f"Le fichier {FICHIER} est introuvable dans le dossier courant.")
+    analyser(travail, mot, constantes, compte)
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = copie_pristine(tmp, travail)
+        env = {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "HOME": tmp, "LANG": "C.UTF-8",
+               "PYTHONDONTWRITEBYTECODE": "1"}
+        res = lancer(copie, mot, env)
+        if res.returncode != 0 or not re.search(r"\b[1-9]\d* passed", res.stdout):
+            print("\n".join((res.stdout + res.stderr).strip().splitlines()[-20:]))
+            echec(f"Le test « {mot} » ne passe pas sur l'API d'origine.")
+        for fichier, ancien, nouveau in MUTATIONS[mutation]:
+            cible = copie / fichier
+            texte = cible.read_text(encoding="utf-8")
+            if ancien not in texte:
+                echec(f"Mutation « {mutation} » inapplicable ({fichier} a changé ?).", 2)
+            cible.write_text(texte.replace(ancien, nouveau), encoding="utf-8")
+        res = lancer(copie, mot, env)
+        if res.returncode == 0:
+            echec(f"Ton test « {mot} » passe toujours alors que l'API est cassée (« {mutation} ») : "
+                  "il ne teste pas assez.")
+    print(f"Bien : ton test « {mot} » passe sur l'API d'origine et détecte la panne « {mutation} ».")
+
+
+if __name__ == "__main__":
+    main()

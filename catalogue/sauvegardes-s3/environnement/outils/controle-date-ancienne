@@ -1,0 +1,6 @@
+#!/bin/sh
+# Outil INTERNE du labo (utilisé par les vérifications de la leçon « Tester une restauration ») : affiche, en UTC au
+# format AAAA-MM-JJ HH:MM:SS, la date de la plus ancienne version de l'objet « backup.tgz » du bucket « sauvegardes ».
+aws s3api list-object-versions --bucket sauvegardes --prefix backup.tgz \
+    --query 'sort_by(Versions, &LastModified)[0].LastModified' --output text \
+    | xargs -I{} date -u -d {} '+%Y-%m-%d %H:%M:%S'

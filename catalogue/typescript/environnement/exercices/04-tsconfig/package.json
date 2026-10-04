@@ -1,0 +1,8 @@
+{
+    "name": "adhesion-mini",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "echo pas de build ici"
+    }
+}

@@ -1,0 +1,10 @@
+stages:
+  - build
+
+build:
+  stage: build
+  image: alpine:3.20
+  script:
+    - echo "Début"
+    - echo Version: 1.0
+    - echo "Fin"

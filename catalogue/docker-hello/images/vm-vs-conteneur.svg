@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<title id="t">Machine virtuelle contre conteneur</title><desc id="d">Une VM embarque un système d&#x27;exploitation invité complet au-dessus d&#x27;un hyperviseur ; les conteneurs partagent le noyau de l&#x27;hôte et n&#x27;embarquent que leurs bibliothèques et leur code.</desc>
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#22c55e"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f59e0b"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker>
+</defs>
+<rect x="1" y="1" width="798" height="318" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+<text x="400" y="36" font-size="18" fill="#e2e8f0" font-weight="700" text-anchor="middle">Machine virtuelle ou conteneur ?</text>
+<rect x="40" y="90" width="320" height="38" rx="8" fill="#111c33" stroke="#94a3b8" stroke-width="2"/><text x="200" y="114" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">Matériel (ton PC / serveur)</text>
+<rect x="40" y="134" width="320" height="38" rx="8" fill="#111c33" stroke="#f59e0b" stroke-width="2"/><text x="200" y="158" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">Hyperviseur</text>
+<text x="200" y="70" font-size="15" fill="#f59e0b" font-weight="700" text-anchor="middle">Machine virtuelle</text>
+<rect x="40" y="178" width="156" height="40" rx="8" fill="#111c33" stroke="#f59e0b" stroke-width="2"/><text x="118" y="203" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">OS invité complet</text>
+<rect x="40" y="222" width="156" height="42" rx="8" fill="#111c33" stroke="#f59e0b" stroke-width="2"/><text x="118" y="248" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">App A</text>
+<rect x="204" y="178" width="156" height="40" rx="8" fill="#111c33" stroke="#f59e0b" stroke-width="2"/><text x="282" y="203" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">OS invité complet</text>
+<rect x="204" y="222" width="156" height="42" rx="8" fill="#111c33" stroke="#f59e0b" stroke-width="2"/><text x="282" y="248" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">App B</text>
+<text x="200" y="292" font-size="12" fill="#f59e0b" font-weight="400" text-anchor="middle">≈ plusieurs Go, démarrage en minutes</text>
+<rect x="440" y="90" width="320" height="38" rx="8" fill="#111c33" stroke="#94a3b8" stroke-width="2"/><text x="600" y="114" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">Matériel (ton PC / serveur)</text>
+<rect x="440" y="134" width="320" height="38" rx="8" fill="#111c33" stroke="#2496ED" stroke-width="2"/><text x="600" y="158" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">Noyau Linux + Docker (partagés)</text>
+<text x="600" y="70" font-size="15" fill="#2496ED" font-weight="700" text-anchor="middle">Conteneurs</text>
+<rect x="440" y="178" width="104" height="86" rx="8" fill="#111c33" stroke="#2496ED" stroke-width="2"/><text x="492" y="216" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">App A</text>
+<text x="492" y="236" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">libs + code</text>
+<rect x="548" y="178" width="104" height="86" rx="8" fill="#111c33" stroke="#2496ED" stroke-width="2"/><text x="600" y="216" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">App B</text>
+<text x="600" y="236" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">libs + code</text>
+<rect x="656" y="178" width="104" height="86" rx="8" fill="#111c33" stroke="#2496ED" stroke-width="2"/><text x="708" y="216" font-size="13" fill="#e2e8f0" font-weight="600" text-anchor="middle">App C</text>
+<text x="708" y="236" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">libs + code</text>
+<text x="600" y="292" font-size="12" fill="#2496ED" font-weight="400" text-anchor="middle">≈ quelques Mo, démarrage en secondes</text>
+<line x1="400" y1="60" x2="400" y2="300" stroke="#1e293b" stroke-width="2" stroke-dasharray="4 6"/>
+</svg>

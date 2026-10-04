@@ -1,0 +1,24 @@
+# Déploiement de Vitrine (très simplifié) : il lit un ConfigMap et un Secret, et monte un volume.
+# Les objets qu'il cite n'existent pas encore : c'est ton travail de les écrire.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vitrine-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vitrine-web
+  template:
+    metadata:
+      labels:
+        app: vitrine-web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27
+          envFrom:
+            - configMapRef:
+                name: vitrine-configmap
+            - secretRef:
+                name: vitrine-secret

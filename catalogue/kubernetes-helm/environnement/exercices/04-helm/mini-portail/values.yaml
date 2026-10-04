@@ -1,0 +1,14 @@
+image:
+  repository: registry.example.org/equipe/vitrine
+  tag: master
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+ingress:
+  enabled: true
+  host: portail.172.17.0.1.nip.io
+
+env:
+  siteUrl: http://portail.172.17.0.1.nip.io
+  appDebug: false

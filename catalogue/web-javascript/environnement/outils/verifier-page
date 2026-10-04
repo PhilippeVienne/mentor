@@ -1,0 +1,3 @@
+#!/bin/sh
+# Raccourci : « verifier-page page.html [options] » lance le vérificateur de pages (jsdom).
+exec node /opt/outils/verifier-page.js "$@"

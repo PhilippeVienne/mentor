@@ -1,0 +1,14 @@
+# Ce pipeline est cassé : deux erreurs, que verifier-ci sait trouver.
+stages:
+  - build
+  - test
+
+compiler:
+  stage: biuld
+  image: python:3.13
+  script:
+    - python3 -m compileall app
+
+tests:
+  stage: test
+  image: python:3.13

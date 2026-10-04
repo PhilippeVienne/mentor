@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">Parcours Django</title>
+  <desc id="d">Bannière du parcours Django, bientôt disponible : trois couches empilées (modèle, vue, template) sur fond sombre.</desc>
+  <rect x="1" y="1" width="1198" height="398" rx="24" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g opacity=".12" stroke="#44B78B" stroke-width="1">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200"/><path d="M240 0V400M480 0V400M720 0V400M960 0V400"/>
+  </g>
+  <g font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#e2e8f0">
+    <rect x="800" y="70" width="280" height="76" rx="16" fill="#0C4B33" stroke="#44B78B" stroke-width="2"/>
+    <text x="940" y="116" text-anchor="middle">Template</text>
+    <rect x="800" y="162" width="280" height="76" rx="16" fill="#0C4B33" stroke="#44B78B" stroke-width="2" opacity=".85"/>
+    <text x="940" y="208" text-anchor="middle">Vue</text>
+    <rect x="800" y="254" width="280" height="76" rx="16" fill="#0C4B33" stroke="#44B78B" stroke-width="2" opacity=".7"/>
+    <text x="940" y="300" text-anchor="middle">Modèle</text>
+  </g>
+  <g stroke="#44B78B" stroke-width="3" fill="#44B78B"><path d="M770 292V108" fill="none"/><path d="M770 98l-9 14h18z"/></g>
+  <text x="80" y="190" font-family="Inter, system-ui, sans-serif" font-size="84" font-weight="700" fill="#e2e8f0">Django</text>
+  <text x="84" y="250" font-family="Inter, system-ui, sans-serif" font-size="30" fill="#94a3b8">Le framework des applications de l'équipe</text>
+  <rect x="80" y="288" width="150" height="46" rx="23" fill="#44B78B" opacity=".2" stroke="#44B78B"/>
+  <text x="155" y="319" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600" fill="#e2e8f0">Bientôt</text>
+</svg>

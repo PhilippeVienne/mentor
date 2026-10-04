@@ -1,0 +1,18 @@
+#!/bin/sh
+# verifier-start : joue `start.sh` sur une copie NEUVE du dossier dist d'origine (/opt/exercices, lecture seule), avec des
+# valeurs différentes de celles du cours, et vérifie que tous les marqueurs ont été remplacés par ces valeurs.
+exec 2>&1
+[ -f start.sh ] || { echo "start.sh n'existe pas."; exit 1; }
+tmp=$(mktemp -d /tmp/start.XXXXXX) || exit 1
+trap 'rm -rf "$tmp"' EXIT
+cp -R /opt/exercices/07-tests-et-build/dist "$tmp/dist" && cp start.sh "$tmp/start.sh" || exit 1
+cd "$tmp" || exit 1
+ADHESION_API_URL=https://api.verif.example.org KEYCLOAK_URL=https://sso.verif.example.org KEYCLOAK_REALM=reino-verif KEYCLOAK_CLIENT_ID=client-verif sh start.sh >/dev/null || { echo "start.sh a échoué."; exit 1; }
+if grep -rqE '__(ADHESION_API_URL|KEYCLOAK_URL|KEYCLOAK_REALM|KEYCLOAK_CLIENT_ID)__' dist/club/browser; then
+    echo "Il reste des marqueurs __…__ dans dist/club/browser après start.sh."
+    exit 1
+fi
+for valeur in https://api.verif.example.org https://sso.verif.example.org reino-verif client-verif; do
+    grep -rqF "$valeur" dist/club/browser || { echo "La valeur $valeur n'a pas été écrite par start.sh."; exit 1; }
+done
+echo "start.sh remplace bien tous les marqueurs par les variables d'environnement."

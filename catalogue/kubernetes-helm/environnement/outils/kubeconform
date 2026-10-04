@@ -1,0 +1,6 @@
+#!/bin/sh
+# Enveloppe Mentor autour de kubeconform : lit les schémas Kubernetes 1.37.1 embarqués dans l'image (aucun réseau).
+# Tous les arguments sont transmis tels quels : `kubeconform -summary fichier.yaml`, `kubeconform -h`…
+exec /opt/outils/kubeconform -strict -kubernetes-version 1.37.1 \
+    -schema-location '/opt/schemas/{{ .NormalizedKubernetesVersion }}-standalone-strict/{{ .ResourceKind }}{{ .KindSuffix }}.json' \
+    "$@"

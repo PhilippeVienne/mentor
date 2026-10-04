@@ -1,0 +1,22 @@
+// Environnement réel du parcours « Kubernetes et Helm » (voir catalogue/README.md §15 et doc/environnements.md).
+// helm, kubectl (client seul) et kubeconform sur Debian, sans cluster ni réseau ; les fichiers des exercices sont copiés
+// dans /workspace par chaque labo.
+{
+    "name": "Kubernetes et Helm de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    }
+}

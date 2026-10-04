@@ -1,0 +1,446 @@
+#!/usr/bin/python3
+"""verifier-go : vérifications « à l'épreuve des contournements » des labos du parcours Go.
+
+Les vérifications du portail s'exécutent dans le conteneur de l'apprenant·e, qui peut modifier ses fichiers (y
+compris les tests). Cet outil, installé par l'image (/usr/local/bin, non modifiable), ne fait donc pas confiance au
+dossier de travail :
+  - il copie le dossier courant dans un dossier temporaire ;
+  - il y supprime TOUS les fichiers *_test.go, puis y remet par-dessus les fichiers d'origine (go.mod, go.sum,
+    main.go, *_test.go) pris dans /opt/exercices (lecture seule) ;
+  - il lance « go test -json » et exige un événement « pass » pour CHAQUE test attendu (« no tests to run »,
+    un test ignoré par t.Skip ou un test absent = échec) ;
+  - il force l'environnement Go (GOENV=off, GOFLAGS=-mod=mod, pas de réseau) pour empêcher « go env -w » ou
+    GOFLAGS=-overlay de fausser le résultat.
+
+Usage :
+  verifier-go tests    EXERCICE PAQUET [Test…]       tests d'origine du paquet (« . » ou « pret »), tous si aucun nom
+  verifier-go tout     EXERCICE                      go vet + tous les tests d'origine de tous les paquets
+  verifier-go binaire  EXERCICE NOM                  NOM est un exécutable Go construit depuis ce module
+  verifier-go lancer   EXERCICE REGEX [VAR=val…]     construit, lance, et cherche REGEX (multiligne) dans la sortie
+  verifier-go lancer-echoue EXERCICE                 construit, lance sans variable : le programme doit échouer
+  verifier-go tests-ecrits EXERCICE Test [minimum]   tests écrits par l'apprenant·e : ils doivent réussir sur la
+                                                     version de référence ET échouer sur des variantes défectueuses
+  verifier-go vet      EXERCICE                      go vet sur ton code (tests écrits par toi inclus), sans rien retirer
+  verifier-go dockerfile EXERCICE                    analyse sémantique du Dockerfile (commentaires ignorés)
+Code de retour : 0 = vérifié, 1 = échec (diagnostic sur la sortie), 2 = erreur d'usage.
+"""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+OPT = "/opt/exercices"
+SKIP_DIRS = {".gocache", ".git", ".cache", "node_modules"}
+MAX_FILE = 1_000_000
+
+
+def echec(msg):
+    print("ÉCHEC : " + msg)
+    sys.exit(1)
+
+
+def usage(msg):
+    print("verifier-go : " + msg, file=sys.stderr)
+    sys.exit(2)
+
+
+def env_go():
+    env = dict(os.environ)
+    env.update(
+        GOENV="off", GOFLAGS="-mod=mod", GOPROXY="off", GOSUMDB="off", GOTOOLCHAIN="local",
+        GOTELEMETRY="off", CGO_ENABLED="0", GOWORK="off", GOROOT="/usr/local/go",
+    )
+    env.setdefault("GOCACHE", "/workspace/.gocache")
+    env.setdefault("GOMODCACHE", "/opt/gomodcache")
+    env.setdefault("HOME", "/tmp")
+    for var in ("GOOVERLAY", "GOFLAGS_EXTRA", "GOEXPERIMENT"):
+        env.pop(var, None)
+    return env
+
+
+def go(args, cwd, timeout=12, extra_env=None):
+    env = env_go()
+    if extra_env:
+        env.update(extra_env)
+    try:
+        p = subprocess.run(["go"] + args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        echec("délai dépassé (« go %s ») : une boucle infinie ou un blocage dans ton code ?" % args[0])
+    return p
+
+
+def exercice(nom):
+    ex = os.path.join(OPT, nom)
+    if not os.path.isdir(ex):
+        usage("exercice inconnu : " + nom)
+    return ex
+
+
+def module_de(ex):
+    with open(os.path.join(ex, "go.mod"), encoding="utf-8") as f:
+        m = re.search(r"(?m)^module\s+(\S+)", f.read())
+    return m.group(1)
+
+
+def copier_travail(dst):
+    """Copie les fichiers ordinaires du dossier courant (ni liens, ni gros fichiers, ni caches)."""
+    src = os.getcwd()
+    for racine, dossiers, fichiers in os.walk(src):
+        dossiers[:] = [d for d in dossiers if d not in SKIP_DIRS and not os.path.islink(os.path.join(racine, d))]
+        rel = os.path.relpath(racine, src)
+        os.makedirs(os.path.join(dst, rel), exist_ok=True)
+        for nom in fichiers:
+            chemin = os.path.join(racine, nom)
+            if os.path.islink(chemin) or not os.path.isfile(chemin) or os.path.getsize(chemin) > MAX_FILE:
+                continue
+            shutil.copyfile(chemin, os.path.join(dst, rel, nom))
+
+
+def fichiers_tests(ex):
+    """Chemins relatifs des fichiers *_test.go d'origine."""
+    res = []
+    for racine, _, fichiers in os.walk(ex):
+        for nom in fichiers:
+            if nom.endswith("_test.go"):
+                res.append(os.path.relpath(os.path.join(racine, nom), ex))
+    return sorted(res)
+
+
+def tests_d_origine(ex):
+    """{dossier relatif: [noms de tests]} d'après les fichiers de test d'origine."""
+    res = {}
+    for rel in fichiers_tests(ex):
+        with open(os.path.join(ex, rel), encoding="utf-8") as f:
+            noms = re.findall(r"(?m)^func (Test\w+)\(", f.read())
+        d = os.path.dirname(rel) or "."
+        res.setdefault(d, []).extend(noms)
+    return res
+
+
+def preparer(ex, dst):
+    """Copie le travail, supprime tous les tests, remet les fichiers d'origine."""
+    copier_travail(dst)
+    for racine, _, fichiers in os.walk(dst):
+        for nom in fichiers:
+            if nom.endswith("_test.go"):
+                os.remove(os.path.join(racine, nom))
+    for rel in fichiers_tests(ex) + ["go.mod", "go.sum", "main.go"]:
+        source = os.path.join(ex, rel)
+        if os.path.isfile(source):
+            cible = os.path.join(dst, rel)
+            os.makedirs(os.path.dirname(cible), exist_ok=True)
+            shutil.copyfile(source, cible)
+
+
+class Dossier:
+    def __enter__(self):
+        self.chemin = tempfile.mkdtemp(prefix="verif-go-")
+        return self.chemin
+
+    def __exit__(self, *_):
+        shutil.rmtree(self.chemin, ignore_errors=True)
+
+
+def lancer_tests(dst, paquets, motif=None):
+    """Lance go test -json ; retourne ({(paquet, test): résultat}, {(paquet, test): sorties}, sortie brute, code)."""
+    args = ["test", "-json", "-count=1", "-timeout", "8s"]
+    if motif:
+        args += ["-run", motif]
+    p = go(args + paquets, dst, timeout=14)
+    res, sorties, brut = {}, {}, []
+    for ligne in p.stdout.splitlines():
+        try:
+            ev = json.loads(ligne)
+        except ValueError:
+            brut.append(ligne)
+            continue
+        cle = (ev.get("Package", ""), ev.get("Test", ""))
+        if ev.get("Action") == "output":
+            sorties.setdefault(cle, []).append(ev.get("Output", ""))
+        elif ev.get("Action") in ("pass", "fail", "skip") and cle[1]:
+            res[cle] = ev["Action"]
+    return res, sorties, p.stdout + p.stderr, p.returncode
+
+
+def diagnostic(cle, sorties, brut):
+    lignes = "".join(sorties.get(cle, [])).strip().splitlines()
+    if not lignes:
+        lignes = [l for l in brut.strip().splitlines() if not l.startswith("{")] or brut.strip().splitlines()
+    return "\n".join("    " + l for l in lignes[-12:])
+
+
+def exiger(res, sorties, brut, attendus):
+    for cle in attendus:
+        etat = res.get(cle)
+        nom = cle[1]
+        if etat == "pass":
+            continue
+        if etat is None:
+            raison = "le test n'a pas été exécuté (il ne compile pas, ou le programme s'est arrêté avant)"
+        elif etat == "skip":
+            raison = "le test a été ignoré"
+        else:
+            raison = "le test échoue"
+        echec("%s : %s.\n%s" % (nom, raison, diagnostic(cle, sorties, brut) or diagnostic(("", ""), sorties, brut)))
+
+
+def cmd_tests(ex_nom, pkg, noms):
+    ex = exercice(ex_nom)
+    origine = tests_d_origine(ex)
+    d = "." if pkg in (".", "./") else pkg.lstrip("./")
+    if d not in origine:
+        echec("le fichier de test d'origine est introuvable pour « %s »" % pkg)
+    attendus = noms or origine[d]
+    inconnus = [n for n in attendus if n not in origine[d]]
+    if inconnus:
+        usage("test inconnu dans les tests d'origine : " + ", ".join(inconnus))
+    mod = module_de(ex)
+    imp = mod if d == "." else mod + "/" + d
+    with Dossier() as dst:
+        preparer(ex, dst)
+        res, sorties, brut, _ = lancer_tests(dst, ["." if d == "." else "./" + d],
+                                             "^(" + "|".join(attendus) + ")$")
+        exiger(res, sorties, brut, [(imp, n) for n in attendus])
+    print("OK : %s réussi(s) (tests d'origine)" % ", ".join(attendus))
+
+
+def cmd_tout(ex_nom):
+    ex = exercice(ex_nom)
+    origine = tests_d_origine(ex)
+    mod = module_de(ex)
+    with Dossier() as dst:
+        preparer(ex, dst)
+        v = go(["vet", "./..."], dst)
+        if v.returncode != 0:
+            echec("« go vet ./... » signale un problème :\n" + "\n".join("    " + l for l in (v.stdout + v.stderr).strip().splitlines()[-12:]))
+        res, sorties, brut, _ = lancer_tests(dst, ["./..."])
+        attendus = [(mod if d == "." else mod + "/" + d, n) for d, noms in origine.items() for n in noms]
+        exiger(res, sorties, brut, attendus)
+    print("OK : go vet ne signale rien et les %d tests d'origine réussissent" % len(attendus))
+
+
+def cmd_vet(ex_nom):
+    ex = exercice(ex_nom)
+    with Dossier() as dst:
+        copier_travail(dst)
+        for rel in ("go.mod", "go.sum", "main.go"):
+            if os.path.isfile(os.path.join(ex, rel)):
+                shutil.copyfile(os.path.join(ex, rel), os.path.join(dst, rel))
+        # Le défaut à corriger doit l'être, pas être supprimé : le mutex et la méthode liste doivent subsister.
+        try:
+            with open(os.path.join(dst, "serveur.go"), encoding="utf-8") as f:
+                src = re.sub(r"//[^\n]*|/\*.*?\*/", "", f.read(), flags=re.S)
+        except OSError:
+            echec("serveur.go est introuvable")
+        if not re.search(r"\bsync\.Mutex\b", src) or not re.search(r"func\s*\(\s*s\s+\*?serveur\s*\)\s*liste\b", src):
+            echec("serveur.go doit garder son mutex et sa méthode liste : corrige le récepteur, ne supprime rien")
+        v = go(["vet", "./..."], dst)
+        if v.returncode != 0:
+            echec("« go vet ./... » signale encore un problème :\n" + "\n".join("    " + l for l in (v.stdout + v.stderr).strip().splitlines()[-12:]))
+    print("OK : go vet ne signale rien")
+
+
+def cmd_binaire(ex_nom, nom):
+    ex = exercice(ex_nom)
+    if os.path.basename(nom) != nom or nom.startswith("."):
+        usage("nom de fichier invalide")
+    if os.path.islink(nom) or not os.path.isfile(nom):
+        echec("le fichier « %s » n'existe pas (ou n'est pas un fichier ordinaire)" % nom)
+    with open(nom, "rb") as f:
+        if f.read(4) != b"\x7fELF":
+            echec("« %s » n'est pas un exécutable : il doit être produit par « go build -o %s . »" % (nom, nom))
+    p = go(["version", "-m", os.path.abspath(nom)], os.getcwd())
+    mod = module_de(ex)
+    if p.returncode != 0 or not re.search(r"(?m)^\s*mod\s+%s(\s|$)" % re.escape(mod), p.stdout):
+        echec("« %s » n'a pas été compilé par Go depuis ce projet : lance « go build -o %s . »" % (nom, nom))
+    print("OK : %s est un exécutable Go du module %s" % (nom, mod))
+
+
+def construire_et_lancer(ex_nom, env_extra, sans_secret=False):
+    ex = exercice(ex_nom)
+    with Dossier() as dst:
+        preparer(ex, dst)
+        b = go(["build", "-o", os.path.join(dst, "_prog_")] + ["."], dst)
+        if b.returncode != 0:
+            echec("le programme ne compile pas :\n" + "\n".join("    " + l for l in (b.stdout + b.stderr).strip().splitlines()[-12:]))
+        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/tmp"), "LANG": "C.UTF-8"}
+        env.update(env_extra)
+        try:
+            p = subprocess.run([os.path.join(dst, "_prog_")], cwd=dst, env=env, capture_output=True, text=True,
+                               timeout=8, stdin=subprocess.DEVNULL)
+        except subprocess.TimeoutExpired:
+            echec("le programme ne s'arrête pas (délai dépassé)")
+        return p
+
+
+def cmd_lancer(ex_nom, regex, variables):
+    env = {}
+    for v in variables:
+        k, _, val = v.partition("=")
+        env[k] = val
+    p = construire_et_lancer(ex_nom, env)
+    sortie = p.stdout + p.stderr
+    if not re.search(regex, sortie, re.M):
+        echec("la sortie du programme ne contient pas ce qui est attendu (%s). Sortie :\n%s" % (regex, "\n".join("    " + l for l in sortie.strip().splitlines()[-8:])))
+    print("OK : la sortie du programme contient « %s »" % regex)
+
+
+def cmd_lancer_echoue(ex_nom):
+    p = construire_et_lancer(ex_nom, {})
+    if p.returncode == 0:
+        echec("le programme aurait dû échouer sans configuration (code de retour 0)")
+    print("OK : le programme échoue sans configuration (code %d)" % p.returncode)
+
+
+# Variantes défectueuses de la version de référence : les tests écrits par l'apprenant·e doivent les détecter.
+REFERENCE_07 = [("func (s serveur) liste", "func (s *serveur) liste")]
+MUTANTS_07 = {
+    "TestAjoute": [
+        ("le titre manquant n'est plus refusé", [('if j.Titre == "" {', "if false {")]),
+        ("le JSON cassé ne répond plus 400", [('"JSON invalide"}`, http.StatusBadRequest)', '"JSON invalide"}`, http.StatusInternalServerError)')]),
+        ("la création ne répond plus 201", [("w.WriteHeader(http.StatusCreated)", "w.WriteHeader(http.StatusOK)")]),
+    ],
+    "TestListe": [
+        ("la liste renvoyée est toujours vide", [("Encode(s.jeux)", "Encode([]Jeu{})")]),
+        ("la liste répond 500", [('w.Header().Set("Content-Type", "application/json")\n\tjson.NewEncoder(w).Encode(s.jeux)',
+                                  'w.WriteHeader(500)\n\tjson.NewEncoder(w).Encode(s.jeux)')]),
+    ],
+}
+
+
+def appliquer(texte, remplacements):
+    for ancien, nouveau in remplacements:
+        if ancien not in texte:
+            usage("variante inapplicable : " + ancien)
+        texte = texte.replace(ancien, nouveau, 1)
+    return texte
+
+
+def cmd_tests_ecrits(ex_nom, test, minimum):
+    ex = exercice(ex_nom)
+    if ex_nom != "07-tests-docker" or test not in MUTANTS_07:
+        usage("tests-ecrits ne connaît que 07-tests-docker : " + ", ".join(MUTANTS_07))
+    mod = module_de(ex)
+    with open(os.path.join(ex, "serveur.go"), encoding="utf-8") as f:
+        reference = appliquer(f.read(), REFERENCE_07)
+
+    def essai(source):
+        with Dossier() as dst:
+            copier_travail(dst)
+            for racine, _, fichiers in os.walk(dst):
+                for nom in fichiers:
+                    if nom.endswith(".go") and not nom.endswith("_test.go"):
+                        os.remove(os.path.join(racine, nom))
+            for rel in ("go.mod", "go.sum", "main.go"):
+                if os.path.isfile(os.path.join(ex, rel)):
+                    shutil.copyfile(os.path.join(ex, rel), os.path.join(dst, rel))
+            with open(os.path.join(dst, "serveur.go"), "w", encoding="utf-8") as f:
+                f.write(source)
+            if not any(n.endswith("_test.go") for n in os.listdir(dst)):
+                echec("aucun fichier de test (*_test.go) dans ton dossier")
+            return lancer_tests(dst, ["."], "^" + test + "$")
+
+    res, sorties, brut, _ = essai(reference)
+    cle = (mod, test)
+    if cle not in res:
+        echec("la fonction %s est introuvable (ou ne s'exécute pas). Sortie :\n%s" % (test, diagnostic(cle, sorties, brut)))
+    exiger(res, sorties, brut, [cle])
+    sous = [k for k, v in res.items() if k[1].startswith(test + "/") and v == "pass"]
+    if len(sous) < minimum:
+        echec("%s doit lancer au moins %d sous-tests avec t.Run, tous réussis (%d trouvé(s))" % (test, minimum, len(sous)))
+    for libelle, remplacements in MUTANTS_07[test]:
+        r, s, b, _ = essai(appliquer(reference, remplacements))
+        if r.get(cle) != "fail":
+            echec("%s ne détecte pas un défaut de %s (%s) : le test est trop faible, ajoute les vérifications qui manquent" % (test, "serveur.go", libelle))
+    print("OK : %s réussit sur le serveur correct et détecte %d défauts introduits" % (test, len(MUTANTS_07[test])))
+
+
+def instructions_dockerfile(texte):
+    lignes = [l for l in texte.splitlines() if not l.lstrip().startswith("#")]
+    logiques, courant = [], ""
+    for l in lignes:
+        if courant == "" and not l.strip():
+            continue
+        courant += l.rstrip()
+        if courant.endswith("\\"):
+            courant = courant[:-1] + " "
+            continue
+        logiques.append(courant.strip())
+        courant = ""
+    if courant.strip():
+        logiques.append(courant.strip())
+    res = []
+    for l in logiques:
+        if not l:
+            continue
+        mot, _, reste = l.partition(" ")
+        res.append((mot.upper(), reste.strip()))
+    return res
+
+
+def cmd_dockerfile(ex_nom):
+    exercice(ex_nom)
+    if os.path.islink("Dockerfile") or not os.path.isfile("Dockerfile"):
+        echec("le fichier Dockerfile n'existe pas")
+    with open("Dockerfile", encoding="utf-8", errors="replace") as f:
+        ins = instructions_dockerfile(f.read())
+    etapes = []
+    for mot, reste in ins:
+        if mot == "FROM":
+            m = re.match(r"(?:--\S+\s+)*(\S+)(?:\s+[Aa][Ss]\s+(\S+))?", reste)
+            etapes.append({"image": m.group(1), "nom": (m.group(2) or "").lower(), "ins": []})
+        elif etapes:
+            etapes[-1]["ins"].append((mot, reste))
+    if len(etapes) < 2:
+        echec("le Dockerfile doit avoir deux étapes (deux instructions FROM)")
+    build, final = etapes[0], etapes[-1]
+    if build["nom"] != "build" or not build["image"].startswith("golang"):
+        echec("la première étape doit être « FROM golang:… AS build »")
+    if not final["image"].startswith("alpine:"):
+        echec("la dernière étape doit partir de « alpine:… »")
+    cgo = any(re.search(r"\bCGO_ENABLED[= ]0\b", reste) for mot, reste in build["ins"] if mot in ("RUN", "ENV"))
+    compile_ = any(mot == "RUN" and re.search(r"\bgo\s+build\b", reste) for mot, reste in build["ins"])
+    if not (cgo and compile_):
+        echec("l'étape build doit compiler avec « go build » et CGO_ENABLED=0")
+    if not any(mot == "COPY" and re.search(r"--from=build\b", reste) for mot, reste in final["ins"]):
+        echec("l'étape finale doit copier le programme avec « COPY --from=build »")
+    users = [reste.split(":")[0].strip() for mot, reste in final["ins"] if mot == "USER"]
+    if not users or users[-1].lower() in ("root", "0", ""):
+        echec("l'étape finale doit s'exécuter avec un utilisateur non-root (instruction USER)")
+    if not any(mot in ("ENTRYPOINT", "CMD") for mot, _ in final["ins"]):
+        echec("l'étape finale doit lancer le programme (ENTRYPOINT ou CMD)")
+    print("OK : Dockerfile en deux étapes, compilé avec CGO_ENABLED=0, utilisateur non-root")
+
+
+def main(argv):
+    if len(argv) < 3:
+        usage("voir l'en-tête du script pour l'usage")
+    cmd, args = argv[1], argv[2:]
+    try:
+        if cmd == "tests" and len(args) >= 2:
+            cmd_tests(args[0], args[1], args[2:])
+        elif cmd == "tout":
+            cmd_tout(args[0])
+        elif cmd == "vet":
+            cmd_vet(args[0])
+        elif cmd == "binaire" and len(args) == 2:
+            cmd_binaire(*args)
+        elif cmd == "lancer" and len(args) >= 2:
+            cmd_lancer(args[0], args[1], args[2:])
+        elif cmd == "lancer-echoue":
+            cmd_lancer_echoue(args[0])
+        elif cmd == "tests-ecrits" and len(args) >= 2:
+            cmd_tests_ecrits(args[0], args[1], int(args[2]) if len(args) > 2 else 1)
+        elif cmd == "dockerfile":
+            cmd_dockerfile(args[0])
+        else:
+            usage("commande inconnue : " + cmd)
+    except OSError as e:
+        echec("erreur de fichier : %s" % e)
+
+
+main(sys.argv)

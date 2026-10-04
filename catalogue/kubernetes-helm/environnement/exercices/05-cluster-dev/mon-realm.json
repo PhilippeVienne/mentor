@@ -1,0 +1,5 @@
+{
+  "realm": "exemple",
+  "enabled": true,
+  "_commentaire": "Fichier factice de formation : le vrai realm est dans infra-dev."
+}

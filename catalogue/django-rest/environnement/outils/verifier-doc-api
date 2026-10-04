@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Vérifie les livrables de documentation de la leçon 6.
+
+Usage :
+  verifier-doc-api schema          régénère le schéma OpenAPI sur TON code et contrôle qu'il décrit l'API ;
+  verifier-doc-api schema-fichier  contrôle que `schema.yml` est bien celui que génère ton code (pas un faux) ;
+  verifier-doc-api fiche           contrôle `API_DOC_EXTERN.md` (structure et exemples, commentaires ignorés).
+
+La génération se fait dans une copie temporaire où les modèles et migrations d'origine (/opt/exercices/base)
+sont remis par-dessus ; Python tourne en mode isolé (`-I`).
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import yaml
+
+OPT = Path("/opt/exercices")
+TITRE, VERSION = "API Agenda", "1.0.0"
+
+
+def echec(message):
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def schema_genere():
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = Path(tmp) / "w"
+        shutil.copytree(Path.cwd(), copie, ignore=shutil.ignore_patterns("__pycache__", ".git", "db.sqlite3"))
+        for relatif in ("manage.py", "agenda/models.py", "agenda/migrations", "agenda/__init__.py", "projet/__init__.py",
+                        "projet/urls.py"):
+            source, cible = OPT / "base" / relatif, copie / relatif
+            if cible.is_dir():
+                shutil.rmtree(cible)
+            if source.is_dir():
+                shutil.copytree(source, cible)
+            else:
+                shutil.copy2(source, cible)
+        env = {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "HOME": tmp, "LANG": "C.UTF-8",
+               "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPATH": ""}
+        res = subprocess.run([sys.executable, "-E", "-s", "manage.py", "generateschema", "--title", TITRE, "--api_version",
+                              VERSION], cwd=copie, env=env, capture_output=True, text=True, timeout=30)
+    if res.returncode != 0:
+        echec("La commande generateschema échoue encore :\n" + "\n".join(res.stderr.strip().splitlines()[-6:]))
+    try:
+        doc = yaml.safe_load(res.stdout)
+    except yaml.YAMLError:
+        echec("La sortie de generateschema n'est pas un schéma YAML valide.")
+    chemins = (doc or {}).get("paths", {}) if isinstance(doc, dict) else {}
+    for chemin in ("/v1/evenements/", "/v1/assos/"):
+        if chemin not in chemins:
+            echec(f"Le schéma généré ne décrit pas {chemin}.")
+    return doc, res.stdout
+
+
+def verifier_fichier_schema():
+    doc, sortie = schema_genere()
+    if "Associations et leurs" not in sortie:
+        echec("Le schéma généré ne reprend pas la docstring de AssoViewSet (« Associations et leurs événements »).")
+    chemin = Path("schema.yml")
+    if not chemin.is_file():
+        echec("Le fichier schema.yml n'existe pas : redirige la sortie de generateschema avec « > schema.yml ».")
+    try:
+        contenu = yaml.safe_load(chemin.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError):
+        echec("schema.yml n'est pas un YAML valide : regénère-le avec la commande generateschema.")
+    if contenu != doc:
+        echec("schema.yml ne correspond pas au schéma généré par ton code : regénère-le avec generateschema "
+              "(après avoir fini les étapes précédentes).")
+
+
+def sans_commentaires(texte):
+    return re.sub(r"<!--.*?-->", "", texte, flags=re.S)
+
+
+def verifier_fiche():
+    chemin = Path("API_DOC_EXTERN.md")
+    if not chemin.is_file():
+        echec("Le fichier API_DOC_EXTERN.md n'existe pas.")
+    brut = sans_commentaires(chemin.read_text(encoding="utf-8", errors="replace"))
+    blocs = re.findall(r"```[^\n]*\n(.*?)```", brut, flags=re.S)
+    prose = re.sub(r"```.*?```", "", brut, flags=re.S)
+    if len(re.findall(r"\w+", prose)) < 25:
+        echec("La fiche est trop courte : décris le point d'accès, la protection, le rôle et le format en quelques phrases.")
+    if not re.search(r"\bPOST\s+/v1/evenements/", brut):
+        echec("Indique le point d'accès sous la forme « POST /v1/evenements/ ».")
+    if not re.search(r"\bBearer\b", prose):
+        echec("Explique la protection de l'API : un jeton « Bearer » dans l'en-tête Authorization.")
+    if not re.search(r"\bstaff\b", prose):
+        echec("Indique le rôle requis pour créer un événement : « staff ».")
+    if not re.search(r"application/json", brut):
+        echec("Indique le Content-Type attendu : application/json.")
+    requete = [i for i, b in enumerate(blocs) if "titre" in b and "places" in b]
+    if not requete:
+        echec("Ajoute dans un bloc de code un exemple de requête (avec au moins `titre` et `places`).")
+    reponse = [i for i, b in enumerate(blocs) if i != requete[0] and re.search(r"\"id\"\s*:", b)]
+    if not reponse:
+        echec("Ajoute dans un second bloc de code un exemple de réponse (avec le champ `id` de l'événement créé).")
+    if not re.search(r"\b201\b", prose + "".join(blocs)):
+        echec("Indique le code de la réponse en cas de succès : 201.")
+    for i in (requete[0], reponse[0]):
+        s = blocs[i].strip()
+        if s.startswith("{"):
+            try:
+                json.loads(s)
+            except ValueError:
+                echec("Un de tes exemples JSON n'est pas du JSON valide (guillemets doubles, virgules).")
+
+
+def main():
+    mode = sys.argv[1] if len(sys.argv) > 1 else ""
+    if mode == "schema":
+        schema_genere()
+    elif mode == "schema-fichier":
+        verifier_fichier_schema()
+    elif mode == "fiche":
+        verifier_fiche()
+    else:
+        echec(__doc__)
+    print("Bien.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,13 @@
+# Service de Vitrine (simplifié). Attention : il est cassé, à toi de comprendre pourquoi.
+apiVersion: v1
+kind: Service
+metadata:
+  name: vitrine-nginx-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="t d" font-family="Inter, system-ui, sans-serif">
+  <title id="t">Déploiement, pods et service</title>
+  <desc id="d">Un service reçoit le trafic et le répartit entre les pods portant le label app vitrine-web ; le déploiement crée et remplace ces pods.</desc>
+  <rect x="1" y="1" width="718" height="278" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <rect x="30" y="100" width="150" height="80" rx="10" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+  <text x="105" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#e2e8f0">Service</text>
+  <text x="105" y="160" text-anchor="middle" font-size="14" fill="#94a3b8">adresse stable</text>
+  <rect x="300" y="30" width="160" height="60" rx="10" fill="#334155"/>
+  <text x="380" y="56" text-anchor="middle" font-size="16" font-weight="700" fill="#e2e8f0">Pod</text>
+  <text x="380" y="78" text-anchor="middle" font-size="14" fill="#94a3b8">app: vitrine-web</text>
+  <rect x="300" y="110" width="160" height="60" rx="10" fill="#334155"/>
+  <text x="380" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#e2e8f0">Pod</text>
+  <text x="380" y="158" text-anchor="middle" font-size="14" fill="#94a3b8">app: vitrine-web</text>
+  <rect x="300" y="190" width="160" height="60" rx="10" fill="#334155"/>
+  <text x="380" y="216" text-anchor="middle" font-size="16" font-weight="700" fill="#e2e8f0">Pod</text>
+  <text x="380" y="238" text-anchor="middle" font-size="14" fill="#94a3b8">app: vitrine-web</text>
+  <path d="M180 140L296 62M180 140L296 140M180 140L296 218" stroke="#6366F1" stroke-width="2.5" fill="none"/>
+  <rect x="540" y="100" width="150" height="80" rx="10" fill="#1e293b" stroke="#326CE5" stroke-width="2"/>
+  <text x="615" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#e2e8f0">Deployment</text>
+  <text x="615" y="160" text-anchor="middle" font-size="14" fill="#94a3b8">crée et remplace</text>
+  <path d="M540 140H464" stroke="#326CE5" stroke-width="2.5" fill="none" stroke-dasharray="6 4"/>
+</svg>

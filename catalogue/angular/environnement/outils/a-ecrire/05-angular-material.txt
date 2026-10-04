@@ -1,0 +1,6 @@
+src/app/carte-bienvenue.ts
+src/app/champ-email.ts
+src/app/confirmation-dialog.ts
+src/app/fournisseurs.ts
+src/app/french-paginator-intl.ts
+src/app/notifier.ts

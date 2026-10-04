@@ -1,0 +1,3 @@
+#!/bin/sh
+# Vérifications « pristines » des labos : voir /opt/verif/verifier-ts.mjs
+exec node /opt/verif/verifier-ts.mjs "$@"

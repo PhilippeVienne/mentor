@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Rejoue les tests D'ORIGINE d'une leçon sur ton travail (leçons 1 à 6).
+
+Usage : verifier-tests <dossier-de-la-leçon> <mot-clé-pytest> [nombre-minimum-de-tests]
+
+Pourquoi ? `pytest` lancé chez toi lit TES fichiers : si l'on pouvait y modifier un test, il suffirait de le vider
+pour qu'il « passe ». Ici on :
+  1. copie ton dossier de travail dans un dossier temporaire ;
+  2. remet par-dessus les fichiers de référence (tests, conftest.py, pytest.ini, helpers_jwt.py, modèles, migrations) pris
+     dans /opt/exercices, que tu ne peux pas modifier ;
+  3. lance pytest (`-k <mot-clé>`) en mode isolé (`python -I` : ni PYTHONPATH, ni site utilisateur) ;
+  4. exige au moins N tests réussis (1 par défaut), aucun échec, aucune erreur.
+Ton code (agenda/*.py, projet/settings.py, requetes.py…) est donc le seul élément pris en compte.
+"""
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+OPT = Path("/opt/exercices")
+# Fichiers de référence (chemins relatifs) remis par-dessus le travail ; les dossiers sont copiés en entier.
+PROTEGES_BASE = ["conftest.py", "pytest.ini", "helpers_jwt.py", "manage.py", "agenda/__init__.py", "agenda/models.py",
+                 "agenda/migrations", "projet/__init__.py", "projet/urls.py"]
+A_SUPPRIMER = {"conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "pyproject.toml", "sitecustomize.py",
+               "usercustomize.py", "db.sqlite3"}
+
+
+def echec(message):
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def copier(source, cible):
+    if source.is_dir():
+        shutil.copytree(source, cible, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__"))
+    elif source.exists():
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, cible)
+
+
+def main():
+    if len(sys.argv) < 3:
+        echec("Usage : verifier-tests <dossier-de-la-leçon> <mot-clé-pytest> [nombre-minimum]")
+    lecon, mot = sys.argv[1], sys.argv[2]
+    minimum = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    dossier_lecon = OPT / lecon
+    if not dossier_lecon.is_dir():
+        echec(f"Leçon inconnue : {lecon}")
+    tests = sorted(p.name for p in dossier_lecon.glob("test_*.py"))
+    travail = Path.cwd()
+    with tempfile.TemporaryDirectory() as tmp:
+        copie = Path(tmp) / "w"
+        shutil.copytree(travail, copie, ignore=shutil.ignore_patterns("__pycache__", ".git", ".pytest_cache"),
+                        symlinks=False, ignore_dangling_symlinks=True)
+        for chemin in list(copie.rglob("*")):
+            if chemin.is_file() and (chemin.name in A_SUPPRIMER or chemin.suffix == ".pth"
+                                     or (chemin.name.startswith("test_") and chemin.suffix == ".py")):
+                chemin.unlink()
+        for relatif in PROTEGES_BASE:
+            if (copie / relatif).is_dir():
+                shutil.rmtree(copie / relatif)
+            copier(OPT / "base" / relatif, copie / relatif)
+        for nom in tests:
+            copier(dossier_lecon / nom, copie / nom)
+        rapport = Path(tmp) / "rapport.xml"
+        env = {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "HOME": tmp, "LANG": "C.UTF-8",
+               "PYTHONDONTWRITEBYTECODE": "1"}
+        cmd = [sys.executable, "-I", "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={rapport}", "-k", mot,
+               *tests]
+        try:
+            res = subprocess.run(cmd, cwd=copie, env=env, capture_output=True, text=True, timeout=60)
+        except subprocess.TimeoutExpired:
+            echec("Les tests ont dépassé le délai : y a-t-il une boucle infinie dans ton code ?")
+        sortie = (res.stdout + res.stderr).strip()
+        total = echecs = 0
+        if rapport.exists():
+            racine = ET.parse(rapport).getroot()
+            for suite in racine.iter("testsuite"):
+                total += int(suite.get("tests", 0)) - int(suite.get("skipped", 0))
+                echecs += int(suite.get("failures", 0)) + int(suite.get("errors", 0))
+        reussis = total - echecs
+        if res.returncode != 0 or echecs or reussis < minimum:
+            lignes = sortie.splitlines()
+            print("\n".join(lignes[-25:]))
+            if reussis < minimum and not echecs:
+                print(f"\nIl faut au moins {minimum} test(s) réussi(s) pour « {mot} » ; il y en a {max(reussis, 0)}.")
+            echec("\nLes tests de la leçon ne passent pas encore sur ton code (on rejoue les tests d'origine).")
+        print(f"Bien : {reussis} test(s) d'origine réussi(s) sur ton code.")
+
+
+if __name__ == "__main__":
+    main()

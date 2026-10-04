@@ -1,0 +1,1483 @@
+#!/usr/bin/env python3
+"""verifier-ci : vérifie la STRUCTURE d'un fichier .gitlab-ci.yml, hors ligne, comme GitLab le ferait.
+
+Ce n'est PAS un runner GitLab : rien n'est exécuté (aucun `script` n'est lancé, aucune image n'est téléchargée).
+L'outil lit le YAML et contrôle ce que GitLab contrôle avant de créer un pipeline : stages déclarés, jobs rattachés
+à un stage connu, `script` présent, `extends`, `include: local`, `rules`, `needs`, clés inconnues, variables.
+Il peut aussi simuler les `rules` (--contexte) pour dire quels jobs seraient créés.
+
+Usage :
+    verifier-ci [FICHIER]                       diagnostic (FICHIER vaut .gitlab-ci.yml par défaut)
+    verifier-ci --strict [FICHIER]              les avertissements font aussi échouer la vérification
+    verifier-ci --montrer [FICHIER]             affiche le pipeline reconstitué (stages, jobs, image, extends)
+    verifier-ci --contexte NOM=VALEUR … [FICHIER]
+                                                dit quels jobs seraient créés dans ce contexte
+                                                (--modifie CHEMIN indique un fichier modifié, pour `changes`)
+    verifier-ci --slug TEXTE                    calcule ce que donnerait $CI_COMMIT_REF_SLUG
+    verifier-ci --masquable VALEUR              dit si GitLab accepterait de masquer cette valeur
+    verifier-ci [FICHIER] --job NOM ASSERTION…  vérifie la STRUCTURE lue du YAML (jamais le texte : un commentaire, une
+                                                valeur dans une chaîne ou un job inutilisé ne valide rien) ; voir
+                                                « verifier-ci --aide-assertions »
+
+Code de sortie : 0 = aucune erreur, 1 = au moins une erreur (ou un avertissement avec --strict), 2 = fichier illisible.
+"""
+
+import argparse
+import difflib
+import glob
+import os
+import re
+import shlex
+import sys
+
+import yaml
+
+# ── Connaissances de GitLab (liste volontairement partielle) ─────────────────────────────────────────────────
+MOTS_GLOBAUX = {
+    "default", "include", "stages", "variables", "workflow", "spec",
+    "image", "services", "before_script", "after_script", "cache", "types",
+}
+CLES_JOB = {
+    "after_script", "allow_failure", "artifacts", "before_script", "cache", "coverage", "dast_configuration",
+    "dependencies", "environment", "extends", "hooks", "identity", "id_tokens", "image", "inherit", "interruptible",
+    "manual_confirmation", "needs", "pages", "parallel", "publish", "release", "resource_group", "retry", "rules",
+    "run", "script", "secrets", "services", "stage", "start_in", "tags", "timeout", "trigger", "variables", "when",
+    "only", "except",
+}
+CLES_HERITEES_PAR_DEFAUT = {
+    "after_script", "artifacts", "before_script", "cache", "image", "interruptible", "retry", "services", "tags", "timeout",
+}
+CLES_REGLE = {"if", "changes", "exists", "when", "allow_failure", "variables", "needs", "interruptible"}
+QUAND_JOB = {"on_success", "on_failure", "always", "never", "manual", "delayed"}
+CLES_ARTEFACTS = {"paths", "exclude", "expire_in", "expose_as", "name", "public", "reports", "untracked", "when"}
+STAGES_PAR_DEFAUT = [".pre", "build", "test", "deploy", ".post"]
+
+VARIABLES_PREDEFINIES = {
+    "CI", "GITLAB_CI", "GITLAB_USER_ID", "GITLAB_USER_EMAIL", "GITLAB_USER_LOGIN", "GITLAB_USER_NAME",
+    "GITLAB_FEATURES", "CHAT_CHANNEL", "CHAT_INPUT", "CI_API_V4_URL", "CI_API_GRAPHQL_URL", "CI_BUILDS_DIR",
+    "CI_COMMIT_AUTHOR", "CI_COMMIT_BEFORE_SHA", "CI_COMMIT_BRANCH", "CI_COMMIT_DESCRIPTION", "CI_COMMIT_MESSAGE",
+    "CI_COMMIT_REF_NAME", "CI_COMMIT_REF_PROTECTED", "CI_COMMIT_REF_SLUG", "CI_COMMIT_SHA", "CI_COMMIT_SHORT_SHA",
+    "CI_COMMIT_TAG", "CI_COMMIT_TAG_MESSAGE", "CI_COMMIT_TIMESTAMP", "CI_COMMIT_TITLE", "CI_CONFIG_PATH",
+    "CI_DEBUG_TRACE", "CI_DEFAULT_BRANCH", "CI_DEPLOY_PASSWORD", "CI_DEPLOY_USER", "CI_DISPOSABLE_ENVIRONMENT",
+    "CI_ENVIRONMENT_NAME", "CI_ENVIRONMENT_URL", "CI_JOB_ID", "CI_JOB_IMAGE", "CI_JOB_JWT", "CI_JOB_NAME",
+    "CI_JOB_STAGE", "CI_JOB_STATUS", "CI_JOB_TOKEN", "CI_JOB_URL", "CI_MERGE_REQUEST_ID", "CI_MERGE_REQUEST_IID",
+    "CI_MERGE_REQUEST_LABELS", "CI_MERGE_REQUEST_PROJECT_ID", "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME",
+    "CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "CI_MERGE_REQUEST_TITLE", "CI_NODE_INDEX", "CI_NODE_TOTAL",
+    "CI_OPEN_MERGE_REQUESTS", "CI_PAGES_DOMAIN", "CI_PAGES_URL", "CI_PIPELINE_ID", "CI_PIPELINE_IID",
+    "CI_PIPELINE_SOURCE", "CI_PIPELINE_URL", "CI_PROJECT_DIR", "CI_PROJECT_ID", "CI_PROJECT_NAME",
+    "CI_PROJECT_NAMESPACE", "CI_PROJECT_PATH", "CI_PROJECT_PATH_SLUG", "CI_PROJECT_ROOT_NAMESPACE",
+    "CI_PROJECT_TITLE", "CI_PROJECT_URL", "CI_PROJECT_VISIBILITY", "CI_REGISTRY", "CI_REGISTRY_IMAGE",
+    "CI_REGISTRY_PASSWORD", "CI_REGISTRY_USER", "CI_REPOSITORY_URL", "CI_RUNNER_DESCRIPTION", "CI_RUNNER_ID",
+    "CI_RUNNER_TAGS", "CI_SERVER", "CI_SERVER_HOST", "CI_SERVER_NAME", "CI_SERVER_URL", "CI_SERVER_VERSION",
+    "CI_SHARED_ENVIRONMENT", "CI_TEMPLATE_REGISTRY_HOST", "CI_PROXY", "CI_ENVIRONMENT_ACTION",
+    "CI_COMMIT_MESSAGE_SUBJECT", "CI_PIPELINE_CREATED_AT", "CI_JOB_STARTED_AT", "CI_HAS_OPEN_REQUIREMENTS",
+    "CI_DEPENDENCY_PROXY_SERVER", "CI_DEPENDENCY_PROXY_USER", "CI_DEPENDENCY_PROXY_PASSWORD",
+    "CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX", "CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX",
+    "CI_MERGE_REQUEST_EVENT_TYPE", "CI_MERGE_REQUEST_DIFF_ID", "CI_MERGE_REQUEST_SOURCE_PROJECT_ID",
+    "CI_MERGE_REQUEST_SOURCE_PROJECT_PATH", "CI_MERGE_REQUEST_SOURCE_PROJECT_URL", "CI_MERGE_REQUEST_APPROVED",
+    "CI_EXTERNAL_PULL_REQUEST_IID", "CI_COMMIT_REF_NAME", "CI_CONCURRENT_ID", "CI_PROJECT_REPOSITORY_LANGUAGES",
+    "CI_PROJECT_CLASSIFICATION_LABEL", "CI_PROJECT_DESCRIPTION", "CI_JOB_NAME_SLUG", "CI_RUNNER_EXECUTABLE_ARCH",
+    "CI_RUNNER_REVISION", "CI_RUNNER_SHORT_TOKEN", "CI_RUNNER_VERSION", "CI_SERVER_PORT", "CI_SERVER_PROTOCOL",
+    "CI_SERVER_SHELL_SSH_HOST", "CI_SERVER_SHELL_SSH_PORT", "CI_SERVER_REVISION", "CI_SERVER_VERSION_MAJOR",
+    "CI_SERVER_VERSION_MINOR", "CI_SERVER_VERSION_PATCH", "CI_TEMPLATE_REGISTRY_HOST", "CI_PAGES_HOSTNAME",
+    "CI_COMMIT_REF_PROTECTED", "CI_GITLAB_FIPS_MODE", "CI_KUBERNETES_ACTIVE", "CI_NODE_INDEX", "CI_JOB_MANUAL",
+}
+
+# Modèles fournis par GitLab (include: template) : nom court -> jobs que verifier-ci connaît.
+MODELES = {
+    "SAST.gitlab-ci.yml": ["semgrep-sast", "kubesec-sast", "gitlab-advanced-sast"],
+    "Code-Quality.gitlab-ci.yml": ["code_quality"],
+    "Dependency-Scanning.gitlab-ci.yml": ["gemnasium-dependency_scanning"],
+    "Secret-Detection.gitlab-ci.yml": ["secret_detection"],
+}
+MODELES_SANS_JOB_CONNU = {
+    "Build.gitlab-ci.yml", "Test.gitlab-ci.yml", "Container-Scanning.gitlab-ci.yml", "DAST.gitlab-ci.yml",
+    "Container-Registry.gitlab-ci.yml", "Terraform.gitlab-ci.yml", "Terraform/Base.gitlab-ci.yml",
+    "MergeRequest-Pipelines.gitlab-ci.yml", "Branch-Pipelines.gitlab-ci.yml", "Pages/HTML.gitlab-ci.yml",
+    "Python.gitlab-ci.yml", "Nodejs.gitlab-ci.yml", "Go.gitlab-ci.yml", "Docker.gitlab-ci.yml",
+    "Auto-DevOps.gitlab-ci.yml", "Dependency-Scanning.latest.gitlab-ci.yml", "SAST-IaC.gitlab-ci.yml",
+}
+PREFIXES_MODELES = ("Jobs/", "Security/", "Workflows/", "Pages/", "Terraform/", "Language/")
+
+NOM_SECRET_RE = re.compile(r"(PASSWORD|PASSWD|SECRET|TOKEN|API_?KEY|PRIVATE_KEY|CREDENTIAL)", re.I)
+NOM_NON_SECRET_RE = re.compile(r"(_URL|_URI|_FILE|_PATH|_NAME|_USER|_ENDPOINT|_ID|_ENABLED|_LABEL|_HOST)$", re.I)
+JETONS_RE = [
+    (re.compile(r"glpat-[A-Za-z0-9_\-]{12,}"), "jeton d'accès GitLab (glpat-…)"),
+    (re.compile(r"ghp_[A-Za-z0-9]{20,}"), "jeton GitHub (ghp_…)"),
+    (re.compile(r"AKIA[0-9A-Z]{16}"), "clé d'accès AWS (AKIA…)"),
+    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"), "clé privée"),
+    (re.compile(r"://[^/\s:@$]+:[^/\s@$]{3,}@"), "mot de passe dans une URL (utilisateur:motdepasse@)"),
+]
+COMMANDES_OUTILS = {
+    # commande -> (fragments acceptés dans le nom de l'image, explication)
+    "npm": ("node",), "npx": ("node",), "node": ("node",), "yarn": ("node",), "pnpm": ("node",),
+    "pip": ("python",), "pip3": ("python",), "python": ("python",), "python3": ("python",),
+    "docker": ("docker",), "go": ("golang", "go:"), "terraform": ("terraform",), "kubectl": ("kubectl",),
+}
+IMAGES_MINIMALES = ("alpine", "busybox", "python", "node", "docker", "golang", "curl", "debian", "ubuntu")
+
+
+AIDE_ASSERTIONS = """Assertions sur la structure du pipeline (toutes combinables, toutes doivent réussir) :
+  --job NOM            le job visé, tel que GitLab le verrait (extends et default appliqués ; un job caché .nom est permis)
+  --cree               le job existe vraiment (ni `when: never`, ni règle qui l'exclut ; voir --contexte, --modifie)
+  --stage S  --image I  --service I  --variable NOM=VAL  --extends PARENT
+  --sans-cle-propre K  le job ne définit pas K lui-même (il l'hérite)
+  --defini-dans F      le job est défini dans le fichier F (après include: local)
+  --lance 'CMD'        before_script, script ou after_script lance CMD ; --avant-script-lance, --script-lance et
+                       --apres-script-lance visent une seule section
+  --ordre 'A' 'B'      les commandes A puis B apparaissent dans cet ordre
+  --stages a,b,c  --include-template T  --include-local CHEMIN  --variable-globale NOM=VAL  --sans-variable-globale NOM
+CMD se lit comme un shell : « docker login :: $CI_REGISTRY_USER » veut une commande qui COMMENCE par `docker login` et
+qui contient `$CI_REGISTRY_USER`. Un commentaire (#), un texte entre guillemets passé à echo ou un autre job ne comptent pas.
+Exigences après `::` : un mot commençant par `-` doit être présent tel quel ; `|| true` demande que la commande soit
+suivie de `|| true` ; tout autre texte doit se trouver dans la commande."""
+
+
+class Probleme:
+    def __init__(self, niveau, fichier, ligne, message):
+        self.niveau, self.fichier, self.ligne, self.message = niveau, fichier, ligne, message
+
+
+class Rapporteur:
+    def __init__(self):
+        self.liste = []
+
+    def erreur(self, fichier, ligne, message):
+        self.liste.append(Probleme("ERREUR", fichier, ligne, message))
+
+    def avertissement(self, fichier, ligne, message):
+        self.liste.append(Probleme("AVERTISSEMENT", fichier, ligne, message))
+
+    def info(self, fichier, ligne, message):
+        self.liste.append(Probleme("INFO", fichier, ligne, message))
+
+    def compte(self, niveau):
+        return sum(1 for p in self.liste if p.niveau == niveau)
+
+
+# ── Lecture du YAML avec numéros de ligne et détection des clés en double ────────────────────────────────────
+class Dico(dict):
+    ligne = 0
+    lignes_cles = None
+
+
+class Chargeur(yaml.SafeLoader):
+    def __init__(self, flux):
+        super().__init__(flux)
+        self.doublons = []
+
+
+def _construire_dico(chargeur, noeud, deep=False):
+    chargeur.flatten_mapping(noeud)
+    dico = Dico()
+    dico.ligne = noeud.start_mark.line + 1
+    dico.lignes_cles = {}
+    for noeud_cle, noeud_valeur in noeud.value:
+        cle = chargeur.construct_object(noeud_cle, deep=True)
+        try:
+            hash(cle)
+        except TypeError:
+            raise yaml.constructor.ConstructorError(
+                None, None, "une clé ne peut pas être une liste ou un bloc", noeud_cle.start_mark
+            )
+        if cle in dico:
+            chargeur.doublons.append((cle, noeud_cle.start_mark.line + 1))
+        dico[cle] = chargeur.construct_object(noeud_valeur, deep=deep)
+        dico.lignes_cles[cle] = noeud_cle.start_mark.line + 1
+    return dico
+
+
+Chargeur.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construire_dico)
+
+AIDES_SYNTAXE = [
+    ("mapping values are not allowed", "un `:` suivi d'une espace n'est pas permis dans un texte non entouré de guillemets : entoure la commande de guillemets, ou écris-la avec `|`"),
+    ("found character '\\t'", "une tabulation est interdite en YAML : indente avec des espaces"),
+    ("could not find expected ':'", "il manque un `:` après un nom de clé, ou l'indentation est incorrecte"),
+    ("did not find expected key", "l'indentation est incohérente avec les lignes précédentes"),
+    ("did not find expected '-' indicator", "l'indentation de la liste est incohérente (les `-` doivent être alignés)"),
+    ("while scanning a quoted scalar", "un guillemet n'est pas refermé"),
+    ("found unexpected end of stream", "un guillemet ou un bloc n'est pas refermé"),
+    ("found undefined alias", "un alias `*nom` est utilisé sans avoir été défini avec `&nom`"),
+    ("found unhashable key", "une clé ne peut pas être une liste ou un bloc"),
+]
+
+
+def lire_yaml(chemin, affiche, rapport):
+    try:
+        with open(chemin, encoding="utf-8") as f:
+            texte = f.read()
+    except OSError as exc:
+        rapport.erreur(affiche, 1, f"fichier illisible : {exc.strerror}")
+        return None
+    if not texte.strip():
+        rapport.erreur(affiche, 1, "le fichier est vide : un pipeline contient au moins un job avec un `script`")
+        return None
+    chargeur = Chargeur(texte)
+    try:
+        data = chargeur.get_single_data()
+    except yaml.YAMLError as exc:
+        marque = getattr(exc, "problem_mark", None)
+        ligne = marque.line + 1 if marque else 1
+        brut = getattr(exc, "problem", None) or str(exc)
+        contexte = getattr(exc, "context", None) or ""
+        aide = next((a for motif, a in AIDES_SYNTAXE if motif in brut or motif in contexte), None)
+        rapport.erreur(affiche, ligne, f"YAML invalide : {brut}" + (f". Piste : {aide}" if aide else ""))
+        return None
+    finally:
+        chargeur.dispose()
+    for cle, ligne in chargeur.doublons:
+        rapport.erreur(
+            affiche, ligne,
+            f"la clé « {cle} » est écrite deux fois dans le même bloc : la seconde écrase silencieusement la première",
+        )
+    if data is None:
+        rapport.erreur(affiche, 1, "le fichier ne contient que des commentaires")
+        return None
+    if not isinstance(data, dict):
+        rapport.erreur(affiche, 1, "la racine du fichier doit être un bloc de clés (stages:, jobs…), pas une liste ou un texte")
+        return None
+    return data
+
+
+def fusion(base, sur):
+    """Fusion profonde comme GitLab : les blocs sont fusionnés, tout le reste (listes, textes) est remplacé."""
+    resultat = Dico(base) if isinstance(base, dict) else Dico()
+    resultat.ligne = getattr(sur, "ligne", 0)
+    resultat.lignes_cles = dict(getattr(base, "lignes_cles", None) or {})
+    resultat.lignes_cles.update(getattr(sur, "lignes_cles", None) or {})
+    for cle, valeur in sur.items():
+        if isinstance(valeur, dict) and isinstance(resultat.get(cle), dict):
+            resultat[cle] = fusion(resultat[cle], valeur)
+        else:
+            resultat[cle] = valeur
+    return resultat
+
+
+# ── Assemblage : include, modèles ────────────────────────────────────────────────────────────────────────────
+class Projet:
+    def __init__(self, racine, rapport):
+        self.racine = racine
+        self.rapport = rapport
+        self.config = Dico()
+        self.origine = {}  # nom de job -> (fichier affiché, ligne)
+        self.modeles = []  # (nom, fichier, ligne)
+        self.jobs_modele = {}  # nom de job -> nom du modèle
+        self.fichiers = []
+        self.inclusions = []  # (genre, valeur) de chaque `include` réellement lu
+
+    def charger(self, chemin, affiche, pile=()):
+        if chemin in pile:
+            self.rapport.erreur(affiche, 1, "boucle d'inclusion : ce fichier s'inclut lui-même (directement ou non)")
+            return Dico()
+        if len(pile) > 10:
+            self.rapport.erreur(affiche, 1, "trop d'inclusions imbriquées (11 niveaux maximum)")
+            return Dico()
+        data = lire_yaml(chemin, affiche, self.rapport)
+        self.fichiers.append(affiche)
+        if data is None:
+            return Dico()
+        cumul = Dico()
+        for inclusion in self._inclusions(data, affiche):
+            cumul = fusion(cumul, self._resoudre(inclusion, affiche, pile + (chemin,)))
+        propre = Dico({k: v for k, v in data.items() if k != "include"})
+        propre.lignes_cles = data.lignes_cles
+        propre.ligne = data.ligne
+        for cle in propre:
+            self.origine[cle] = (affiche, data.lignes_cles.get(cle, 1))
+        return fusion(cumul, propre)
+
+    def _inclusions(self, data, affiche):
+        brut = data.get("include")
+        ligne = data.lignes_cles.get("include", 1) if data.lignes_cles else 1
+        if brut is None:
+            return []
+        if isinstance(brut, (str, dict)):
+            brut = [brut]
+        if not isinstance(brut, list):
+            self.rapport.erreur(affiche, ligne, "`include` doit être un texte, un bloc ou une liste")
+            return []
+        resultat = []
+        for element in brut:
+            if isinstance(element, str):
+                element = Dico({"remote": element} if element.startswith(("http://", "https://")) else {"local": element})
+                element.ligne = ligne
+            if not isinstance(element, dict):
+                self.rapport.erreur(affiche, ligne, "chaque élément d'`include` doit être un texte ou un bloc (local, template, project, remote…)")
+                continue
+            if not getattr(element, "ligne", 0):
+                element.ligne = ligne
+            resultat.append(element)
+        return resultat
+
+    def _resoudre(self, inclusion, affiche, pile):
+        ligne = getattr(inclusion, "ligne", 1)
+        types = [k for k in ("local", "template", "project", "remote", "component") if k in inclusion]
+        if len(types) != 1:
+            connues = ", ".join(("local", "template", "project", "remote", "component"))
+            self.rapport.erreur(affiche, ligne, f"un élément d'`include` doit avoir exactement une de ces clés : {connues}")
+            return Dico()
+        genre = types[0]
+        valeur = inclusion[genre]
+        self.inclusions.append((genre, str(valeur).lstrip("/") if genre == "local" else str(valeur)))
+        if genre == "local":
+            return self._inclure_local(valeur, affiche, ligne, pile)
+        if genre == "template":
+            return self._inclure_modele(valeur, affiche, ligne)
+        self.rapport.info(
+            affiche, ligne,
+            f"`include: {genre}` ne peut pas être résolu hors ligne : son contenu n'est pas vérifié ici",
+        )
+        return Dico()
+
+    def _inclure_local(self, valeur, affiche, ligne, pile):
+        if not isinstance(valeur, str):
+            self.rapport.erreur(affiche, ligne, "`include: local` attend un chemin (texte)")
+            return Dico()
+        relatif = valeur.lstrip("/")
+        trouves = sorted(glob.glob(os.path.join(self.racine, relatif), recursive=True))
+        trouves = [t for t in trouves if os.path.isfile(t)]
+        if not trouves:
+            self.rapport.erreur(
+                affiche, ligne,
+                f"`include: local: {valeur}` : aucun fichier ne correspond (le chemin part de la racine du dépôt, "
+                f"c'est-à-dire du dossier qui contient le .gitlab-ci.yml)",
+            )
+            return Dico()
+        cumul = Dico()
+        for chemin in trouves:
+            cumul = fusion(cumul, self.charger(chemin, os.path.relpath(chemin, self.racine), pile))
+        return cumul
+
+    def _inclure_modele(self, valeur, affiche, ligne):
+        if not isinstance(valeur, str):
+            self.rapport.erreur(affiche, ligne, "`include: template` attend un nom de modèle (texte)")
+            return Dico()
+        court = valeur
+        for prefixe in PREFIXES_MODELES:
+            if court.startswith(prefixe) and court[len(prefixe):] in set(MODELES) | MODELES_SANS_JOB_CONNU:
+                court = court[len(prefixe):]
+                break
+        if court in MODELES:
+            self.modeles.append((valeur, affiche, ligne))
+            cumul = Dico()
+            for job in MODELES[court]:
+                synthetique = Dico({"stage": "test", "script": ["(défini par le modèle)"]})
+                synthetique.lignes_cles = {}
+                cumul[job] = synthetique
+                self.jobs_modele[job] = valeur
+                self.origine.setdefault(job, (affiche, ligne))
+            return cumul
+        if court in MODELES_SANS_JOB_CONNU:
+            self.modeles.append((valeur, affiche, ligne))
+            self.rapport.info(affiche, ligne, f"modèle « {valeur} » : ses jobs ne sont pas connus de verifier-ci, ils ne sont pas vérifiés")
+            return Dico()
+        proches = difflib.get_close_matches(court, list(MODELES) + list(MODELES_SANS_JOB_CONNU), n=1, cutoff=0.8)
+        if proches:
+            self.rapport.erreur(
+                affiche, ligne,
+                f"le modèle « {valeur} » n'existe pas : tu voulais écrire « {proches[0]} » (avec le préfixe Jobs/ ou Security/ ) ?",
+            )
+        else:
+            self.rapport.avertissement(
+                affiche, ligne,
+                f"le modèle « {valeur} » est inconnu de verifier-ci (liste partielle) : vérifie son nom dans la documentation de GitLab",
+            )
+        return Dico()
+
+
+# ── Conditions `if` des rules ────────────────────────────────────────────────────────────────────────────────
+class ErreurCondition(Exception):
+    pass
+
+
+JETON_RE = re.compile(
+    r"""\s*(?:(?P<var>\$[A-Za-z_][A-Za-z0-9_]*)|(?P<chaine>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')"""
+    r"""|(?P<regex>/(?:[^/\\]|\\.)*/[a-z]*)|(?P<op>==|!=|=~|!~|&&|\|\||\(|\))|(?P<nul>null\b))"""
+)
+
+
+def decouper(condition):
+    jetons, pos = [], 0
+    while True:
+        reste = condition[pos:]
+        if not reste.strip():
+            return jetons
+        m = JETON_RE.match(condition, pos)
+        if not m:
+            caractere = reste.lstrip()[0]
+            conseils = {
+                "=": "pour comparer, écris `==` (deux signes)",
+                "&": "le « et » s'écrit `&&`",
+                "|": "le « ou » s'écrit `||`",
+                "!": "la différence s'écrit `!=`",
+            }
+            raise ErreurCondition(
+                f"caractère inattendu « {caractere} »" + (f" : {conseils[caractere]}" if caractere in conseils else "")
+                + (" (les textes comparés sont entre guillemets)" if caractere.isalpha() else "")
+            )
+        genre = m.lastgroup
+        jetons.append((genre, m.group(genre)))
+        pos = m.end()
+
+
+class Evaluateur:
+    def __init__(self, condition, contexte, noms):
+        self.jetons = decouper(condition)
+        if not self.jetons:
+            raise ErreurCondition("la condition est vide")
+        self.i = 0
+        self.contexte = contexte
+        self.noms = noms
+
+    def evaluer(self):
+        valeur = self._ou()
+        if self.i != len(self.jetons):
+            raise ErreurCondition(f"« {self.jetons[self.i][1]} » est inattendu ici (opérateur manquant ou parenthèse en trop)")
+        return bool(valeur)
+
+    def _suivant(self):
+        return self.jetons[self.i] if self.i < len(self.jetons) else (None, None)
+
+    def _ou(self):
+        gauche = self._et()
+        while self._suivant() == ("op", "||"):
+            self.i += 1
+            droite = self._et()
+            gauche = bool(gauche) or bool(droite)
+        return gauche
+
+    def _et(self):
+        gauche = self._comparaison()
+        while self._suivant() == ("op", "&&"):
+            self.i += 1
+            droite = self._comparaison()
+            gauche = bool(gauche) and bool(droite)
+        return gauche
+
+    def _comparaison(self):
+        gauche = self._atome()
+        genre, valeur = self._suivant()
+        if genre == "op" and valeur in ("==", "!=", "=~", "!~"):
+            self.i += 1
+            if valeur in ("=~", "!~"):
+                genre_d, texte = self._suivant()
+                if genre_d != "regex":
+                    raise ErreurCondition(f"après `{valeur}`, écris une expression régulière entre barres obliques : /motif/")
+                self.i += 1
+                try:
+                    motif = re.compile(texte[1:texte.rfind("/")])
+                except re.error as exc:
+                    raise ErreurCondition(f"expression régulière invalide : {exc}")
+                trouve = gauche is not None and motif.search(str(gauche)) is not None
+                return trouve if valeur == "=~" else not trouve
+            droite = self._atome()
+            egal = gauche == droite
+            return egal if valeur == "==" else not egal
+        return gauche
+
+    def _atome(self):
+        genre, valeur = self._suivant()
+        if genre is None:
+            raise ErreurCondition("la condition se termine trop tôt (il manque une valeur après l'opérateur)")
+        self.i += 1
+        if genre == "var":
+            nom = valeur[1:]
+            self.noms.add(nom)
+            return self.contexte.get(nom)
+        if genre == "chaine":
+            return valeur[1:-1]
+        if genre == "nul":
+            return None
+        if genre == "op" and valeur == "(":
+            interieur = self._ou()
+            if self._suivant() != ("op", ")"):
+                raise ErreurCondition("une parenthèse ouvrante n'est pas refermée")
+            self.i += 1
+            return interieur
+        if genre == "regex":
+            raise ErreurCondition("une expression régulière /…/ ne s'utilise qu'après `=~` ou `!~`")
+        raise ErreurCondition(f"« {valeur} » est inattendu ici")
+
+
+def evaluer_condition(condition, contexte, noms=None):
+    return Evaluateur(condition, contexte, noms if noms is not None else set()).evaluer()
+
+
+def motif_changes(motif):
+    sortie, i = "", 0
+    while i < len(motif):
+        if motif.startswith("**/", i):
+            sortie += "(?:.*/)?"
+            i += 3
+        elif motif.startswith("**", i):
+            sortie += ".*"
+            i += 2
+        elif motif[i] == "*":
+            sortie += "[^/]*"
+            i += 1
+        elif motif[i] == "?":
+            sortie += "[^/]"
+            i += 1
+        else:
+            sortie += re.escape(motif[i])
+            i += 1
+    return re.compile("^" + sortie + "$")
+
+
+# ── Analyse du pipeline ──────────────────────────────────────────────────────────────────────────────────────
+def lignes_script(valeur):
+    """Aplatit une valeur script/before_script/after_script en liste de textes."""
+    if isinstance(valeur, str):
+        return [valeur]
+    if isinstance(valeur, list):
+        sortie = []
+        for element in valeur:
+            sortie.extend(lignes_script(element))
+        return sortie
+    return []
+
+
+SEPARATEURS = {";", "&&", "||", "|", "&", "|&"}
+
+
+def commandes_reelles(valeur):
+    """Les commandes réellement lancées par un script YAML : une liste de (mots, suivie_de_ou_true).
+
+    Le script est lu comme le ferait un shell : les commentaires `#`, les guillemets et les séparateurs
+    (`;`, `&&`, `||`, `|`) sont interprétés, donc `echo "docker login"` est une commande `echo`, pas `docker login`.
+    """
+    resultat = []
+    for ligne in lignes_script(valeur):
+        for physique in str(ligne).splitlines():
+            try:
+                lex = shlex.shlex(physique, posix=True, punctuation_chars=True)
+                lex.whitespace_split = True
+                lex.commenters = "#"
+                mots = list(lex)
+            except ValueError:
+                mots = physique.split()
+            courante, suites = [], []
+            for mot in mots + [";"]:
+                if mot in SEPARATEURS:
+                    if courante:
+                        suites.append((courante, mot))
+                    courante = []
+                else:
+                    courante.append(mot)
+            for i, (commande, _) in enumerate(suites):
+                while commande and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", commande[0]):
+                    commande = commande[1:]  # variables d'environnement placées devant la commande
+                if not commande:
+                    continue
+                suivante = suites[i + 1][0] if i + 1 < len(suites) else []
+                ou_vrai = suites[i][1] == "||" and suivante[:1] in (["true"], [":"])
+                resultat.append((commande, ou_vrai))
+    return resultat
+
+
+def commande_correspond(commande, motif):
+    """`motif` = « mots du début :: exigence :: exigence… » ; une exigence commençant par `-` est un mot exact,
+    `|| true` demande que la commande soit suivie de `|| true` (ou `|| :`), les autres sont un morceau de la commande."""
+    mots, ou_vrai = commande
+    morceaux = [m.strip() for m in motif.split("::")]
+    debut = shlex.split(morceaux[0])
+    if mots[:len(debut)] != debut:
+        return False
+    reste = " ".join(mots[len(debut):])
+    for exigence in morceaux[1:]:
+        if exigence == "|| true":
+            if not ou_vrai:
+                return False
+        elif exigence.startswith("-"):
+            if exigence not in mots[len(debut):]:
+                return False
+        elif exigence not in reste:
+            return False
+    return True
+
+
+def proche(nom, candidats, cutoff=0.7):
+    trouve = difflib.get_close_matches(str(nom), [str(c) for c in candidats], n=1, cutoff=cutoff)
+    return trouve[0] if trouve else None
+
+
+class Analyse:
+    def __init__(self, projet, rapport):
+        self.p = projet
+        self.r = rapport
+        self.cfg = projet.config
+        self.stages = None
+        self.jobs = {}  # jobs résolus, non cachés : nom -> Dico
+        self.caches = {}
+        self.heritages = {}
+        self.defauts = Dico()
+        self.variables_globales = {}
+
+    # -- utilitaires de position
+    def pos(self, nom):
+        return self.p.origine.get(nom, ("?", 1))
+
+    def err(self, nom, message, ligne=None):
+        fichier, l0 = self.pos(nom)
+        self.r.erreur(fichier, ligne or l0, f"job « {nom} » : {message}")
+
+    def warn(self, nom, message, ligne=None):
+        fichier, l0 = self.pos(nom)
+        self.r.avertissement(fichier, ligne or l0, f"job « {nom} » : {message}")
+
+    def ligne_cle(self, dico, cle, repli):
+        lignes = getattr(dico, "lignes_cles", None) or {}
+        return lignes.get(cle, repli)
+
+    # -- étapes
+    def analyser(self):
+        self.verifier_globaux()
+        self.rassembler_jobs()
+        for nom in list(self.jobs):
+            self.verifier_job(nom)
+        self.verifier_needs()
+        self.verifier_modeles_et_stages()
+
+    def verifier_globaux(self):
+        fichier = self.p.fichiers[0] if self.p.fichiers else "?"
+        cfg = self.cfg
+        stages = cfg.get("stages")
+        ligne = self.ligne_cle(cfg, "stages", 1)
+        if stages is None:
+            self.stages = list(STAGES_PAR_DEFAUT)
+        elif not isinstance(stages, list) or not stages or not all(isinstance(s, str) for s in stages):
+            self.r.erreur(fichier, ligne, "`stages` doit être une liste de noms de stages (textes), un par ligne précédé d'un tiret")
+            self.stages = list(STAGES_PAR_DEFAUT)
+        else:
+            doubles = sorted({s for s in stages if stages.count(s) > 1})
+            if doubles:
+                self.r.erreur(fichier, ligne, f"`stages` contient deux fois : {', '.join(doubles)}")
+            self.stages = [".pre"] + [s for s in stages if s not in (".pre", ".post")] + [".post"]
+        if cfg.get("default") is not None and not isinstance(cfg.get("default"), dict):
+            self.r.erreur(fichier, self.ligne_cle(cfg, "default", 1), "`default` doit être un bloc")
+        else:
+            self.defauts = Dico(cfg.get("default") or {})
+        for cle in ("image", "services", "before_script", "after_script", "cache"):
+            if cle in cfg and cle not in self.defauts:
+                self.defauts[cle] = cfg[cle]
+        if "types" in cfg:
+            self.r.avertissement(fichier, self.ligne_cle(cfg, "types", 1), "`types` est ancien et supprimé : utilise `stages`")
+        variables = cfg.get("variables")
+        if variables is not None:
+            self.verifier_variables(variables, None, self.ligne_cle(cfg, "variables", 1), fichier)
+            if isinstance(variables, dict):
+                self.variables_globales = {
+                    k: (v.get("value") if isinstance(v, dict) else v) for k, v in variables.items()
+                }
+        if "workflow" in cfg:
+            wf = cfg["workflow"]
+            ligne = self.ligne_cle(cfg, "workflow", 1)
+            if not isinstance(wf, dict):
+                self.r.erreur(fichier, ligne, "`workflow` doit être un bloc (rules, name…)")
+            elif "rules" in wf:
+                self.verifier_regles(wf["rules"], "workflow", fichier, ligne, workflow=True)
+
+    def rassembler_jobs(self):
+        for nom, valeur in self.cfg.items():
+            if nom in MOTS_GLOBAUX:
+                continue
+            fichier, ligne = self.pos(nom)
+            if not isinstance(valeur, dict):
+                proposition = proche(nom, MOTS_GLOBAUX | CLES_JOB, 0.75)
+                aide = f" Tu voulais écrire « {proposition} » ?" if proposition else ""
+                self.r.erreur(
+                    fichier, ligne,
+                    f"« {nom} » n'est ni un mot-clé global connu ni un job (un job est un bloc : un nom, `:`, puis des clés indentées).{aide}",
+                )
+                continue
+            if str(nom).startswith("."):
+                self.caches[nom] = valeur
+            else:
+                self.jobs[nom] = valeur
+        brut = dict(self.jobs)
+        for nom in list(self.jobs):
+            self.jobs[nom] = self.resoudre(nom, brut, (), nom)
+        # Les clés par défaut (default:) complètent les jobs qui ne les définissent pas.
+        for nom, job in self.jobs.items():
+            herite = job.get("inherit")
+            if isinstance(herite, dict) and herite.get("default") is False:
+                continue
+            for cle, valeur in self.defauts.items():
+                if cle in CLES_HERITEES_PAR_DEFAUT and cle not in job:
+                    job[cle] = valeur
+
+    def resoudre(self, nom, brut, pile, racine):
+        source = brut.get(nom, self.caches.get(nom))
+        if source is None:
+            return Dico()
+        if nom in pile:
+            self.err(racine, f"`extends` forme une boucle : {' → '.join(pile + (nom,))}")
+            return Dico(source)
+        parents = source.get("extends")
+        if parents is None:
+            return source
+        if isinstance(parents, str):
+            parents = [parents]
+        if not isinstance(parents, list) or not all(isinstance(p, str) for p in parents):
+            self.err(racine, "`extends` doit être un nom de job (texte) ou une liste de noms")
+            return source
+        self.heritages[nom] = list(parents)
+        base = Dico()
+        for parent in parents:
+            if parent not in brut and parent not in self.caches:
+                proposition = proche(parent, list(brut) + list(self.caches), 0.6)
+                aide = f" Tu voulais écrire « {proposition} » ?" if proposition else ""
+                self.err(
+                    racine,
+                    f"`extends: {parent}` : aucun job ne porte ce nom.{aide} (un modèle caché commence par un point, "
+                    f"par exemple « .node »)",
+                    self.ligne_cle(source, "extends", None),
+                )
+                continue
+            base = fusion(base, self.resoudre(parent, brut, pile + (nom,), racine))
+        propre = Dico({k: v for k, v in source.items() if k != "extends"})
+        propre.lignes_cles = source.lignes_cles
+        resultat = fusion(base, propre)
+        resultat["extends"] = parents
+        return resultat
+
+    # -- vérification d'un job
+    def verifier_job(self, nom):
+        job = self.jobs[nom]
+        modele = nom in self.p.jobs_modele
+        # Clés inconnues
+        for cle in job:
+            if cle not in CLES_JOB:
+                proposition = proche(cle, CLES_JOB, 0.7)
+                aide = f" Tu voulais écrire « {proposition} » ?" if proposition else ""
+                self.err(nom, f"la clé « {cle} » n'existe pas dans un job.{aide}", self.ligne_cle(job, cle, None))
+        # Stage
+        stage = job.get("stage", "test")
+        if not isinstance(stage, str):
+            self.err(nom, "`stage` doit être un nom de stage (texte)", self.ligne_cle(job, "stage", None))
+        elif stage not in self.stages and not modele:
+            declares = ", ".join(s for s in self.stages if s not in (".pre", ".post")) or "aucun"
+            proposition = proche(stage, self.stages, 0.6)
+            aide = f" Tu voulais écrire « {proposition} » ?" if proposition else f" Ajoute « {stage} » à `stages`, ou choisis un stage déclaré."
+            implicite = "" if "stage" in job else " (sans `stage:`, un job est rangé dans le stage « test »)"
+            self.err(
+                nom,
+                f"le stage « {stage} » n'est pas déclaré dans `stages`{implicite}. Stages déclarés : {declares}.{aide}",
+                self.ligne_cle(job, "stage", None),
+            )
+        # script
+        a_script = "script" in job
+        if not a_script and not any(k in job for k in ("trigger", "run")) and not modele:
+            self.err(nom, "il n'y a pas de `script` : un job doit dire quelles commandes lancer (ou hériter d'un job qui le fait avec `extends`)")
+        for cle in ("script", "before_script", "after_script"):
+            if cle in job:
+                self.verifier_commandes(nom, job, cle)
+        if a_script and not lignes_script(job["script"]) and not modele:
+            self.err(nom, "`script` est vide", self.ligne_cle(job, "script", None))
+        # image, services
+        image = job.get("image")
+        if image is not None and not (isinstance(image, str) or (isinstance(image, dict) and isinstance(image.get("name"), str))):
+            self.err(nom, "`image` doit être un nom d'image (texte) ou un bloc avec `name:`", self.ligne_cle(job, "image", None))
+        services = job.get("services")
+        if services is not None and not (
+            isinstance(services, list) and all(isinstance(s, str) or (isinstance(s, dict) and "name" in s) for s in services)
+        ):
+            self.err(nom, "`services` doit être une liste de noms d'images (ou de blocs avec `name:`)", self.ligne_cle(job, "services", None))
+        # when, allow_failure
+        quand = job.get("when")
+        if quand is not None and quand not in QUAND_JOB:
+            self.err(nom, f"`when: {quand}` est invalide ; valeurs possibles : {', '.join(sorted(QUAND_JOB))}", self.ligne_cle(job, "when", None))
+        if quand == "delayed" and "start_in" not in job:
+            self.err(nom, "`when: delayed` demande aussi `start_in` (par exemple `start_in: 5 minutes`)")
+        af = job.get("allow_failure")
+        if af is not None and not isinstance(af, (bool, dict)):
+            self.err(nom, "`allow_failure` vaut `true` ou `false`", self.ligne_cle(job, "allow_failure", None))
+        # only/except et rules
+        if ("only" in job or "except" in job) and "rules" in job:
+            self.err(nom, "`rules` ne peut pas être combiné avec `only` / `except` : garde seulement `rules`")
+        elif "only" in job or "except" in job:
+            self.warn(nom, "`only` / `except` sont anciens : utilise `rules`")
+        if "rules" in job:
+            self.verifier_regles(job["rules"], nom, *self.pos(nom), ligne_job=self.ligne_cle(job, "rules", None))
+        # variables, artifacts, cache, needs
+        if "variables" in job:
+            fichier, l0 = self.pos(nom)
+            self.verifier_variables(job["variables"], nom, self.ligne_cle(job, "variables", l0), fichier)
+        if "artifacts" in job:
+            self.verifier_artefacts(nom, job)
+        if "cache" in job:
+            cache = job["cache"]
+            blocs = cache if isinstance(cache, list) else [cache]
+            for bloc in blocs:
+                if not isinstance(bloc, dict):
+                    self.err(nom, "`cache` doit être un bloc (`key`, `paths`…)", self.ligne_cle(job, "cache", None))
+                elif "paths" in bloc and not isinstance(bloc["paths"], list):
+                    self.err(nom, "`cache: paths` doit être une liste de chemins", self.ligne_cle(job, "cache", None))
+        if "tags" in job and not (isinstance(job["tags"], list) and all(isinstance(t, str) for t in job["tags"])):
+            self.err(nom, "`tags` doit être une liste de textes", self.ligne_cle(job, "tags", None))
+        if "trigger" in job and isinstance(job["trigger"], dict) and not any(k in job["trigger"] for k in ("project", "include")):
+            self.err(nom, "`trigger` demande `project` ou `include`")
+        if not modele:
+            self.verifier_docker(nom, job)
+            self.verifier_outils(nom, job)
+            self.verifier_secrets(nom, job)
+            self.verifier_variables_connues(nom, job)
+
+    def verifier_commandes(self, nom, job, cle):
+        valeur = job[cle]
+        ligne = self.ligne_cle(job, cle, None)
+
+        def parcourir(element, imbrique=False):
+            if isinstance(element, str):
+                return
+            if isinstance(element, list):
+                for sous in element:
+                    parcourir(sous, True)
+                return
+            if isinstance(element, dict):
+                texte = ", ".join(f"{k}: {v}" for k, v in list(element.items())[:1])
+                self.err(
+                    nom,
+                    f"dans `{cle}`, YAML a lu « {texte} … » comme un petit bloc clé/valeur, pas comme une commande. "
+                    f"Cause habituelle : un `: ` (deux-points suivi d'une espace) dans la commande. "
+                    f"Entoure toute la commande de guillemets, ou écris-la avec `- |`",
+                    ligne,
+                )
+                return
+            self.err(
+                nom,
+                f"dans `{cle}`, la valeur « {element} » n'est pas un texte (YAML l'a lue comme "
+                f"{'un booléen' if isinstance(element, bool) else 'un nombre' if isinstance(element, (int, float)) else 'une valeur vide'}) : "
+                f"entoure la commande de guillemets",
+                ligne,
+            )
+
+        if isinstance(valeur, (str, list)):
+            parcourir(valeur)
+        elif valeur is None:
+            self.err(nom, f"`{cle}` est vide", ligne)
+        else:
+            self.err(nom, f"`{cle}` doit être un texte ou une liste de commandes", ligne)
+
+    def verifier_regles(self, regles, nom, fichier, ligne, workflow=False, ligne_job=None):
+        etiquette = "workflow:rules" if workflow else f"job « {nom} », rules"
+        emet = (lambda m: self.r.erreur(fichier, ligne_job or ligne, f"{etiquette} : {m}"))
+        if not isinstance(regles, list) or not regles:
+            emet("`rules` doit être une liste non vide de règles (chacune commence par un tiret)")
+            return
+        for index, regle in enumerate(regles, start=1):
+            if not isinstance(regle, dict):
+                emet(f"la règle {index} doit être un bloc (`if:`, `when:`…)")
+                continue
+            for cle in regle:
+                if cle not in CLES_REGLE:
+                    proposition = proche(cle, CLES_REGLE, 0.6)
+                    emet(f"la règle {index} contient la clé « {cle} » qui n'existe pas" + (f" (« {proposition} » ?)" if proposition else ""))
+            quand = regle.get("when")
+            if quand is not None and quand not in QUAND_JOB:
+                emet(f"la règle {index} a un `when: {quand}` invalide ; valeurs possibles : {', '.join(sorted(QUAND_JOB))}")
+            if "if" in regle:
+                if not isinstance(regle["if"], str):
+                    emet(f"la règle {index} : `if` doit être un texte (entoure la condition de guillemets simples)")
+                else:
+                    noms = set()
+                    try:
+                        evaluer_condition(regle["if"], {}, noms)
+                    except ErreurCondition as exc:
+                        emet(f"la règle {index} a une condition invalide ({regle['if']}) : {exc}")
+                    for variable in sorted(noms):
+                        self.signaler_variable_inconnue(variable, fichier, ligne_job or ligne, f"{etiquette}, règle {index}")
+            if "changes" in regle:
+                changes = regle["changes"]
+                chemins = changes.get("paths") if isinstance(changes, dict) else changes
+                if not isinstance(chemins, list) or not all(isinstance(c, str) for c in chemins):
+                    emet(f"la règle {index} : `changes` doit être une liste de chemins (textes)")
+            sans_condition = not any(k in regle for k in ("if", "changes", "exists"))
+            if sans_condition and index < len(regles):
+                self.r.avertissement(
+                    fichier, ligne_job or ligne,
+                    f"{etiquette} : la règle {index} n'a aucune condition, elle correspond donc toujours : "
+                    f"les {len(regles) - index} règle(s) suivante(s) ne seront jamais lues",
+                )
+
+    def signaler_variable_inconnue(self, variable, fichier, ligne, contexte):
+        if variable in VARIABLES_PREDEFINIES or variable in self.variables_globales:
+            return
+        if not (variable.startswith("CI_") or variable.startswith("GITLAB_")):
+            return
+        proposition = proche(variable, VARIABLES_PREDEFINIES, 0.85)
+        if proposition:
+            self.r.avertissement(
+                fichier, ligne,
+                f"{contexte} : la variable ${variable} n'existe pas, elle sera vide. Tu voulais écrire ${proposition} ?",
+            )
+        else:
+            self.r.avertissement(
+                fichier, ligne,
+                f"{contexte} : la variable ${variable} n'est pas une variable prédéfinie de GitLab connue de verifier-ci "
+                f"(liste partielle) : vérifie l'orthographe",
+            )
+
+    def verifier_variables(self, variables, nom, ligne, fichier):
+        etiquette = f"job « {nom} », variables" if nom else "variables"
+        if not isinstance(variables, dict):
+            self.r.erreur(fichier, ligne, f"{etiquette} : doit être un bloc `NOM: valeur`")
+            return
+        for cle, valeur in variables.items():
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", str(cle)):
+                self.r.erreur(fichier, ligne, f"{etiquette} : « {cle} » n'est pas un nom de variable valide (lettres, chiffres et _, sans commencer par un chiffre)")
+            brute = valeur.get("value") if isinstance(valeur, dict) else valeur
+            if isinstance(valeur, (list,)) or (isinstance(valeur, dict) and not isinstance(valeur.get("value", ""), (str, int, float, bool))):
+                self.r.erreur(fichier, ligne, f"{etiquette} : la valeur de « {cle} » doit être un texte, un nombre ou un booléen")
+                continue
+            if (
+                isinstance(brute, str)
+                and brute
+                and NOM_SECRET_RE.search(str(cle))
+                and not NOM_NON_SECRET_RE.search(str(cle))
+                and not re.fullmatch(r"\$\{?[A-Za-z_][A-Za-z0-9_]*\}?", brute)
+                and brute.lower() not in ("true", "false")
+            ):
+                self.r.erreur(
+                    fichier, ligne,
+                    f"{etiquette} : « {cle} » ressemble à un secret et sa valeur est écrite EN CLAIR dans le fichier "
+                    f"(donc dans l'historique Git). Crée la variable dans Settings > CI/CD > Variables et retire la valeur d'ici",
+                )
+
+    def verifier_artefacts(self, nom, job):
+        artefacts = job["artifacts"]
+        ligne = self.ligne_cle(job, "artifacts", None)
+        if not isinstance(artefacts, dict):
+            self.err(nom, "`artifacts` doit être un bloc (`paths`, `expire_in`…)", ligne)
+            return
+        for cle in artefacts:
+            if cle not in CLES_ARTEFACTS:
+                proposition = proche(cle, CLES_ARTEFACTS, 0.6)
+                self.err(nom, f"`artifacts` : la clé « {cle} » n'existe pas" + (f" (« {proposition} » ?)" if proposition else ""), ligne)
+        if "paths" in artefacts and not (isinstance(artefacts["paths"], list) and all(isinstance(p, str) for p in artefacts["paths"])):
+            self.err(nom, "`artifacts: paths` doit être une liste de chemins", ligne)
+
+    def verifier_needs(self):
+        existants = set(self.jobs)
+        graphe = {}
+        for nom, job in self.jobs.items():
+            besoins = job.get("needs")
+            if besoins is None:
+                continue
+            ligne = self.ligne_cle(job, "needs", None)
+            if isinstance(besoins, dict):
+                besoins = besoins.get("job") and [besoins] or []
+            if not isinstance(besoins, list):
+                self.err(nom, "`needs` doit être une liste de noms de jobs", ligne)
+                continue
+            graphe[nom] = []
+            for besoin in besoins:
+                cible = besoin.get("job") if isinstance(besoin, dict) else besoin
+                optionnel = isinstance(besoin, dict) and besoin.get("optional") is True
+                if isinstance(besoin, dict) and ("pipeline" in besoin or "project" in besoin):
+                    continue
+                if not isinstance(cible, str):
+                    self.err(nom, "chaque élément de `needs` est un nom de job (texte)", ligne)
+                    continue
+                if cible == nom:
+                    self.err(nom, "`needs` désigne le job lui-même", ligne)
+                elif cible not in existants:
+                    if not optionnel:
+                        proposition = proche(cible, existants, 0.6)
+                        self.err(
+                            nom,
+                            f"`needs: {cible}` : aucun job ne porte ce nom" + (f". Tu voulais écrire « {proposition} » ?" if proposition else "")
+                            + " (ou ajoute `optional: true`)",
+                            ligne,
+                        )
+                else:
+                    graphe[nom].append(cible)
+                    s_cible = self.jobs[cible].get("stage", "test")
+                    s_job = job.get("stage", "test")
+                    if s_cible in self.stages and s_job in self.stages and self.stages.index(s_cible) > self.stages.index(s_job):
+                        self.err(nom, f"`needs: {cible}` pointe vers un job d'un stage ultérieur ({s_cible}) : un job ne peut pas attendre un job qui vient après lui", ligne)
+        etat = {}
+
+        def visite(n, chemin):
+            etat[n] = 1
+            for suivant in graphe.get(n, []):
+                if etat.get(suivant) == 1:
+                    self.err(n, f"`needs` forme une boucle : {' → '.join(chemin + [n, suivant])}")
+                elif suivant not in etat:
+                    visite(suivant, chemin + [n])
+            etat[n] = 2
+
+        for n in graphe:
+            if n not in etat:
+                visite(n, [])
+
+    def verifier_modeles_et_stages(self):
+        if self.p.modeles and isinstance(self.cfg.get("stages"), list) and "test" not in self.cfg["stages"]:
+            fichier, ligne = self.pos("stages")
+            noms = ", ".join(sorted({m for m, _, _ in self.p.modeles}))
+            self.r.erreur(
+                fichier, ligne,
+                f"les modèles inclus ({noms}) rangent leurs jobs dans le stage « test », mais `stages` ne le déclare pas : "
+                f"GitLab refusera le pipeline (« chosen stage does not exist »). Ajoute « test » à `stages`",
+            )
+
+    # -- heuristiques pédagogiques
+    def commandes_du_job(self, job):
+        lignes = []
+        for cle in ("before_script", "script", "after_script"):
+            lignes.extend(lignes_script(job.get(cle)))
+        return lignes
+
+    def verifier_docker(self, nom, job):
+        lignes = self.commandes_du_job(job)
+        docker = [l for l in lignes if re.search(r"(^|[\s;&|(])docker\s+(build|push|pull|login|run|compose|buildx)\b", l)]
+        if not docker:
+            return
+        variables = {**self.variables_globales}
+        if isinstance(job.get("variables"), dict):
+            variables.update(job["variables"])
+        services = job.get("services") or []
+        noms_services = [s if isinstance(s, str) else (s.get("name") or "") for s in services if isinstance(s, (str, dict))]
+        a_dind = any("dind" in str(s) for s in noms_services)
+        if not a_dind or "DOCKER_HOST" not in variables:
+            manque = []
+            if not a_dind:
+                manque.append("`services: [docker:dind]`")
+            if "DOCKER_HOST" not in variables:
+                manque.append("`DOCKER_HOST: tcp://docker:2375`")
+            self.warn(
+                nom,
+                f"le script lance `docker` mais il manque {' et '.join(manque)} : le conteneur du job ne contient que le "
+                f"client Docker, il lui faut un démon (message typique : « Cannot connect to the Docker daemon »)",
+            )
+        pousse = any(re.search(r"docker\s+push\b", l) for l in docker)
+        if pousse and not any(re.search(r"docker\s+login\b", l) for l in docker):
+            self.warn(nom, "le script fait `docker push` sans `docker login` avant : le registry répondra « unauthorized »")
+        for l in docker:
+            if re.search(r"docker\s+push\s+\S*[a-z]\s*$", l) and ":" not in l.split("push", 1)[1] and "$" not in l:
+                self.warn(nom, f"`{l.strip()}` : l'image poussée n'a pas de nom de registry ni de tag ; utilise \"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG\"")
+        if any(re.search(r"docker\s+build\b", l) for l in docker) and not any(re.search(r"docker\s+build\b.*(\s-t\s|--tag)", l) for l in docker):
+            self.warn(nom, "`docker build` sans `-t` : l'image n'aura pas de nom et ne pourra pas être poussée")
+
+    def verifier_outils(self, nom, job):
+        image = job.get("image")
+        image = image.get("name") if isinstance(image, dict) else image
+        if not isinstance(image, str):
+            return
+        lignes = self.commandes_du_job(job)
+        installe = any(re.search(r"\b(apk add|apt-get install|apt install|pip install)\b", l) for l in lignes)
+        depot = image.split(":")[0].rsplit("/", 1)[-1].lower()
+        if not any(depot.startswith(m) or m in image.lower() for m in IMAGES_MINIMALES):
+            return
+        vus = set()
+        for l in lignes:
+            for morceau in re.split(r"&&|\|\||;|\|", l):
+                mots = morceau.split()
+                while mots and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=\S*", mots[0]):
+                    mots = mots[1:]
+                if not mots:
+                    continue
+                commande = mots[0]
+                if commande in COMMANDES_OUTILS and commande not in vus:
+                    vus.add(commande)
+                    acceptes = COMMANDES_OUTILS[commande]
+                    if not any(a in image.lower() for a in acceptes) and not (installe and commande not in ("docker",)):
+                        self.warn(
+                            nom,
+                            f"le script lance `{commande}` mais l'image `{image}` ne le contient sans doute pas : le log dirait "
+                            f"« {commande}: not found » et « exit code 127 ». Choisis une `image` qui contient l'outil "
+                            f"({' / '.join(acceptes)}…) ou installe-le avant",
+                        )
+
+    def verifier_secrets(self, nom, job):
+        for l in self.commandes_du_job(job):
+            for libelle in [lib for motif, lib in JETONS_RE if motif.search(l)]:
+                self.err(nom, f"une commande contient un secret en clair ({libelle})")
+            affiche = re.search(r"(^|[\s;&|(])(echo|printf|cat|print)\s", l)
+            if affiche and "--password-stdin" not in l:
+                for variable in re.findall(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)", l):
+                    if NOM_SECRET_RE.search(variable) and not NOM_NON_SECRET_RE.search(variable):
+                        self.warn(
+                            nom,
+                            f"`{l.strip()}` écrit la valeur de ${variable} dans le log du job. Même masquée, une valeur peut fuiter "
+                            f"transformée (base64…) ; teste plutôt sa présence avec `test -n \"${variable}\"`",
+                        )
+            if re.match(r"\s*(env|printenv|export -p|set -x)\s*(\||$|>)", l) or re.match(r"\s*set\s+-[a-z]*x", l):
+                self.warn(nom, f"`{l.strip()}` affiche toutes les variables (ou toutes les commandes, valeurs comprises) dans le log : les secrets risquent d'y apparaître")
+
+    def verifier_variables_connues(self, nom, job):
+        fichier, ligne = self.pos(nom)
+        connues = set(self.variables_globales)
+        if isinstance(job.get("variables"), dict):
+            connues |= set(job["variables"])
+        vues = set()
+        for l in self.commandes_du_job(job):
+            for variable in re.findall(r"\$\{?([A-Z][A-Z0-9_]*)", l):
+                if variable in connues or variable in vues:
+                    continue
+                vues.add(variable)
+                self.signaler_variable_inconnue(variable, fichier, ligne, f"job « {nom} »")
+
+    # -- secrets en clair n'importe où
+    def jetons_en_clair(self):
+        fichier = self.p.fichiers[0] if self.p.fichiers else "?"
+
+        def parcourir(valeur):
+            if isinstance(valeur, str):
+                yield valeur
+            elif isinstance(valeur, dict):
+                for v in valeur.values():
+                    yield from parcourir(v)
+            elif isinstance(valeur, list):
+                for v in valeur:
+                    yield from parcourir(v)
+
+        deja = set()
+        for texte in parcourir(self.cfg):
+            for motif, libelle in JETONS_RE:
+                if motif.search(texte) and libelle not in deja:
+                    deja.add(libelle)
+                    self.r.erreur(fichier, 1, f"le fichier contient un secret en clair : {libelle}. Révoque-le s'il est réel, puis passe par une variable CI/CD du projet")
+
+    # -- assertions sur la structure (aucune lecture du texte du fichier)
+    def trouver_job(self, nom):
+        if nom in self.jobs:
+            return self.jobs[nom]
+        return self.caches.get(nom)
+
+    def decision_job(self, nom, contexte, modifies):
+        """(créé ?, raison) : le job existerait-il dans ce contexte (workflow:rules, rules, when: never) ?"""
+        if nom not in self.jobs:
+            return False, "ce n'est pas un job (un job caché, commençant par un point, n'est jamais lancé)"
+        ctx = {**{k: (v.get("value") if isinstance(v, dict) else v) for k, v in self.variables_globales.items() if v is not None}, **contexte}
+        workflow = self.cfg.get("workflow")
+        if isinstance(workflow, dict) and isinstance(workflow.get("rules"), list):
+            decision = self.premiere_regle(workflow["rules"], ctx, modifies)
+            if decision is None or decision[1] == "never":
+                return False, "workflow:rules empêche le pipeline"
+        job = self.jobs[nom]
+        regles = job.get("rules")
+        if isinstance(regles, list):
+            decision = self.premiere_regle(regles, ctx, modifies)
+            if decision is None:
+                return False, "aucune règle `rules` ne correspond"
+            quand = decision[1] or job.get("when") or "on_success"
+        else:
+            quand = job.get("when") or "on_success"
+        if quand == "never":
+            return False, "`when: never`"
+        return True, ""
+
+    def asserter(self, args, contexte):
+        """Évalue les assertions de la ligne de commande ; retourne la liste des messages d'échec."""
+        echecs = []
+        if args.stages is not None:
+            attendus = [s.strip() for s in args.stages.split(",")]
+            reels = [s for s in (self.stages or []) if s not in (".pre", ".post")]
+            if reels != attendus:
+                echecs.append(f"stages : {', '.join(reels) or '(aucun)'} au lieu de {', '.join(attendus)}")
+        inclus = {(g, v) for g, v in self.p.inclusions}
+        for valeur in args.include_template:
+            if ("template", valeur) not in inclus:
+                echecs.append(f"`include: template: {valeur}` n'est pas déclaré")
+        for valeur in args.include_local:
+            if ("local", valeur.lstrip("/")) not in inclus:
+                echecs.append(f"`include: local: {valeur}` n'est pas déclaré")
+        for element in args.variable_globale:
+            nom, _, valeur = element.partition("=")
+            reelle = self.variables_globales.get(nom)
+            if reelle is None or str(reelle) != valeur:
+                echecs.append(f"variable globale {nom} : {'absente' if reelle is None else repr(reelle)}, attendu {valeur!r}")
+        for nom in args.sans_variable_globale:
+            if nom in self.variables_globales:
+                echecs.append(f"la variable globale {nom} ne devrait pas être définie")
+        if not args.job:
+            return echecs
+        job = self.trouver_job(args.job)
+        if job is None:
+            return echecs + [f"aucun job « {args.job} » dans le pipeline"]
+        j = f"job « {args.job} »"
+        if args.cree:
+            cree, raison = self.decision_job(args.job, contexte, args.modifie)
+            if not cree:
+                echecs.append(f"{j} ne serait pas créé : {raison}")
+        if args.stage is not None and job.get("stage", "test") != args.stage:
+            echecs.append(f"{j} : stage {job.get('stage', 'test')} au lieu de {args.stage}")
+        if args.image is not None:
+            image = job.get("image")
+            image = image.get("name") if isinstance(image, dict) else image
+            if image != args.image:
+                echecs.append(f"{j} : image {image!r} au lieu de {args.image!r}")
+        for service in args.service:
+            noms = [s.get("name") if isinstance(s, dict) else s for s in (job.get("services") or []) if isinstance(s, (str, dict))]
+            if service not in noms:
+                echecs.append(f"{j} : le service {service} n'est pas déclaré dans `services`")
+        variables = {**self.variables_globales}
+        if isinstance(job.get("variables"), dict):
+            variables.update({k: (v.get("value") if isinstance(v, dict) else v) for k, v in job["variables"].items()})
+        for element in args.variable:
+            nom, _, valeur = element.partition("=")
+            if nom not in variables or str(variables[nom]) != valeur:
+                echecs.append(f"{j} : variable {nom} {'absente' if nom not in variables else repr(variables[nom])}, attendu {valeur!r}")
+        for parent in args.extends:
+            if parent not in (job.get("extends") or []):
+                echecs.append(f"{j} n'hérite pas de {parent} (`extends`)")
+        brut = self.cfg.get(args.job)
+        for cle in args.sans_cle_propre:
+            if isinstance(brut, dict) and cle in brut:
+                echecs.append(f"{j} définit lui-même `{cle}` (il devrait l'hériter)")
+        if args.defini_dans is not None:
+            fichier = self.p.origine.get(args.job, ("?", 0))[0]
+            if os.path.normpath(fichier) != os.path.normpath(args.defini_dans):
+                echecs.append(f"{j} est défini dans {fichier}, pas dans {args.defini_dans}")
+        sections = {"avant": ("before_script",), "script": ("script",), "apres": ("after_script",),
+                    "toutes": ("before_script", "script", "after_script")}
+        for portee, motifs in (("avant", args.avant_script_lance), ("script", args.script_lance),
+                               ("apres", args.apres_script_lance), ("toutes", args.lance)):
+            commandes = []
+            for cle in sections[portee]:
+                commandes += commandes_reelles(job.get(cle))
+            for motif in motifs:
+                if not any(commande_correspond(c, motif) for c in commandes):
+                    nom_section = {"avant": "before_script", "script": "script", "apres": "after_script",
+                                   "toutes": "before_script/script/after_script"}[portee]
+                    echecs.append(f"{j} : aucune commande réelle de {nom_section} ne correspond à « {motif} »")
+        if args.ordre:
+            toutes = []
+            for cle in sections["toutes"]:
+                toutes += commandes_reelles(job.get(cle))
+            positions = []
+            for motif in args.ordre:
+                trouvees = [i for i, c in enumerate(toutes) if commande_correspond(c, motif)]
+                positions.append(trouvees[0] if trouvees else None)
+            if None in positions or positions != sorted(positions) or len(set(positions)) != len(positions):
+                echecs.append(f"{j} : les commandes ne sont pas dans l'ordre « {' » puis « '.join(args.ordre)} »")
+        return echecs
+
+    # -- sorties
+    def ordre_jobs(self):
+        def cle(nom):
+            stage = self.jobs[nom].get("stage", "test")
+            return self.stages.index(stage) if stage in self.stages else len(self.stages)
+        return sorted(self.jobs, key=cle)
+
+    def montrer(self):
+        visibles = [s for s in self.stages if s not in (".pre", ".post") or any(self.jobs[j].get("stage") == s for j in self.jobs)]
+        print("stages : " + ", ".join(visibles))
+        for valeur, _, _ in self.p.modeles:
+            jobs = [j for j, m in self.p.jobs_modele.items() if m == valeur]
+            print(f"modèle {valeur} : ajoute {', '.join(jobs) if jobs else '(jobs inconnus de verifier-ci)'}")
+        for nom in self.ordre_jobs():
+            job = self.jobs[nom]
+            image = job.get("image")
+            image = image.get("name") if isinstance(image, dict) else image
+            champs = [f"[{job.get('stage', 'test')}] {nom}"]
+            if image:
+                champs.append(f"image={image}")
+            if job.get("extends"):
+                champs.append("extends=" + ",".join(job["extends"]))
+            if isinstance(job.get("rules"), list):
+                champs.append(f"rules={len(job['rules'])}")
+            if job.get("when"):
+                champs.append(f"when={job['when']}")
+            if job.get("needs"):
+                champs.append("needs=" + ",".join(str(b.get("job") if isinstance(b, dict) else b) for b in job["needs"]) if isinstance(job["needs"], list) else "needs")
+            if nom in self.p.jobs_modele:
+                champs.append("(modèle)")
+            print("  ".join(champs))
+
+    def simuler(self, contexte, modifies):
+        ctx = {**{k: (v.get("value") if isinstance(v, dict) else v) for k, v in self.variables_globales.items() if v is not None}, **contexte}
+        print("contexte : " + (" ".join(f"{k}={v}" for k, v in sorted(contexte.items())) or "(vide)")
+              + ("  fichiers modifiés : " + ", ".join(modifies) if modifies else ""))
+        workflow = (self.cfg.get("workflow") or {}).get("rules") if isinstance(self.cfg.get("workflow"), dict) else None
+        if isinstance(workflow, list):
+            decision = self.premiere_regle(workflow, ctx, modifies)
+            if decision is None or decision[1] == "never":
+                print("aucun pipeline n'est créé : workflow:rules ne l'autorise pas")
+                return
+        for nom in self.ordre_jobs():
+            job = self.jobs[nom]
+            stage = job.get("stage", "test")
+            regles = job.get("rules")
+            if isinstance(regles, list):
+                decision = self.premiere_regle(regles, ctx, modifies)
+                if decision is None:
+                    print(f"- {nom} : aucune règle ne correspond")
+                    continue
+                numero, quand = decision
+                quand = quand or job.get("when") or "on_success"
+                if quand == "never":
+                    print(f"- {nom} : exclu par la règle {numero} (when: never)")
+                    continue
+            else:
+                quand = job.get("when") or "on_success"
+                if quand == "never":
+                    print(f"- {nom} : when: never")
+                    continue
+            suffixe = " (manuel)" if quand == "manual" else " (retardé)" if quand == "delayed" else ""
+            if nom in self.p.jobs_modele:
+                suffixe += " (règles du modèle non simulées)"
+            print(f"+ [{stage}] {nom}{suffixe}")
+
+    def premiere_regle(self, regles, ctx, modifies):
+        for numero, regle in enumerate(regles, start=1):
+            if not isinstance(regle, dict):
+                continue
+            try:
+                if "if" in regle and isinstance(regle["if"], str) and not evaluer_condition(regle["if"], ctx):
+                    continue
+            except ErreurCondition:
+                continue
+            if "changes" in regle:
+                changes = regle["changes"]
+                chemins = changes.get("paths", []) if isinstance(changes, dict) else changes
+                motifs = [motif_changes(c) for c in chemins if isinstance(c, str)]
+                if not any(m.match(f) for m in motifs for f in modifies):
+                    continue
+            if "exists" in regle:
+                existants = regle["exists"] if isinstance(regle["exists"], list) else regle["exists"].get("paths", []) if isinstance(regle["exists"], dict) else []
+                if not any(glob.glob(os.path.join(self.p.racine, str(e)), recursive=True) for e in existants):
+                    continue
+            return numero, regle.get("when")
+        return None
+
+
+# ── Petits outils annexes ────────────────────────────────────────────────────────────────────────────────────
+def slug(texte):
+    s = re.sub(r"[^a-z0-9]", "-", texte.lower())[:63]
+    return s.strip("-")
+
+
+def masquable(valeur):
+    raisons = []
+    if len(valeur) < 8:
+        raisons.append(f"trop courte ({len(valeur)} caractères, il en faut au moins 8)")
+    if "\n" in valeur:
+        raisons.append("sur plusieurs lignes")
+    if " " in valeur:
+        raisons.append("elle contient une espace")
+    interdits = sorted({c for c in valeur if not re.fullmatch(r"[A-Za-z0-9+/=@:.~]", c) and c not in " \n"})
+    if interdits:
+        raisons.append("caractères non autorisés : " + " ".join(interdits))
+    return raisons
+
+
+def afficher_probleme(p, rapport_fichiers):
+    emplacement = f"ligne {p.ligne}" if len(rapport_fichiers) <= 1 else f"{p.fichier}, ligne {p.ligne}"
+    print(f"{p.niveau:<13} ({emplacement}) : {p.message}")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="verifier-ci", description="Vérifie la structure d'un .gitlab-ci.yml (hors ligne ; ce n'est pas un runner).")
+    ap.add_argument("fichier", nargs="?", default=".gitlab-ci.yml")
+    ap.add_argument("--strict", action="store_true", help="les avertissements font aussi échouer")
+    ap.add_argument("--montrer", action="store_true", help="affiche le pipeline reconstitué")
+    ap.add_argument("--contexte", action="append", default=[], metavar="NOM=VALEUR", help="simule les rules dans ce contexte")
+    ap.add_argument("--modifie", action="append", default=[], metavar="CHEMIN", help="fichier modifié (pour changes:)")
+    ap.add_argument("--slug", metavar="TEXTE", help="calcule $CI_COMMIT_REF_SLUG")
+    ap.add_argument("--masquable", metavar="VALEUR", help="dit si GitLab accepterait de masquer cette valeur")
+    gr = ap.add_argument_group("assertions sur la structure lue (voir --aide-assertions)")
+    gr.add_argument("--aide-assertions", action="store_true")
+    gr.add_argument("--job", metavar="NOM", help="job (résolu : extends et default appliqués) visé par les assertions")
+    gr.add_argument("--cree", action="store_true", help="le job existerait (avec --contexte/--modifie éventuels)")
+    gr.add_argument("--stage", metavar="STAGE")
+    gr.add_argument("--image", metavar="IMAGE")
+    gr.add_argument("--service", action="append", default=[], metavar="IMAGE")
+    gr.add_argument("--variable", action="append", default=[], metavar="NOM=VALEUR", help="variable effective du job")
+    gr.add_argument("--extends", action="append", default=[], metavar="NOM")
+    gr.add_argument("--sans-cle-propre", action="append", default=[], metavar="CLE", help="le job ne définit pas CLE lui-même")
+    gr.add_argument("--defini-dans", metavar="FICHIER", help="le job est défini dans ce fichier (include)")
+    gr.add_argument("--lance", action="append", default=[], metavar="CMD", help="before_script, script ou after_script lance CMD")
+    gr.add_argument("--avant-script-lance", action="append", default=[], metavar="CMD")
+    gr.add_argument("--script-lance", action="append", default=[], metavar="CMD")
+    gr.add_argument("--apres-script-lance", action="append", default=[], metavar="CMD")
+    gr.add_argument("--ordre", nargs="+", metavar="CMD", help="ces commandes apparaissent dans cet ordre")
+    gr.add_argument("--stages", metavar="A,B,C", help="liste exacte des stages déclarés")
+    gr.add_argument("--include-template", action="append", default=[], metavar="MODELE")
+    gr.add_argument("--include-local", action="append", default=[], metavar="CHEMIN")
+    gr.add_argument("--variable-globale", action="append", default=[], metavar="NOM=VALEUR")
+    gr.add_argument("--sans-variable-globale", action="append", default=[], metavar="NOM")
+    args = ap.parse_args(argv)
+
+    if args.aide_assertions:
+        print(AIDE_ASSERTIONS)
+        return 0
+    if args.slug is not None:
+        print(slug(args.slug))
+        return 0
+    if args.masquable is not None:
+        raisons = masquable(args.masquable)
+        if raisons:
+            print("NON masquable : " + " ; ".join(raisons))
+            return 1
+        print("masquable : GitLab acceptera de la masquer")
+        return 0
+
+    contexte = {}
+    for element in args.contexte:
+        nom, sep, valeur = element.partition("=")
+        if not sep or not nom:
+            print(f"--contexte attend NOM=VALEUR, reçu : {element}", file=sys.stderr)
+            return 2
+        contexte[nom] = valeur
+
+    chemin = args.fichier
+    if not os.path.isfile(chemin):
+        print(f"Fichier introuvable : {chemin}. Crée-le (le pipeline d'un projet s'appelle .gitlab-ci.yml, à la racine du dépôt).")
+        return 2
+    rapport = Rapporteur()
+    projet = Projet(os.path.dirname(os.path.abspath(chemin)), rapport)
+    projet.config = projet.charger(os.path.abspath(chemin), os.path.basename(chemin))
+    analyse = Analyse(projet, rapport)
+    if projet.config:
+        analyse.analyser()
+        analyse.jetons_en_clair()
+
+    assertions = any([args.job, args.stages is not None, args.include_template, args.include_local,
+                      args.variable_globale, args.sans_variable_globale])
+    if assertions:
+        if not projet.config:
+            for p in rapport.liste:
+                if p.niveau == "ERREUR":
+                    afficher_probleme(p, projet.fichiers)
+            print("Le fichier est illisible ou vide : impossible de vérifier sa structure.")
+            return 1
+        echecs = analyse.asserter(args, contexte)
+        for message in echecs:
+            print(f"ERREUR : {message}")
+        if echecs:
+            return 1
+        print("OK : la structure du pipeline est conforme.")
+        return 0
+
+    if args.montrer or contexte or args.modifie:
+        if rapport.compte("ERREUR"):
+            for p in rapport.liste:
+                if p.niveau == "ERREUR":
+                    afficher_probleme(p, projet.fichiers)
+            print("Le fichier contient des erreurs : le pipeline ne serait pas créé.")
+            return 1
+        if args.montrer:
+            analyse.montrer()
+        if contexte or args.modifie:
+            analyse.simuler(contexte, args.modifie)
+        return 0
+
+    print(f"verifier-ci : {chemin}")
+    for p in sorted(rapport.liste, key=lambda p: (p.niveau == "INFO", p.fichier != projet.fichiers[0] if projet.fichiers else False, p.ligne)):
+        afficher_probleme(p, projet.fichiers)
+    erreurs, avertissements = rapport.compte("ERREUR"), rapport.compte("AVERTISSEMENT")
+    if erreurs or (args.strict and avertissements):
+        print(f"ÉCHEC : {erreurs} erreur(s), {avertissements} avertissement(s). GitLab refuserait ce pipeline." if erreurs
+              else f"ÉCHEC (--strict) : {avertissements} avertissement(s) à corriger.")
+        return 1
+    jobs = len(analyse.jobs)
+    stages = [s for s in analyse.stages if s not in (".pre", ".post")]
+    print(f"OK : {len(stages)} stage(s), {jobs} job(s), aucune erreur" + (f", {avertissements} avertissement(s)" if avertissements else "")
+          + ". (Rappel : verifier-ci contrôle la structure, il n'exécute rien.)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

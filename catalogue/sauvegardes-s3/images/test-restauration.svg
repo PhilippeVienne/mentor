@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="t d" font-family="Inter, system-ui, sans-serif">
+  <title id="t">Test de restauration</title>
+  <desc id="d">Trois étapes en boucle : restaurer dans un volume de test, vérifier le contenu, puis consigner la durée mesurée.</desc>
+  <rect x="1" y="1" width="718" height="218" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <rect x="30" y="70" width="190" height="80" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="125" y="116" text-anchor="middle" font-size="16" fill="#e2e8f0">1. Restaurer (test)</text>
+  <rect x="265" y="70" width="190" height="80" rx="12" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+  <text x="360" y="116" text-anchor="middle" font-size="16" fill="#e2e8f0">2. Vérifier</text>
+  <rect x="500" y="70" width="190" height="80" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="595" y="116" text-anchor="middle" font-size="16" fill="#e2e8f0">3. Consigner la durée</text>
+  <path d="M220 110H263M455 110H498" stroke="#6366F1" stroke-width="3"/>
+</svg>

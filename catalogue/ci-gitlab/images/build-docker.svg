@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="t d">
+  <title id="t">Build d'une image dans un pipeline GitLab</title>
+  <desc id="d">Le job exécute le client docker, qui parle au service docker:dind ; ce dernier construit l'image, puis le job la pousse dans le registry du projet.</desc>
+  <rect x="1" y="1" width="718" height="218" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g font-family="Inter, system-ui, sans-serif" font-size="16" fill="#e2e8f0" text-anchor="middle">
+    <rect x="30" y="70" width="190" height="80" rx="10" fill="#1e293b" stroke="#334155"/>
+    <text x="125" y="105" font-weight="700">Job build</text>
+    <text x="125" y="132" fill="#94a3b8">client docker</text>
+    <rect x="270" y="70" width="190" height="80" rx="10" fill="#1e293b" stroke="#334155"/>
+    <text x="365" y="105" font-weight="700">docker:dind</text>
+    <text x="365" y="132" fill="#94a3b8">démon Docker</text>
+    <rect x="510" y="70" width="180" height="80" rx="10" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+    <text x="600" y="105" font-weight="700">Registry</text>
+    <text x="600" y="132" fill="#94a3b8">image du projet</text>
+    <path d="M222 110H268M462 110H508" stroke="#6366F1" stroke-width="3" fill="none"/>
+    <path d="M258 102l10 8-10 8M498 102l10 8-10 8" stroke="#6366F1" stroke-width="3" fill="none"/>
+    <text x="245" y="60" fill="#94a3b8" font-size="14">tcp://docker:2375</text>
+    <text x="485" y="180" fill="#94a3b8" font-size="14">docker push</text>
+  </g>
+</svg>

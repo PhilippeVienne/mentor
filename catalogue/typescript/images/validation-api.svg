@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-labelledby="t d">
+  <title id="t">Valider une réponse d'API</title>
+  <desc id="d">Une réponse inconnue venue du réseau passe par un type guard ; si le test réussit elle devient un Evenement, sinon une erreur est levée.</desc>
+  <rect x="1" y="1" width="758" height="218" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+  <g font-family="Inter, system-ui, sans-serif" font-size="16" fill="#e2e8f0" text-anchor="middle">
+    <rect x="30" y="70" width="170" height="70" rx="10" fill="#1e293b" stroke="#334155"/>
+    <text x="115" y="100">Réponse JSON</text><text x="115" y="124" fill="#94a3b8">type : unknown</text>
+    <rect x="295" y="70" width="170" height="70" rx="10" fill="#1e293b" stroke="#6366F1" stroke-width="2"/>
+    <text x="380" y="100">Type guard</text><text x="380" y="124" fill="#94a3b8">estEvenement(…)</text>
+    <rect x="560" y="30" width="170" height="60" rx="10" fill="#1e293b" stroke="#334155"/>
+    <text x="645" y="66">Evenement sûr</text>
+    <rect x="560" y="120" width="170" height="60" rx="10" fill="#1e293b" stroke="#334155"/>
+    <text x="645" y="156">Erreur levée</text>
+    <path d="M200 105H295M465 90L560 60M465 120L560 150" stroke="#6366F1" stroke-width="3" fill="none"/>
+    <text x="520" y="62" fill="#94a3b8" font-size="14">oui</text>
+    <text x="520" y="160" fill="#94a3b8" font-size="14">non</text>
+  </g>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 325" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<title id="t">Réseau Docker personnalisé</title><desc id="d">Les conteneurs web et db sont sur le réseau demo-net et se joignent par leur nom grâce au DNS interne. Le conteneur seul, sur le réseau bridge par défaut, n&#x27;est pas joignable par son nom.</desc>
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#22c55e"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f59e0b"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker>
+</defs>
+<rect x="1" y="1" width="798" height="323" rx="16" fill="#0b1220" stroke="#1e293b" stroke-width="2"/>
+<text x="400" y="36" font-size="17" fill="#e2e8f0" font-weight="700" text-anchor="middle">Un réseau créé par toi : les conteneurs se trouvent par leur nom</text>
+<rect x="150" y="62" width="400" height="210" rx="10" fill="#111c33" stroke="#2496ED" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="170" y="86" font-size="13" fill="#2496ED" font-weight="700" text-anchor="start">réseau « demo-net »</text>
+<rect x="180" y="110" width="140" height="70" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="250.0" y="140" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">web</text>
+<text x="250.0" y="160" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">nginx</text>
+<rect x="380" y="110" width="140" height="70" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="450.0" y="140" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">db</text>
+<text x="450.0" y="160" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">postgres</text>
+<line x1="320" y1="145" x2="378" y2="145" stroke="#2496ED" stroke-width="2.4" marker-end="url(#ab)"/>
+<rect x="311.0" y="114" width="76" height="24" rx="12" fill="#0b1220" stroke="#2496ED" stroke-width="1.5"/>
+<text x="349" y="130" font-size="11" fill="#2496ED" font-weight="600" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">db:5432</text>
+<text x="350" y="218" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">DNS interne : « db » → 172.18.0.3</text>
+<text x="350" y="248" font-size="12" fill="#f59e0b" font-weight="400" text-anchor="middle">-p 8080:80 sur web uniquement</text>
+<rect x="40" y="110" width="90" height="70" rx="10" fill="#111c33" stroke="#22c55e" stroke-width="2"/>
+<text x="85.0" y="140" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">Toi</text>
+<text x="85.0" y="160" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">localhost:8080</text>
+<line x1="130" y1="145" x2="178" y2="145" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#am)"/>
+<rect x="600" y="110" width="170" height="70" rx="10" fill="#111c33" stroke="#6366F1" stroke-width="2"/>
+<text x="685.0" y="140" font-size="15" fill="#e2e8f0" font-weight="600" text-anchor="middle">seul</text>
+<text x="685.0" y="160" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">réseau bridge par défaut</text>
+<path d="M 520 160 C 560 160, 560 160, 598 150" fill="none" stroke="#6366F1" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="560" y="205" font-size="12" fill="#6366F1" font-weight="700" text-anchor="middle">ping seul ✗</text>
+<text x="685" y="205" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">introuvable par son nom</text>
+<text x="400" y="306" font-size="12" fill="#94a3b8" font-weight="400" text-anchor="middle">Entre conteneurs du même réseau : pas besoin de publier les ports.</text>
+
+</svg>

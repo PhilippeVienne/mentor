@@ -1,0 +1,4 @@
+#!/bin/sh
+# classes-generees classe... : compile globals.css avec Tailwind CSS sur une copie de ton projet (voir classes-generees.js)
+# et vérifie que chaque classe donnée a reçu une règle CSS.
+exec /opt/outils/controler executer 05-tailwind node /opt/outils/classes-generees.js "$@"

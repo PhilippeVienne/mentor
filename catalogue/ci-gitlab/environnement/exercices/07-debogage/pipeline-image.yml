@@ -1,0 +1,9 @@
+stages:
+  - quality
+
+lint:
+  stage: quality
+  image: python:3.13
+  script:
+    - npm ci
+    - npm run lint

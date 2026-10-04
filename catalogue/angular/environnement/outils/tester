@@ -1,0 +1,151 @@
+#!/bin/bash
+# tester : compile le projet avec ngc (le compilateur d'Angular, en mode strict) puis lance ses tests *.spec.ts avec Vitest.
+#
+# Usage : tester [partie-du-nom-de-fichier ...] [-t "titre du test"]
+#   tester                      compile tout le projet et lance tous les tests
+#   tester liste-membres        ne compile et ne lance que les fichiers *.spec.ts dont le nom contient « liste-membres »
+#   tester -t "nombre"          lance seulement les tests dont le titre contient « nombre »
+#   tester --compile-seul       compile tout le projet (gabarits compris) sans lancer de test
+#
+# Les messages d'erreur du compilateur et des tests sont tous écrits sur la sortie standard.
+#
+# Pour que le résultat soit fiable, `tester` travaille sur une COPIE temporaire de ton projet : les fichiers de test fournis
+# par l'exercice (de /opt/exercices, en lecture seule) y sont remis tels quels par-dessus les tiens, ainsi que tous les autres
+# fichiers fournis que tu n'as pas à écrire (configuration, modèles...). Modifier ou vider un test fourni ne change donc rien :
+# il faut faire passer le test d'origine. Les fichiers de test que tu dois compléter toi-même (ceux qui contiennent un
+# commentaire « À FAIRE ») sont gardés, à condition de ne rien retirer de ce qui y est déjà écrit. `tester` échoue aussi
+# quand aucun test n'a réellement été exécuté avec succès.
+exec 2>&1
+racine=$PWD
+outils=/opt/angular
+
+filtres=()
+options=()
+compile_seul=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -t | --testNamePattern)
+            options+=("$1" "$2")
+            shift 2
+            ;;
+        --compile-seul)
+            compile_seul=1
+            shift
+            ;;
+        -*)
+            options+=("$1")
+            shift
+            ;;
+        *)
+            filtres+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# 1. Quel exercice est-ce ? On compare les fichiers du dossier courant à chaque exercice de /opt/exercices.
+exercice=""
+meilleur=0
+for dossier in /opt/exercices/*/; do
+    score=0
+    while IFS= read -r fichier; do
+        [ -e "$racine/${fichier#"$dossier"}" ] && score=$((score + 1))
+    done < <(find "$dossier" -type f -not -path '*/dist/*')
+    if [ "$score" -gt "$meilleur" ]; then
+        meilleur=$score
+        exercice=${dossier%/}
+    fi
+done
+if [ -z "$exercice" ]; then
+    echo "Je ne reconnais pas le projet : lance « tester » depuis le dossier de travail de l'exercice (/workspace)."
+    exit 1
+fi
+
+# 2. Copie temporaire du projet (sans node_modules, dist ni caches), puis fichiers d'origine remis par-dessus.
+tmp=$(mktemp -d /tmp/tester.XXXXXX) || exit 1
+nettoyer() { rm -rf "$tmp"; }
+trap nettoyer EXIT
+tar -C "$racine" --exclude=./node_modules --exclude=./dist --exclude=./.angular --exclude=./.test-out -cf - . | tar -C "$tmp" -xf -
+ln -s $outils/node_modules "$tmp/node_modules"
+
+# Tout ce que l'exercice fournit et que tu n'as pas à écrire (tests, configuration, modèles de données, services de départ...)
+# est remis tel quel par-dessus ta copie. Seuls tes fichiers de travail (liste dans /opt/angular/a-ecrire) sont gardés.
+nom=$(basename "$exercice")
+liste_ecrire=$outils/a-ecrire/$nom.txt
+originaux=""
+a_conserver=""
+while IFS= read -r source; do
+    rel=${source#"$exercice"/}
+    case "$rel" in dist/*) continue ;; esac
+    base=$(basename "$rel")
+    case "$base" in *.spec.ts) originaux="$originaux${originaux:+,}${base%.ts}" ;; esac
+    if grep -qxF -- "$rel" "$liste_ecrire"; then
+        # Fichier de travail : gardé tel que tu l'as écrit ; un test à compléter doit garder tout ce qui y était déjà.
+        case "$base" in *.spec.ts) a_conserver="$a_conserver $rel" ;; esac
+    else
+        mkdir -p "$tmp/$(dirname "$rel")"
+        cp "$source" "$tmp/$rel"
+    fi
+done < <(find "$exercice" -type f | sort)
+
+for rel in $a_conserver; do
+    if [ ! -f "$tmp/$rel" ] || ! node $outils/conservation.js "$exercice/$rel" "$tmp/$rel"; then
+        exit 1
+    fi
+done
+
+# Les directives qui désactivent la vérification de TypeScript sont refusées.
+if find "$tmp/src" -name '*.ts' -print0 | xargs -0 grep -nE '@ts-(nocheck|ignore|expect-error)' ; then
+    echo "Les commentaires @ts-nocheck, @ts-ignore et @ts-expect-error masquent les erreurs au lieu de les corriger : retire-les."
+    exit 1
+fi
+
+cd "$tmp" || exit 1
+sortie=$tmp/.test-out
+config=$tmp/.tsconfig-tester.json
+
+# 3. Compilation (tout le projet, ou seulement les tests demandés).
+projet=tsconfig.json
+if [ ${#filtres[@]} -gt 0 ]; then
+    liste=""
+    while IFS= read -r fichier; do
+        for filtre in "${filtres[@]}"; do
+            case "$fichier" in
+                *"$filtre"*)
+                    liste="$liste${liste:+, }\"$fichier\""
+                    break
+                    ;;
+            esac
+        done
+    done < <(find src -name '*.spec.ts' 2>/dev/null | sort)
+    if [ -z "$liste" ]; then
+        echo "Aucun fichier de test ne correspond à : ${filtres[*]}"
+        exit 1
+    fi
+    printf '{ "extends": "./tsconfig.json", "include": [], "files": [%s] }\n' "$liste" >"$config"
+    projet=$config
+fi
+
+if [ "$compile_seul" = 1 ]; then
+    if ! $outils/node_modules/.bin/ngc -p tsconfig.json --noEmit; then
+        echo "La compilation a échoué : corrige les erreurs ci-dessus."
+        exit 1
+    fi
+    echo "La compilation réussit."
+    exit 0
+fi
+
+if ! $outils/node_modules/.bin/ngc -p "$projet" --outDir "$sortie"; then
+    echo "La compilation a échoué : corrige les erreurs ci-dessus, les tests ne sont pas lancés."
+    exit 1
+fi
+
+# 4. Les tests, avec un compte rendu lisible (verbose) et un compte rendu JSON pour contrôler le résultat.
+cd "$sortie" || exit 1
+json=$tmp/resultat.json
+if ! $outils/node_modules/.bin/vitest run --configLoader runner --config $outils/vitest.config.mjs --root "$PWD" \
+    --reporter=verbose --reporter=json --outputFile.json="$json" "${filtres[@]}" "${options[@]}"; then
+    exit 1
+fi
+if [ ${#options[@]} -gt 0 ]; then portee=filtre; else portee=tout; fi
+node $outils/verdict.js "$json" "$portee" "$originaux" "${filtres[@]}"

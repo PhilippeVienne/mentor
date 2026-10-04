@@ -1,0 +1,9 @@
+[package]
+name = "mentor-core"
+description = "Règles métier de Mentor (XP, niveaux), sans entrée/sortie."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }

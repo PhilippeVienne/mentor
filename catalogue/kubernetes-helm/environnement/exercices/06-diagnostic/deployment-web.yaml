@@ -1,0 +1,27 @@
+# Déploiement de Vitrine (simplifié) tel qu'il tourne dans l'état fourni dans le dossier etat/.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vitrine-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vitrine-web
+  template:
+    metadata:
+      labels:
+        app: vitrine-web
+    spec:
+      containers:
+        - name: web
+          image: registry.example.org/equipe/vitrine:master
+          ports:
+            - name: django
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 5

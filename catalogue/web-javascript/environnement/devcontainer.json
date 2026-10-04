@@ -1,0 +1,42 @@
+// Environnement réel du parcours « HTML, CSS et JavaScript » (voir catalogue/README.md §15 et doc/environnements.md).
+// Node.js 24 sur Debian, jsdom préinstallé (pas de navigateur dans le conteneur), nano et un serveur SSH pour VS Code.
+{
+    "name": "HTML, CSS et JavaScript de l'équipe",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root.
+    "containerUser": "node",
+    "remoteUser": "node",
+    "workspaceFolder": "/workspace",
+    // Ports redirigés vers ton poste par VS Code : la commande `servir` y publie le dossier de travail.
+    "forwardPorts": [8000],
+    "portsAttributes": {
+        "8000": { "label": "Page du labo" }
+    },
+    "containerEnv": {
+        "EDITOR": "nano",
+        // jsdom est dans /opt/outils/node_modules : accessible à `require('jsdom')` depuis les exercices.
+        "NODE_PATH": "/opt/outils/node_modules",
+        "NODE_OPTIONS": "--no-warnings",
+        // Pas de message de mise à jour de npm (le conteneur n'a pas de réseau).
+        "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    },
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "256mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        },
+        "vscode": {
+            "settings": {
+                "editor.tabSize": 2,
+                "editor.formatOnSave": false
+            }
+        }
+    }
+}
