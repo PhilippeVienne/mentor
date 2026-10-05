@@ -1,0 +1,15 @@
+[package]
+name = "mentor-db"
+description = "PostgreSQL storage of Mentor: tenants, learners, progress; tenant isolation by row-level security."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+mentor-core = { path = "../mentor-core" }
+sqlx = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -16,8 +16,9 @@ Phase 0 (foundations) is in progress. What exists today:
 | [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
 | [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams |
 
+| [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, lesson progress and XP. Tenant isolation is enforced by row-level security |
 
-Not built yet: the web server, the database layer, the catalogue linter, lab orchestration.
+Not built yet: the web server, the catalogue linter, lab orchestration; in the database, cohorts, badges earned and exam attempts.
 
 Real labs run in Firecracker microVMs, but Mentor does not implement that isolation: it will come from a base
 shared with the [Atelier](https://github.com/PhilippeVienne/atelier) project, on Kubernetes. The integration
@@ -40,6 +41,16 @@ cargo test                                         # unit tests and conformance 
 cargo run -p mentor-content --example export       # compile catalogue/ and print it as JSON
 cargo clippy --all-targets && cargo fmt --check
 ```
+
+The database tests need a real PostgreSQL and are skipped without it:
+
+```shell
+docker run -d --name mentor-test-pg -e POSTGRES_PASSWORD=mentor-test -p 127.0.0.1:55439:5432 postgres:16-alpine
+MENTOR_TEST_DATABASE_URL=postgres://postgres:mentor-test@127.0.0.1:55439/postgres cargo test -p mentor-db
+```
+
+Each test creates its own database, and connects as an ordinary role for the application side: a superuser
+would bypass row-level security and the isolation tests would prove nothing.
 
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
