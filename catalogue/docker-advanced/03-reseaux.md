@@ -21,8 +21,10 @@ Sur le réseau `bridge` par défaut, les conteneurs ne se retrouvent pas par leu
 docker network create demo-net
 docker run -d --name db --network demo-net -e POSTGRES_PASSWORD=pw postgres:16-alpine
 docker run -d --name web --network demo-net -p 8080:80 nginx
-docker exec web ping db
+docker exec web ping -c 2 db
 ```
+
+`-c 2` envoie deux paquets puis s'arrête : sans cette option, `ping` continue jusqu'à ce que tu l'interrompes avec Ctrl+C.
 
 ```mermaid
 sequenceDiagram
@@ -50,11 +52,11 @@ docker network inspect demo-net
 ```
 
 :::info ping dans les vraies images
-Les images officielles minimalistes (nginx, postgres…) n'incluent pas toujours `ping`. Le simulateur l'a installé pour illustrer la résolution de noms ; en vrai, tu peux aussi tester avec `curl http://db:5432` ou `nslookup db` selon ce qui est disponible.
+Les images officielles minimalistes (nginx, postgres…) n'incluent pas toujours `ping`. Le nginx servi dans cet environnement est la variante Alpine, qui l'embarque ; l'image `nginx` par défaut (Debian) ne l'a pas. Sans `ping`, tu peux aussi tester avec `getent hosts db`, `curl http://db:5432` ou `nslookup db` selon ce qui est disponible.
 :::
 
 :::warning Un conteneur isolé
-Un conteneur lancé sans `--network` est sur le réseau `bridge` : `ping seul` depuis `web` échoue (*bad address*). C'est voulu : les applications sont **isolées** les unes des autres.
+Un conteneur lancé sans `--network` est sur le réseau `bridge` : `ping -c 2 seul` depuis `web` échoue (*bad address*). C'est voulu : les applications sont **isolées** les unes des autres.
 :::
 
 ## À retenir
@@ -66,44 +68,49 @@ Un conteneur lancé sans `--network` est sur le réseau `bridge` : `ping seul` 
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
   Crée un réseau, y connecte une base et un serveur web, puis vérifie qu'ils se voient — et que les autres non.
 steps:
   - text: 'Crée le réseau `demo-net`'
     hint: "Le sous-ensemble `network` de la CLI a une action `create`, suivie du nom du réseau."
     checks:
-      - network-exists: demo-net
+      - command-succeeds: 'docker network inspect demo-net'
     solution:
       - docker network create demo-net
   - text: 'Lance `db` (postgres:16-alpine, mot de passe) sur ce réseau'
     hint: "Combine ce que tu connais : `-d`, `--name`, `-e`… et la nouvelle option `--network` suivie du nom du réseau."
     checks:
-      - container-running: db
-      - container-network: [db, demo-net]
+      - output-contains: ['docker inspect -f "{{.State.Running}} {{.Config.Image}}" db', '^true postgres:16-alpine$']
+      - output-contains: ['docker inspect -f "{{json .NetworkSettings.Networks}}" db', '"demo-net":']
     solution:
       - 'docker run -d --name db --network demo-net -e POSTGRES_PASSWORD=pw postgres:16-alpine'
   - text: 'Lance `web` (nginx, port 8080) sur le même réseau'
     hint: "Comme `db`, sur le même réseau ; celui-ci publie en plus un port (`-p`)."
     checks:
-      - container-running: web
-      - container-network: [web, demo-net]
+      - output-contains: ['docker inspect -f "{{.State.Running}}" web', '^true$']
+      - output-contains: ['docker inspect -f "{{json .NetworkSettings.Networks}}" web', '"demo-net":']
+      - output-contains: ['docker port web 80', ':8080$']
     solution:
       - 'docker run -d --name web --network demo-net -p 8080:80 nginx'
-  - text: 'Depuis `web`, joins `db` par son nom : `docker exec web ping db`'
-    hint: "Exécute `ping` *dans* `web`, avec pour cible le nom du conteneur `db`."
+  - text: 'Depuis `web`, joins `db` par son nom avec `docker exec web ping -c 2 db`, puis garde le résultat : `docker exec web ping -c 2 db > ping-db.txt`'
+    hint: "Exécute `ping` *dans* `web`, avec pour cible le nom du conteneur `db`. `-c 2` envoie deux paquets puis s'arrête (sans lui, `ping` ne s'arrête qu'avec Ctrl+C)."
+    after: [2, 3]
+    checks:
+      - env-file-contains: [ping-db.txt, '\b[1-9]\d* packets received']
+    solution:
+      - docker exec web ping -c 2 db
+      - docker exec web ping -c 2 db > ping-db.txt
+  - text: 'Lance un conteneur `seul` (nginx, détaché) sur le réseau par défaut et constate que `web` ne le trouve pas : `docker exec web ping -c 2 seul`'
+    hint: "Lance un conteneur sans `--network`, puis refais le `ping` depuis `web` vers ce nouveau nom : l'erreur *bad address* arrive après quelques secondes."
     after: [3]
     checks:
-      - command: ^docker exec web ping db
-    solution:
-      - docker exec web ping db
-  - text: 'Lance un conteneur `seul` sur le réseau par défaut et constate que `web` ne le trouve pas'
-    hint: "Lance un conteneur sans `--network`, puis refais le `ping` depuis `web` vers ce nouveau nom."
-    checks:
-      - container-exists: seul
-      - command: ^docker exec web ping seul
+      - output-contains: ['docker inspect -f "{{.State.Running}}" web', '^true$']
+      - output-contains: ['docker inspect -f "{{.State.Running}}" seul', '^true$']
+      - command-fails: 'docker exec web ping -c 1 -W 2 seul'
     solution:
       - docker run -d --name seul nginx
-      - docker exec web ping seul
+      - docker exec web ping -c 2 seul
 :::
 
 ## Vérifie tes acquis

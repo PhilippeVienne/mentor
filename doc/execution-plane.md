@@ -105,7 +105,8 @@ Mentor needs (many short learner sessions). None was measured.
 
 ## 5. What it changes for Mentor
 
-- **Kubernetes becomes a requirement for real labs.** Simulated labs, quizzes and exams still need nothing.
+- **Kubernetes becomes a requirement for labs.** Reading, quizzes and exams still need nothing. (Since
+  5 October 2026 every lab is real: without an execution plane a lesson is its text and its quiz.)
   Atelier documents a single-node install, so a small deployment remains possible.
 - **Mentor's execution-plane crates are gone**: no scheduler, host agent or guest agent of its own.
 - **Phase 1 of the migration plan changes**: instead of building a Firecracker plane behind v1's `Broker`, it is

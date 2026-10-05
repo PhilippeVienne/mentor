@@ -1,0 +1,9 @@
+# Paquets Python téléchargés au BUILD dans /opt/mentor/wheels : Flask et ses dépendances, versions épinglées.
+# La leçon 1 les installe sans Internet : `pip install --no-index --find-links=wheels -r requirements.txt`.
+flask==3.0.3
+blinker==1.9.0
+click==8.5.0
+itsdangerous==2.2.0
+jinja2==3.1.6
+markupsafe==3.0.4
+werkzeug==3.1.9

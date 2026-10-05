@@ -71,49 +71,52 @@ Supprime l'ancien (`docker rm web`) ou choisis un autre nom.
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
   Un nginx tourne déjà (`web`) et un vieux conteneur `vieux` traîne. Fais le ménage.
 commands:
   - 'docker run -d --name web -p 8080:80 nginx'
   - docker run --name vieux alpine echo ancien
 steps:
-  - text: 'Liste *tous* les conteneurs avec `docker ps -a`'
-    hint: "Une seule lettre en plus de `docker ps` : `a` comme *all*."
+  - text: 'Liste *tous* les conteneurs avec `docker ps -a`, puis garde la liste : `docker ps -a > tous.txt`'
+    hint: "Une seule lettre en plus de `docker ps` : `a` comme *all*."
     checks:
-      - command: ^docker ps -a
+      - env-file-contains: [tous.txt, '\bvieux$']
     solution:
       - docker ps -a
+      - docker ps -a > tous.txt
   - text: 'Arrête `web`'
-    hint: "Le verbe est dans l'énoncé : « arrête »."
+    hint: "Le verbe est dans l'énoncé : « arrête »."
     checks:
-      - container-stopped: web
+      - output-contains: ['docker inspect -f "{{.State.Status}}" web', '^exited$']
     solution:
       - docker stop web
   - text: 'Redémarre `web`'
-    hint: "Le conteneur existe encore, il suffit de le démarrer : pas de `run` ici (il recréerait un conteneur)."
+    hint: "Le conteneur existe encore, il suffit de le démarrer : pas de `run` ici (il recréerait un conteneur)."
     after: [2]
     checks:
-      - container-running: web
+      - output-contains: ['docker inspect -f "{{.State.Running}}" web', '^true$']
     solution:
       - docker start web
   - text: 'Supprime le conteneur `vieux`'
-    hint: "`rm` pour *remove* : il est déjà arrêté, aucune option n'est nécessaire."
+    hint: "`rm` pour *remove* : il est déjà arrêté, aucune option n'est nécessaire."
     checks:
-      - container-absent: vieux
+      - command-succeeds: 'docker info > /dev/null && ! docker container inspect vieux > /dev/null 2>&1'
     solution:
       - docker rm vieux
-  - text: 'Lance un conteneur jetable : `docker run --rm alpine echo ephemere`'
-    hint: "Une option qui commence par deux tirets et se lit « remove » (en abrégé) s'ajoute à `docker run`."
+  - text: 'Lance un conteneur jetable et garde sa réponse : `docker run --rm alpine echo ephemere > ephemere.txt`'
+    hint: "Une option qui commence par deux tirets et se lit « remove » (en abrégé) s'ajoute à `docker run` : le conteneur est supprimé dès qu'il s'arrête."
+    after: [4]
     checks:
-      - command: '^docker run .*--rm'
-      - no-container-for-image: alpine
+      - env-file-contains: [ephemere.txt, '^ephemere$']
+      - command-succeeds: 'docker info > /dev/null && test -z "$(docker ps -aq --filter ancestor=alpine)"'
     solution:
-      - docker run --rm alpine echo ephemere
+      - docker run --rm alpine echo ephemere > ephemere.txt
   - text: "Supprime `web` d'un coup avec `docker rm -f web`"
-    hint: "`rm` avec l'option de force : elle arrête et supprime en une fois."
+    hint: "`rm` avec l'option de force : elle arrête et supprime en une fois."
     after: [3]
     checks:
-      - container-absent: web
+      - command-succeeds: 'docker info > /dev/null && ! docker container inspect web > /dev/null 2>&1'
     solution:
       - docker rm -f web
 :::

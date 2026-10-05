@@ -89,28 +89,31 @@ docker images
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
-  Le démon Docker est démarré. Lance ton premier conteneur !
+  Le moteur Docker de ton environnement est démarré. Lance ton premier conteneur !
 steps:
-  - text: 'Affiche la version avec `docker --version`'
-    hint: "Une commande avec un double tiret : demande à Docker son numéro de version."
+  - text: 'Affiche la version avec `docker --version`, puis garde-la dans un fichier : `docker --version > version.txt`'
+    hint: "Une commande avec un double tiret : demande à Docker son numéro de version. Le `>` écrit la réponse dans un fichier au lieu de l'afficher."
     checks:
-      - command: '^docker (--version|version)'
+      - env-file-contains: [version.txt, '^Docker version']
     solution:
       - docker --version
+      - docker --version > version.txt
   - text: 'Lance `docker run hello-world`'
     hint: "`docker run` suivi du nom de l'image de test officielle (elle s'appelle comme le programme de tes débuts)."
     checks:
-      - container-image: hello-world
+      - output-contains: ['docker ps -a --filter ancestor=hello-world --format "{{.Image}}"', '^hello-world']
     solution:
       - docker run hello-world
-  - text: 'Liste les images téléchargées avec `docker images`'
-    hint: "Une commande d'une seule ligne qui liste les images locales : `hello-world` doit y figurer, et elle est minuscule."
+  - text: 'Liste les images téléchargées avec `docker images`, puis garde la liste : `docker images > images.txt`'
+    hint: "Une commande d'une seule ligne qui liste les images locales : `hello-world` doit y figurer, et elle est minuscule."
+    after: [2]
     checks:
-      - command: '^docker (images|image ls)'
-      - image-present: hello-world
+      - env-file-contains: [images.txt, 'hello-world']
     solution:
       - docker images
+      - docker images > images.txt
 :::
 
 ## Vérifie tes acquis

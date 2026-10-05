@@ -2,7 +2,6 @@
 title: "Git basics"
 icon: "🐙"
 summary: "Versionner son code, travailler en branches et collaborer via GitLab : les bases de Git en pratiquant."
-engine: git
 environment: environnement
 requires: []
 published: true

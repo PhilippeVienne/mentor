@@ -35,7 +35,7 @@
 | Commande | Effet |
 | --- | --- |
 | `docker compose up -d` | Démarre (et recrée si besoin) les services |
-| `docker compose ps` | État des services |
+| `docker compose ps` | État des services (`-a` : y compris ceux qui se sont arrêtés) |
 | `docker compose logs <service>` | Journaux d'un service |
 | `docker compose stop` | Arrête sans supprimer |
 | `docker compose down` | Supprime conteneurs et réseau |

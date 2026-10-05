@@ -1,0 +1,15 @@
+# Registry local de la leçon 5 (« publier une image ») : il joue le rôle du registry GitLab de l'équipe.
+# En écriture, protégé par un identifiant et un mot de passe (apprenant / mentor) ; ses données vivent dans
+# le dossier personnel, effacé à l'arrêt de l'environnement. Démarré à la demande : `mentor-docker registre`.
+version: 0.1
+log:
+  level: warn
+storage:
+  filesystem:
+    rootdirectory: /home/apprenant/.local/share/registre
+auth:
+  htpasswd:
+    realm: Registre Mentor
+    path: /opt/mentor/registre.htpasswd
+http:
+  addr: 127.0.0.1:5000

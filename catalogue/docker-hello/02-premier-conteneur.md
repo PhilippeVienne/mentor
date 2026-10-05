@@ -92,44 +92,47 @@ Si le port 8080 de ta machine est déjà utilisé, Docker refuse de démarrer le
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
-  Lance une commande ponctuelle, puis un vrai serveur web nginx accessible depuis ton « navigateur » (`curl`).
+  Lance une commande ponctuelle, puis un vrai serveur web nginx que tu visiteras avec `curl`.
 steps:
-  - text: 'Affiche « Bonjour » depuis un conteneur `alpine` avec `echo`'
-    hint: "Format `docker run IMAGE commande` : l'image est `alpine`, la commande est `echo` suivi du texte entre guillemets."
+  - text: 'Affiche « Bonjour » depuis un conteneur `alpine` avec `echo`'
+    hint: "Format `docker run IMAGE commande` : l'image est `alpine`, la commande est `echo` suivi du texte entre guillemets."
     checks:
-      - command: '^docker run .*alpine echo'
-      - container-image: alpine
+      - output-contains: ['docker ps -a --no-trunc --filter ancestor=alpine --format "{{.Command}}"', 'echo']
     solution:
       - 'docker run alpine echo "Bonjour"'
   - text: 'Démarre nginx détaché, nommé `web`, port `8080` → `80`'
-    hint: "Trois options à combiner avant le nom de l'image `nginx` : détaché, nom `web`, et la redirection `hôte:conteneur` 8080 → 80."
+    hint: "Trois options à combiner avant le nom de l'image `nginx` : détaché, nom `web`, et la redirection `hôte:conteneur` 8080 → 80."
     checks:
-      - container-running: web
-      - container-port: [web, '8080:80']
+      - output-contains: ['docker inspect -f "{{.State.Running}}" web', '^true$']
+      - output-contains: ['docker port web 80', ':8080$']
     solution:
       - 'docker run -d --name web -p 8080:80 nginx'
-  - text: "Vérifie qu'il tourne avec `docker ps`"
-    hint: "Sans option : seuls les conteneurs en cours d'exécution sont listés."
+  - text: "Vérifie qu'il tourne avec `docker ps`, puis garde la liste : `docker ps > conteneurs.txt`"
+    hint: "Sans option : seuls les conteneurs en cours d'exécution sont listés."
     after: [2]
     checks:
-      - command: ^docker ps
+      - env-file-contains: [conteneurs.txt, '\bweb$']
     solution:
       - docker ps
-  - text: 'Visite-le avec `curl localhost:8080`'
+      - docker ps > conteneurs.txt
+  - text: 'Visite-le avec `curl localhost:8080`, puis enregistre la page : `curl localhost:8080 > page.html`'
     hint: "Interroge ta machine sur le port que tu as publié (celui de gauche dans `-p`)."
     after: [2]
     checks:
-      - command: '^curl .*8080'
+      - env-file-contains: [page.html, 'Welcome to nginx']
     solution:
       - 'curl localhost:8080'
-  - text: 'Lis ses journaux avec `docker logs web`'
-    hint: "La sous-commande `logs` attend le nom du conteneur."
-    after: [2]
+      - 'curl localhost:8080 > page.html'
+  - text: 'Lis ses journaux avec `docker logs web`, puis garde-les : `docker logs web > journal.txt`'
+    hint: "La sous-commande `logs` attend le nom du conteneur. Tes visites avec `curl` y apparaissent."
+    after: [4]
     checks:
-      - command: ^docker logs web
+      - env-file-contains: [journal.txt, 'GET / HTTP']
     solution:
       - docker logs web
+      - docker logs web > journal.txt
 :::
 
 ## Vérifie tes acquis

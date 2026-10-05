@@ -1,0 +1,18 @@
+#!/bin/sh
+# Prépare Docker dans l'environnement : démarre le miroir d'images local, puis attend le moteur Docker.
+# Lancé par postStartCommand ; relançable à la main (« mentor-docker ») si quelque chose s'est arrêté.
+set -eu
+if ! curl -fs http://127.0.0.1:5001/v2/ >/dev/null 2>&1; then
+    nohup docker-registry serve /opt/mentor/miroir.yml >/tmp/mentor-miroir.log 2>&1 &
+fi
+i=0
+while [ "$i" -lt 60 ]; do
+    if docker info >/dev/null 2>&1 && curl -fs http://127.0.0.1:5001/v2/ >/dev/null 2>&1; then
+        echo "Docker est prêt."
+        exit 0
+    fi
+    i=$((i + 1))
+    sleep 1
+done
+echo "Docker n'est pas prêt : le moteur ou le miroir d'images n'a pas démarré (voir /tmp/mentor-miroir.log)." >&2
+exit 1

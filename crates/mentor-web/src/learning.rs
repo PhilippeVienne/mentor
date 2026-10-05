@@ -8,13 +8,10 @@ use mentor_core::progress::{CourseShape, LessonRules};
 use mentor_db::badges::CatalogueView;
 use mentor_db::exam::ExamSettings;
 
-/// Engine name of labs that run in a real environment.
-const REAL_ENGINE: &str = "real";
-
 /// Time zone that cuts activity into days and dates badges, until tenants have their own setting.
 pub const UTC_OFFSET_MINUTES: i32 = 60;
 
-/// This server does not run labs yet, simulated or real. A lab that cannot be done does not gate its quiz.
+/// This server is not connected to an execution plane yet. A lab that cannot be done does not gate its quiz.
 const LABS_AVAILABLE: bool = false;
 
 /// Delay before a new exam attempt after a failed or expired one.
@@ -70,7 +67,6 @@ pub fn rules(course: &Course, lesson: &Lesson) -> LessonRules {
         slug: lesson.slug.clone(),
         tasks: lesson.lab.as_ref().map_or(0, |lab| lab.steps.len() as u32),
         questions: lesson.quiz.len() as u32,
-        server_verified: lesson.lab.as_ref().is_some_and(|lab| lab.engine == REAL_ENGINE),
         lab_available: LABS_AVAILABLE,
     }
 }

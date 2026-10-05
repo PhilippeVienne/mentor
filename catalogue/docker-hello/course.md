@@ -2,14 +2,14 @@
 title: "Docker hello world"
 icon: "🐳"
 summary: "Images, conteneurs, ports, logs : lance tes premiers conteneurs et comprends leur cycle de vie."
-engine: docker
+environment: environnement
 requires: []
 published: true
 color: "#2496ED"
 banner: images/banniere.svg
 ---
 
-« Ça marche chez moi ! » : fini. **Docker** empaquette une application avec tout ce dont elle a besoin, et c'est ainsi que tournent presque toutes les applications de l'équipe, du site vitrine à l'API d'adhésion. Ce parcours te fait faire tes premiers pas, **en tapant de vraies commandes** dans un terminal Docker simulé : aucune installation requise.
+« Ça marche chez moi ! » : fini. **Docker** empaquette une application avec tout ce dont elle a besoin, et c'est ainsi que tournent presque toutes les applications de l'équipe, du site vitrine à l'API d'adhésion. Ce parcours te fait faire tes premiers pas, **en tapant de vraies commandes** dans un environnement prêté par le portail, avec un vrai moteur Docker : aucune installation requise.
 
 ## À qui s'adresse ce parcours ?
 

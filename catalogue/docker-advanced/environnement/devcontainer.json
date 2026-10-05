@@ -1,0 +1,30 @@
+// Environnement réel du parcours « Docker advanced » (voir catalogue/README.md §15).
+// Un vrai moteur Docker : la plateforme le démarre dans la microVM de l'apprenant·e (dockerInDocker).
+{
+    "name": "Docker de l'équipe (avancé)",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root. Il accède au moteur par le groupe `docker`.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano"
+    },
+    // Démarre le miroir d'images local et attend que le moteur Docker réponde.
+    "postStartCommand": "mentor-docker",
+    // Plus de disque que « Docker hello world » : les leçons construisent des images Python et Node.
+    "hostRequirements": {
+        "cpus": 2,
+        "memory": "2gb",
+        "storage": "4gb"
+    },
+    "customizations": {
+        "mentor": {
+            "dockerInDocker": true,
+            "vscodeWeb": true
+        }
+    }
+}

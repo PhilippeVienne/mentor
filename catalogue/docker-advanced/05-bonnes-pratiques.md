@@ -13,12 +13,12 @@ Une image qui marche sur ton poste n'est pas forcément prête pour la productio
 
 ## 1. Les builds multi-étapes
 
-Pour *construire* un site, il faut Node.js et ses dépendances (≈ 1 Go). Pour le *servir*, un simple nginx suffit (≈ 40 Mo). Avec un Dockerfile multi-étapes, la première étape construit, la seconde ne garde que le résultat.
+Pour *construire* un site, il faut Node.js et ses dépendances (≈ 290 Mo, même dans sa variante allégée `slim`). Pour le *servir*, un simple nginx suffit (≈ 90 Mo). Avec un Dockerfile multi-étapes, la première étape construit, la seconde ne garde que le résultat.
 
-![L'étape de build (≈ 1,1 Go) est jetée ; seule l'image finale, légère, est publiée sur le registry](images/multistage.svg)
+![L'étape de build (≈ 290 Mo) est jetée ; seule l'image finale, légère, est publiée sur le registry](images/multistage.svg)
 
 ```dockerfile file=Dockerfile
-FROM node:20 AS build
+FROM node:20-slim AS build
 WORKDIR /app
 COPY package.json .
 COPY index.html .
@@ -33,10 +33,12 @@ COPY --from=build /app/index.html /usr/share/nginx/html/index.html
 Dans l'équipe, la CI GitLab construit l'image à chaque push et la publie dans le registry du projet ; sur le serveur, un outil comme *Watchtower* (repérable aux labels `com.centurylinklabs.watchtower.enable` des fichiers `compose-infra.yaml`) détecte la nouvelle image et met à jour le conteneur. À la main, ça donne :
 
 ```shell run
-docker tag site:leger registry.example.org/equipe/site:master
-docker login registry.gitlab.example.org
-docker push registry.example.org/equipe/site:master
+docker tag site:leger localhost:5000/equipe/site:master
+docker login localhost:5000
+docker push localhost:5000/equipe/site:master
 ```
+
+Dans cet environnement, un registry local (`localhost:5000`, identifiant `apprenant`, mot de passe `mentor`) joue le rôle de celui de l'équipe : le labo le démarre pour toi (à la main : `mentor-docker registre`). Avec le GitLab de l'équipe, le nom de l'image serait `registry.gitlab.example.org/equipe/site:master`, et tu te connecterais avec `docker login registry.gitlab.example.org`.
 
 ```mermaid
 flowchart LR
@@ -94,15 +96,16 @@ Les couches d'une image sont **lisibles par tous ceux qui l'ont**. Un `COPY .env
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
-  Compare une image « naïve » et une image multi-étapes, puis publie la plus légère sur le registry (simulé).
+  Compare une image « naïve » et une image multi-étapes, puis publie la plus légère. Le registry GitLab de l'équipe (`registry.gitlab.example.org`) est remplacé ici par un registry local, `localhost:5000` : identifiant `apprenant`, mot de passe `mentor`.
 files:
   package.json: |
     { "name": "site", "scripts": { "build": "echo build" } }
   index.html: |
     <h1>Site du club</h1>
   Dockerfile: |
-    FROM node:20 AS build
+    FROM node:20-slim AS build
     WORKDIR /app
     COPY package.json .
     COPY index.html .
@@ -111,49 +114,53 @@ files:
     FROM nginx:alpine
     COPY --from=build /app/index.html /usr/share/nginx/html/index.html
   Dockerfile.single: |
-    FROM node:20
+    FROM node:20-slim
     WORKDIR /app
     COPY . .
     RUN npm run build
     CMD ["npx", "serve", "."]
+commands:
+  - mentor-docker registre
 steps:
   - text: "Construis l'image naïve : `docker build -t site:lourd -f Dockerfile.single .`"
     hint: "`-f` désigne le fichier de recette à utiliser (ici `Dockerfile.single`), `-t` donne le nom et l'étiquette `lourd`."
     checks:
-      - image-present: 'site:lourd'
+      - command-succeeds: 'docker image inspect site:lourd'
     solution:
       - 'docker build -t site:lourd -f Dockerfile.single .'
   - text: "Construis l'image multi-étapes : `docker build -t site:leger .`"
     hint: "Cette fois le fichier par défaut (`Dockerfile`, multi-étapes) suffit : seul le tag change."
     checks:
-      - image-present: 'site:leger'
+      - command-succeeds: 'docker image inspect site:leger'
     solution:
       - 'docker build -t site:leger .'
-  - text: 'Compare les tailles avec `docker images`'
-    hint: "Compare la colonne SIZE des deux étiquettes `site`."
+  - text: 'Compare les tailles avec `docker images site`, puis garde le tableau : `docker images site > tailles.txt`'
+    hint: "Compare la colonne DISK USAGE (la place occupée sur le disque) des deux étiquettes `site`."
     after: [1, 2]
     checks:
-      - command: ^docker images
+      - env-file-contains: [tailles.txt, '\bsite[:\s]+lourd\b']
+      - env-file-contains: [tailles.txt, '\bsite[:\s]+leger\b']
     solution:
-      - docker images
-  - text: "Étiquette l'image légère pour le registry GitLab : `docker tag`"
+      - docker images site
+      - docker images site > tailles.txt
+  - text: "Étiquette l'image légère pour le registry : `docker tag site:leger localhost:5000/equipe/site:master`"
     hint: "`docker tag SOURCE DESTINATION` : la destination commence par le nom du registry."
     checks:
-      - image-present: 'registry.example.org/equipe/site:master'
+      - command-succeeds: 'docker image inspect localhost:5000/equipe/site:master'
     solution:
-      - 'docker tag site:leger registry.example.org/equipe/site:master'
-  - text: 'Connecte-toi : `docker login registry.gitlab.example.org`'
-    hint: "Le nom du registry est celui qui commence l'étiquette de l'étape précédente."
+      - 'docker tag site:leger localhost:5000/equipe/site:master'
+  - text: 'Connecte-toi : `docker login localhost:5000` (identifiant `apprenant`, mot de passe `mentor`)'
+    hint: "Le nom du registry est celui qui commence l'étiquette de l'étape précédente. Le mot de passe ne s'affiche pas pendant que tu le tapes."
     checks:
-      - registry-logged-in: registry.gitlab.example.org
+      - command-succeeds: 'grep -q "localhost:5000" "$HOME/.docker/config.json"'
     solution:
-      - docker login registry.gitlab.example.org
+      - 'echo mentor | docker login localhost:5000 -u apprenant --password-stdin'
   - text: "Publie l'image : `docker push`"
     hint: "Pousse l'étiquette complète créée à l'étape 4."
     checks:
-      - image-pushed: 'registry.example.org/equipe/site:master'
+      - output-contains: ['curl -fs -u apprenant:mentor http://localhost:5000/v2/equipe/site/tags/list', '"master"']
     solution:
-      - 'docker push registry.example.org/equipe/site:master'
+      - 'docker push localhost:5000/equipe/site:master'
 :::
 
 ## Vérifie tes acquis

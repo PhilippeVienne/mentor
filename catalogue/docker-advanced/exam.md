@@ -362,7 +362,7 @@ Ton service `web` déclare `depends_on: [db]`. Au démarrage, `web` échoue car 
 :::
 
 :::quiz
-Après `docker compose up -d`, `docker compose ps` montre `db` en état « Exited (1) » alors que `web` tourne. Quelle commande donne la cause ?
+Après `docker compose up -d`, `docker compose ps -a` montre `db` en état « Exited (1) » alors que `web` tourne. Quelle commande donne la cause ?
 
 - [ ] `docker compose down`
 - [x] `docker compose logs db`

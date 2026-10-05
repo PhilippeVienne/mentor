@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" role="img" aria-labelledby="t d" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
-<title id="t">Build multi-étapes et registry</title><desc id="d">La première étape construit le site avec Node.js (environ 1,1 Go). La seconde ne garde que le résultat dans une image nginx:alpine d&#x27;environ 40 Mo, poussée ensuite sur le registry GitLab.</desc>
+<title id="t">Build multi-étapes et registry</title><desc id="d">La première étape construit le site avec Node.js (environ 290 Mo). La seconde ne garde que le résultat dans une image nginx:alpine d&#x27;environ 90 Mo, poussée ensuite sur le registry GitLab.</desc>
 <defs>
 <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2496ED"/></marker>
 <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6366F1"/></marker>
@@ -11,9 +11,9 @@
 <text x="400" y="36" font-size="18" fill="#e2e8f0" font-weight="700" text-anchor="middle">Build multi-étapes puis publication sur le registry</text>
 <rect x="24" y="70" width="220" height="150" rx="10" fill="#111c33" stroke="#f59e0b" stroke-width="2"/>
 <text x="134" y="94" font-size="14" fill="#f59e0b" font-weight="700" text-anchor="middle">Étape 1 : build</text>
-<text x="134" y="120" font-size="12" fill="#e2e8f0" font-weight="400" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">FROM node:20 AS build</text>
+<text x="134" y="120" font-size="12" fill="#e2e8f0" font-weight="400" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">FROM node:20-slim AS build</text>
 <text x="134" y="142" font-size="12" fill="#e2e8f0" font-weight="400" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">RUN npm run build</text>
-<text x="134" y="176" font-size="12" fill="#f59e0b" font-weight="700" text-anchor="middle">≈ 1,1 Go (outils inclus)</text>
+<text x="134" y="176" font-size="12" fill="#f59e0b" font-weight="700" text-anchor="middle">≈ 290 Mo (outils inclus)</text>
 <text x="134" y="196" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">jetée après le build</text>
 <line x1="244" y1="145" x2="320" y2="145" stroke="#22c55e" stroke-width="2.4" marker-end="url(#ag)"/>
 <rect x="253.0" y="113" width="64" height="24" rx="12" fill="#0b1220" stroke="#22c55e" stroke-width="1.5"/>
@@ -22,7 +22,7 @@
 <text x="436" y="94" font-size="14" fill="#22c55e" font-weight="700" text-anchor="middle">Étape 2 : image finale</text>
 <text x="436" y="120" font-size="12" fill="#e2e8f0" font-weight="400" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">FROM nginx:alpine</text>
 <text x="436" y="142" font-size="12" fill="#e2e8f0" font-weight="400" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">COPY --from=build …</text>
-<text x="436" y="176" font-size="12" fill="#22c55e" font-weight="700" text-anchor="middle">≈ 40 Mo (juste le site)</text>
+<text x="436" y="176" font-size="12" fill="#22c55e" font-weight="700" text-anchor="middle">≈ 90 Mo (juste le site)</text>
 <text x="436" y="196" font-size="11" fill="#94a3b8" font-weight="400" text-anchor="middle">c&#x27;est elle qu&#x27;on livre</text>
 <line x1="546" y1="145" x2="620" y2="145" stroke="#2496ED" stroke-width="2.4" marker-end="url(#ab)"/>
 <rect x="557.0" y="113" width="52" height="24" rx="12" fill="#0b1220" stroke="#2496ED" stroke-width="1.5"/>

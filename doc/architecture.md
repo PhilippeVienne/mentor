@@ -24,9 +24,10 @@ authentication, execution plane (scheduler, host agent, guest agent), terminal/V
 
 **Kept as is** (no reason to rewrite):
 
-- the **catalogue format** (Markdown, front matter, `:::labo`, `:::quiz`, `_verifications.yml`): the 19 existing
+- the **catalogue format** (Markdown, front matter, `:::lab`, `:::quiz`, `_checks.yml`): the 19 existing
   courses compile after a mechanical conversion of the format to English names (see §10);
-- the **browser JavaScript** (simulated Git/Docker engines, quiz, exam, editor) and its Jest tests;
+- the **browser JavaScript** of quizzes and exams (the simulated Git and Docker engines of v1 are not carried
+  over: v2 only has real labs, see §10);
 - the **style sheets** and the brand file (`branding.yml`);
 - the **VS Code extension** and the accepted `devcontainer.json` subset.
 
@@ -168,9 +169,9 @@ Two consequences to handle before phase 4:
 
 1. **Exam question identifiers change.** An identifier is the SHA-1 of the question's HTML, and v2 escapes quotes
    differently. Stored exam attempts must be remapped during data migration (or identifiers recomputed from text).
-2. **The browser JavaScript must follow the renamed fields** (`steps`, `checks`, `text`…) and check names when
-   it is brought into v2 (phase 3); v1's `static/js/checks.js` still uses the French names.
-3. **Not ported yet**: the authoring guide `catalogue/README.md` (still describing v1 names), validation of the `devcontainer.json` specification (it belongs with the execution plane,
+2. **Simulated labs are gone** (decision of 5 October 2026, §10): the two courses that used them
+   (`docker-hello`, `docker-advanced`) are rewritten as real labs and excluded from the lab comparison with v1.
+3. **Not ported yet**: validation of the `devcontainer.json` specification (it belongs with the execution plane,
    phase 1), regular-expression validation of real-lab check arguments, syntax highlighting, the catalogue linter.
 
 ## 7. Target deployment
@@ -215,6 +216,7 @@ Decided on 4 October 2026:
 | Data isolation | PostgreSQL **row-level security**, a `tenant_id` column everywhere |
 | Repository | **A new repository**: `PhilippeVienne/mentor` holds only the Rust code; the v1 repository stays as the reference |
 | Execution plane | **Shared with Atelier** through a common base extracted from it; **Kubernetes is required** for real labs. Mentor's own prototype was removed (5 October 2026) |
+| Labs | **Real labs only** (5 October 2026). v1's labs simulated in the browser (fake `git` and `docker` terminals, their checks, effects, simulated server and sandbox) are removed from the format, the compiler, the rules and the scripts: every lab runs in an environment of its course and is verified by the server. The browser can no longer report a lab step. Docker courses use a Docker daemon inside the microVM and a local registry mirror filled when the image is built, since environments have no network at run time |
 | Language | **Everything in English**: code, comments, tests, documentation, compiler diagnostics and the catalogue format (file names, keys, directive and check names). Course content keeps its authors' language |
 
 Consequence of the new repository: the catalogue, static files (JavaScript, CSS) and conformance tools are no
@@ -229,5 +231,9 @@ Still open:
 2. **Shared catalogue**: are the 19 current courses offered to every tenant, or does each tenant bring its own?
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
-4. **The cut between the shared base and Atelier**, and what a lab check costs through it: see
+4. **Docker inside an environment**: `customizations.mentor.dockerInDocker` asks the platform to run a Docker
+   daemon as root in the microVM and to give the learner's account access to its socket. The Docker courses were
+   replayed with that arrangement in a privileged container standing in for the microVM; whether Atelier's
+   guest can start the daemon this way is not verified.
+5. **The cut between the shared base and Atelier**, and what a lab check costs through it: see
    [execution-plane.md](execution-plane.md) §2, §4 and §7.

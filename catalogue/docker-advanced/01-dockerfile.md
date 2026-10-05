@@ -32,17 +32,22 @@ flowchart LR
 
 ## Un exemple complet
 
-L'application Flask du projet (`app.py` + `requirements.txt`) est déjà dans le dossier du labo. Voici son Dockerfile :
+L'application Flask du projet (`app.py` + `requirements.txt`) est déjà dans le dossier du labo, avec un dossier `wheels/` qui contient Flask et ses dépendances. Voici son Dockerfile :
 
 ```dockerfile file=Dockerfile
 FROM python:3.13-slim
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY wheels/ wheels/
+RUN pip install --no-index --find-links=wheels -r requirements.txt
 COPY . .
 EXPOSE 5000
 CMD ["python", "app.py"]
 ```
+
+:::info Pourquoi --no-index et --find-links ?
+D'habitude, un simple `RUN pip install -r requirements.txt` télécharge les paquets depuis Internet (PyPI). L'environnement du labo n'a pas accès à Internet : les paquets sont fournis dans le dossier `wheels/`, et `--no-index --find-links=wheels` dit à `pip` de les prendre là. C'est aussi la méthode des builds sur des réseaux isolés d'Internet.
+:::
 
 ## Construire et lancer
 
@@ -61,7 +66,7 @@ Chaque instruction produit une couche. Docker **réutilise** les couches inchang
 ![Après modification du code, seules les couches COPY . . et suivantes sont reconstruites](images/couches-cache.svg)
 
 :::tip L'ordre compte
-Une couche invalidée invalide **toutes les suivantes**. En copiant `requirements.txt` *avant* le reste du code, l'installation des dépendances n'est refaite que si elles changent. Modifie `app.py` et reconstruis : tu verras `CACHED` devant les étapes situées avant la modification (dans le simulateur, bien visible sur `COPY requirements.txt` et `RUN pip install`), alors que `COPY . .` et la suite sont refaits.
+Une couche invalidée invalide **toutes les suivantes**. En copiant `requirements.txt` *avant* le reste du code, l'installation des dépendances n'est refaite que si elles changent. Modifie `app.py` et reconstruis : tu verras `CACHED` devant les étapes situées avant la modification (`COPY requirements.txt`, `COPY wheels/` et `RUN pip install`), alors que `COPY . .` et la suite sont refaits.
 :::
 
 :::info CMD sous forme de liste
@@ -81,8 +86,9 @@ Une couche invalidée invalide **toutes les suivantes**. En copiant `requirement
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
-  Le projet contient `app.py` et `requirements.txt`. Écris le Dockerfile (bouton « Créer ce fichier » dans la leçon, ou `nano Dockerfile`) puis construis ton image.
+  Le projet contient `app.py`, `requirements.txt` et le dossier `wheels/` (Flask et ses dépendances). Écris le Dockerfile de la leçon avec `nano Dockerfile` (ou dans VS Code), puis construis ton image.
 files:
   app.py: |
     from flask import Flask
@@ -92,68 +98,61 @@ files:
 
     @app.route("/")
     def hello():
-        return "Bonjour depuis Mentor !"
+        return "Bonjour depuis Mentor !"
 
 
     if __name__ == "__main__":
         app.run(host="0.0.0.0", port=5000)
   requirements.txt: |
     flask==3.0.3
+commands:
+  - mentor-docker sans-registre
+  - cp -r /opt/mentor/wheels wheels
 steps:
   - text: 'Crée un fichier `Dockerfile` qui commence par `FROM`'
-    hint: Clique sur « Créer ce fichier dans le labo » sous le Dockerfile de la leçon.
+    hint: "Ouvre l'éditeur avec `nano Dockerfile`, recopie le Dockerfile de la leçon, puis enregistre (Ctrl+O, Entrée) et quitte (Ctrl+X)."
     checks:
-      - file-contains: [Dockerfile, '^FROM ']
+      - env-file-contains: [Dockerfile, '^FROM ']
     solution:
       - write:
           Dockerfile: |
             FROM python:3.13-slim
             WORKDIR /app
             COPY requirements.txt .
-            RUN pip install -r requirements.txt
+            COPY wheels/ wheels/
+            RUN pip install --no-index --find-links=wheels -r requirements.txt
             COPY . .
             EXPOSE 5000
             CMD ["python", "app.py"]
   - text: "Construis l'image : `docker build -t demo-app .`"
     hint: "`docker build` avec `-t` pour le nom de l'image, et un point final : le contexte de build est le dossier courant."
     checks:
-      - image-present: demo-app
+      - command-succeeds: 'docker image inspect demo-app'
     solution:
       - docker build -t demo-app .
   - text: 'Lance-la : détachée, nommée `app`, port `5000`'
     hint: "C'est un `docker run` comme celui de nginx, mais avec ton image : le port 5000 est celui d'écoute de Flask."
     checks:
-      - container-running: app
+      - output-contains: ['docker inspect -f "{{.State.Running}}" app', '^true$']
+      - output-contains: ['docker port app 5000', ':5000$']
     solution:
       - 'docker run -d --name app -p 5000:5000 demo-app'
-  - text: 'Interroge ton application : `curl localhost:5000`'
-    hint: "Même principe que pour nginx : le port publié côté machine."
+  - text: 'Interroge ton application avec `curl localhost:5000`, puis garde sa réponse : `curl localhost:5000 > reponse.txt`'
+    hint: "Même principe que pour nginx : le port publié côté machine. Si `curl` échoue, laisse une seconde à Flask pour démarrer et recommence."
     after: [3]
     checks:
-      - command: '^curl .*5000'
+      - env-file-contains: [reponse.txt, 'Bonjour']
     solution:
       - 'curl localhost:5000'
-  - text: 'Modifie `app.py` (change le message), puis reconstruis : observe le `CACHED`'
-    hint: "Édite `app.py` (clique sur le fichier dans le labo), puis refais exactement le même `docker build` qu'avant."
+      - 'curl localhost:5000 > reponse.txt'
+  - text: 'Dans `app.py`, remplace « Bonjour » par « Salut », puis reconstruis l''image : observe les `CACHED`'
+    hint: "Édite `app.py` avec `nano app.py` (ou VS Code), puis refais exactement le même `docker build` qu'avant. Le conteneur `app` déjà lancé garde l'ancienne image : c'est normal."
+    after: [2]
     checks:
-      - command-count: [^docker build, 2]
-      - file-modified: app.py
+      - env-file-contains: [app.py, 'Salut']
+      - output-contains: ['docker run --rm demo-app cat app.py', 'Salut']
     solution:
-      - write:
-          app.py: |
-            from flask import Flask
-
-            app = Flask(__name__)
-
-
-            @app.route("/")
-            def hello():
-                return "Bonjour depuis Mentor !"
-
-
-            if __name__ == "__main__":
-                app.run(host="0.0.0.0", port=5000)
-            # modifié
+      - "sed -i 's/Bonjour/Salut/' app.py"
       - docker build -t demo-app .
 :::
 

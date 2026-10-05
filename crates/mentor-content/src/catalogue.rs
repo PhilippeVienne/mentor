@@ -13,9 +13,9 @@ use sha1::{Digest, Sha1};
 
 use crate::document::{render_document, Quiz, QuizOption};
 use crate::error::{ContentError, Result};
-use crate::lab::{Checks, Lab, LabContext, ENGINES};
+use crate::lab::{Checks, Lab, LabContext};
 use crate::markdown::{md_inline, Render};
-use crate::yaml::{is_falsy, text, to_json};
+use crate::yaml::{is_falsy, text};
 
 static LESSON_FILE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+)-(.+)\.md$").unwrap());
 
@@ -36,15 +36,12 @@ pub struct Course {
     pub title: String,
     pub icon: String,
     pub summary: String,
-    /// Simulated engine of the course (`git`, `docker`), or empty.
-    pub engine: String,
     pub requires: Vec<String>,
     pub published: bool,
     pub accent: String,
     pub banner: String,
     pub description_html: String,
     pub cheatsheet_html: String,
-    pub scenarios: Json,
     /// Real environments used by the course, by folder name. The devcontainer specification is not
     /// validated here yet (to be ported with the execution plane).
     pub environments: BTreeMap<String, Json>,
@@ -154,14 +151,7 @@ impl Environments<'_> {
     }
 }
 
-fn load_lesson(
-    path: &Path,
-    course: &str,
-    engine: Option<&str>,
-    checks: &Checks,
-    inherited: &str,
-    environments: &mut Environments,
-) -> Result<Lesson> {
+fn load_lesson(path: &Path, course: &str, checks: &Checks, inherited: &str, environments: &mut Environments) -> Result<Lesson> {
     let (meta, body) = split_front_matter(&read(path)?, path)?;
     require(&meta, &["id", "title", "summary", "minutes"], path)?;
     let mut environment = inherited.to_string();
@@ -173,7 +163,7 @@ fn load_lesson(
     }
     let mut ctx = Render::new(path, course);
     let mut resolve = |name: &Yaml| environments.resolve(name);
-    let mut lab_ctx = LabContext { engine, checks, environment: environment.clone(), resolver: Some(&mut resolve) };
+    let mut lab_ctx = LabContext { checks, environment: environment.clone(), resolver: Some(&mut resolve) };
     let (body_html, mut collected) = render_document(&body, &mut ctx, Some(&mut lab_ctx))?;
     if collected.labs.len() > 1 {
         return ctx.fail("a lesson can contain only one `:::lab` block");
@@ -257,12 +247,13 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
     let (meta, body) = split_front_matter(&read(&path)?, &path)?;
     require(&meta, &["title", "icon", "summary"], &path)?;
     let slug = directory.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
-    let engine = match meta.get("engine") {
-        None | Some(Yaml::Null) => None,
-        Some(Yaml::String(name)) if ENGINES.contains(&name.as_str()) => Some(name.clone()),
-        Some(other) => return Err(ContentError::new(&path, format!("`engine` must be git or docker (got: {})", text(other)))),
-    };
-    let engine = engine.as_deref();
+    // v1 courses named the engine that simulated their labs in the browser.
+    if meta.get("engine").is_some_and(|value| !is_falsy(value)) {
+        return Err(ContentError::new(&path, "`engine` no longer exists: labs run in the course's real `environment`"));
+    }
+    if directory.join("sandbox.yml").exists() {
+        return Err(ContentError::new(&directory.join("sandbox.yml"), "the simulated sandbox no longer exists: remove this file"));
+    }
     let mut environments = Environments { directory, seen: BTreeMap::new() };
     let course_environment = match meta.get("environment").filter(|v| !is_falsy(v)) {
         Some(value) => {
@@ -273,21 +264,12 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
     };
 
     let render_page = |file: &Path, source: &str| -> Result<String> {
-        let mut lab_ctx = LabContext { engine, checks, environment: String::new(), resolver: None };
+        let mut lab_ctx = LabContext { checks, environment: String::new(), resolver: None };
         Ok(render_document(source, &mut Render::new(file, &slug), Some(&mut lab_ctx))?.0)
     };
     let description_html = render_page(&path, &body)?;
     let cheat_path = directory.join("cheatsheet.md");
     let cheatsheet_html = if cheat_path.exists() { render_page(&cheat_path, &read(&cheat_path)?)? } else { String::new() };
-
-    let sandbox_path = directory.join("sandbox.yml");
-    let scenarios = if sandbox_path.exists() {
-        let parsed: Yaml =
-            serde_yaml::from_str(&read(&sandbox_path)?).map_err(|err| ContentError::new(&sandbox_path, format!("invalid YAML: {err}")))?;
-        parsed.get("scenarios").map(to_json).unwrap_or_else(|| Json::Object(Default::default()))
-    } else {
-        Json::Object(Default::default())
-    };
 
     let mut files: Vec<PathBuf> = fs::read_dir(directory)
         .map_err(|err| ContentError::new(directory, format!("cannot be read: {err}")))?
@@ -298,7 +280,7 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
     let mut lessons = Vec::with_capacity(files.len());
     let mut seen = BTreeSet::new();
     for file in &files {
-        let lesson = load_lesson(file, &slug, engine, checks, &course_environment, &mut environments)?;
+        let lesson = load_lesson(file, &slug, checks, &course_environment, &mut environments)?;
         if RESERVED_LESSON_IDS.contains(&lesson.slug.as_str()) {
             return Err(ContentError::new(directory, format!("the lesson id `{}` is reserved (URL of the validation exam)", lesson.slug)));
         }
@@ -318,14 +300,12 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
         title: field(&meta, "title"),
         icon: field(&meta, "icon"),
         summary: field(&meta, "summary"),
-        engine: engine.unwrap_or_default().to_string(),
         requires: meta.get("requires").and_then(Yaml::as_sequence).map(|items| items.iter().map(text).collect()).unwrap_or_default(),
         published,
         accent: field(&meta, "color"),
         banner: field(&meta, "banner"),
         description_html,
         cheatsheet_html,
-        scenarios,
         environments: environments.seen,
         exam,
         lessons,

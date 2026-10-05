@@ -19,11 +19,8 @@ pub struct LessonRules {
     pub tasks: u32,
     /// Number of quiz questions.
     pub questions: u32,
-    /// The lab runs in a real environment: its steps are validated by the server only.
-    pub server_verified: bool,
-    /// The lab can actually be done on this platform. When it cannot (a real lab without real environments, a
-    /// simulated lab on a platform that does not run them yet), it does not gate the quiz: the lesson ends
-    /// with the reading and the quiz.
+    /// The lab can actually be done on this platform. When it cannot (no execution plane is connected), it
+    /// does not gate the quiz: the lesson ends with the reading and the quiz.
     pub lab_available: bool,
 }
 
@@ -87,9 +84,9 @@ pub enum Event {
 /// Who reports an event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
-    /// The learner's browser (simulated labs, quizzes).
+    /// The learner's browser: quiz scores. It can never report a lab step.
     Browser,
-    /// The server, after checking a step inside the learner's real environment.
+    /// The server, after checking a step inside the learner's environment.
     Server,
 }
 
@@ -128,7 +125,7 @@ impl Award {
 pub enum RecordError {
     /// The course's prerequisites are not completed.
     CourseLocked,
-    /// The steps of a real lab can only be reported by the server.
+    /// Lab steps are validated by the server inside the environment: the browser cannot report one.
     ServerVerifiedLab,
     /// The step index is out of range.
     InvalidTask,
@@ -154,7 +151,7 @@ pub fn record(lesson: &LessonRules, progress: &mut LessonProgress, event: Event,
     let reference = lesson.reference();
     let mut awards = Vec::new();
     match event {
-        Event::Task(_) if lesson.server_verified && source != Source::Server => return Err(RecordError::ServerVerifiedLab),
+        Event::Task(_) if source != Source::Server => return Err(RecordError::ServerVerifiedLab),
         Event::Task(index) => {
             if index >= lesson.tasks {
                 return Err(RecordError::InvalidTask);
@@ -233,7 +230,7 @@ mod tests {
     use super::*;
 
     fn lesson(tasks: u32, questions: u32) -> LessonRules {
-        LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, server_verified: false, lab_available: true }
+        LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, lab_available: true }
     }
 
     fn xp(recorded: &Recorded) -> u32 {
@@ -243,22 +240,22 @@ mod tests {
     #[test]
     fn a_step_is_awarded_once() {
         let (lesson, mut progress) = (lesson(2, 3), LessonProgress::default());
-        let first = record(&lesson, &mut progress, Event::Task(0), Source::Browser).unwrap();
+        let first = record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
         assert_eq!(first.awards, vec![Award { kind: AwardKind::Task, key: "git/intro/t0".into(), xp: XP_TASK }]);
-        let again = record(&lesson, &mut progress, Event::Task(0), Source::Browser).unwrap();
+        let again = record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
         assert!(again.awards.is_empty() && !again.lesson_completed);
     }
 
     #[test]
     fn step_out_of_range_is_refused() {
-        assert_eq!(record(&lesson(2, 0), &mut LessonProgress::default(), Event::Task(2), Source::Browser), Err(RecordError::InvalidTask));
+        assert_eq!(record(&lesson(2, 0), &mut LessonProgress::default(), Event::Task(2), Source::Server), Err(RecordError::InvalidTask));
     }
 
     #[test]
     fn quiz_waits_for_the_lab() {
         let (lesson, mut progress) = (lesson(1, 3), LessonProgress::default());
         assert_eq!(record(&lesson, &mut progress, Event::Quiz(3), Source::Browser), Err(RecordError::LabNotDone));
-        record(&lesson, &mut progress, Event::Task(0), Source::Browser).unwrap();
+        record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
         assert!(record(&lesson, &mut progress, Event::Quiz(3), Source::Browser).unwrap().lesson_completed);
     }
 
@@ -290,19 +287,19 @@ mod tests {
     }
 
     #[test]
-    fn real_lab_steps_come_from_the_server_only() {
-        let real = LessonRules { server_verified: true, lab_available: true, ..lesson(1, 0) };
-        let mut progress = LessonProgress::default();
-        assert_eq!(record(&real, &mut progress, Event::Task(0), Source::Browser), Err(RecordError::ServerVerifiedLab));
-        assert!(record(&real, &mut progress, Event::Task(0), Source::Server).unwrap().lesson_completed);
+    fn lab_steps_come_from_the_server_only() {
+        let (lesson, mut progress) = (lesson(1, 0), LessonProgress::default());
+        assert_eq!(record(&lesson, &mut progress, Event::Task(0), Source::Browser), Err(RecordError::ServerVerifiedLab));
+        assert!(progress.tasks_done.is_empty());
+        assert!(record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap().lesson_completed);
     }
 
     #[test]
-    fn a_real_lab_does_not_gate_the_quiz_without_real_environments() {
-        let real = LessonRules { server_verified: true, lab_available: false, ..lesson(3, 3) };
-        assert!(!real.lab_required());
-        assert!(record(&real, &mut LessonProgress::default(), Event::Quiz(2), Source::Browser).unwrap().lesson_completed);
-        let available = LessonRules { lab_available: true, ..real };
+    fn a_lab_does_not_gate_the_quiz_while_it_cannot_be_done() {
+        let pending = LessonRules { lab_available: false, ..lesson(3, 3) };
+        assert!(!pending.lab_required());
+        assert!(record(&pending, &mut LessonProgress::default(), Event::Quiz(2), Source::Browser).unwrap().lesson_completed);
+        let available = LessonRules { lab_available: true, ..pending };
         assert_eq!(record(&available, &mut LessonProgress::default(), Event::Quiz(2), Source::Browser), Err(RecordError::LabNotDone));
     }
 

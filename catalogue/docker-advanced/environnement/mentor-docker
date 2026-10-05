@@ -1,0 +1,57 @@
+#!/bin/sh
+# Prépare Docker dans l'environnement : démarre le miroir d'images local, puis attend le moteur Docker.
+# Lancé par postStartCommand ; relançable à la main (« mentor-docker ») si quelque chose s'est arrêté.
+# « mentor-docker registre » démarre en plus le registry de la leçon 5 sur localhost:5000. Il n'est pas lancé
+# d'office : le port 5000 est aussi celui que publie l'application Flask de la leçon 1.
+# « mentor-docker sans-registre » l'arrête (labo de la leçon 1), pour libérer le port 5000.
+set -eu
+
+# Vrai si le registry de cette adresse répond : 200 pour le miroir, 401 pour celui de la leçon 5 (protégé).
+pret() {
+    [ "$(curl -s -o /dev/null -w '%{http_code}' "$1")" = "$2" ]
+}
+
+attendre() {
+    i=0
+    while [ "$i" -lt 60 ]; do
+        if "$@"; then
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 1
+    done
+    return 1
+}
+
+moteur_et_miroir() {
+    docker info >/dev/null 2>&1 && pret http://127.0.0.1:5001/v2/ 200
+}
+
+if ! pret http://127.0.0.1:5001/v2/ 200; then
+    nohup docker-registry serve /opt/mentor/miroir.yml >/tmp/mentor-miroir.log 2>&1 &
+fi
+if ! attendre moteur_et_miroir; then
+    echo "Docker n'est pas prêt : le moteur ou le miroir d'images n'a pas démarré (voir /tmp/mentor-miroir.log)." >&2
+    exit 1
+fi
+
+if [ "${1:-}" = "sans-registre" ]; then
+    pkill -f "docker-registry serve /opt/mentor/registre.yml" || true
+fi
+if [ "${1:-}" = "registre" ]; then
+    if ! pret http://127.0.0.1:5000/v2/ 401; then
+        occupant=$(docker ps --filter publish=5000 --format '{{.Names}}' | head -n 1)
+        if [ -n "$occupant" ]; then
+            echo "Le port 5000 est occupé par le conteneur « $occupant » : supprime-le (docker rm -f $occupant), puis relance « mentor-docker registre »." >&2
+            exit 1
+        fi
+        mkdir -p "$HOME/.local/share/registre"
+        nohup docker-registry serve /opt/mentor/registre.yml >/tmp/mentor-registre.log 2>&1 &
+    fi
+    if ! attendre pret http://127.0.0.1:5000/v2/ 401; then
+        echo "Le registry de l'équipe n'a pas démarré sur localhost:5000 (voir /tmp/mentor-registre.log)." >&2
+        exit 1
+    fi
+    echo "Le registry de l'équipe répond sur localhost:5000 (identifiant : apprenant, mot de passe : mentor)."
+fi
+echo "Docker est prêt."

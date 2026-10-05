@@ -1,7 +1,7 @@
 # Mentor
 
-White-label interactive training platform: learners practise in simulated terminals or in real isolated
-environments, validate quizzes, earn XP, level up and unlock badges. Courses are plain Markdown files.
+White-label interactive training platform: learners practise in real isolated environments, validate
+quizzes, earn XP, level up and unlock badges. Courses are plain Markdown files.
 
 This repository is **Mentor v2**: a rewrite in Rust, with Firecracker microVMs for real labs and multi-tenancy.
 v1 is a Python/Django application and stays the reference implementation while v2 is built.
@@ -119,7 +119,8 @@ The catalogue was converted from the French v1 format with
 [`conformance/v1-names.json`](conformance/v1-names.json). The same table lets the conformance test compare v2's
 output with v1's export.
 
-`catalogue/README.md`, the authoring guide, still describes the French v1 names and has to be rewritten.
+The authoring guide is [`catalogue/README.md`](catalogue/README.md); [`catalogue/_template/`](catalogue/_template)
+is the course to copy when starting a new one.
 
 ## Licence
 

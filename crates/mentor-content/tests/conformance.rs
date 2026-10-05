@@ -4,6 +4,11 @@
 //! The v1 export uses the French names of the v1 format; it is first rewritten with the English names of
 //! `conformance/v1-names.json` (the table the migration tool uses), then compared on two levels:
 //! - **structure** (identifiers, order, durations, labs, checks, solutions, correct answers): strict equality;
+//!
+//! v1 also had labs simulated in the browser; v2 only has real ones. What only existed for simulated labs is
+//! dropped from the v1 side before comparing, and the two courses that were simulated in v1 and are rewritten
+//! as real labs here are compared on everything but their labs and lesson texts (see [`REWRITTEN_SINCE_V1`]).
+//!
 //! - **HTML**: markup differs (another Markdown engine, no server-side highlighting), so the **text** of each
 //!   fragment is compared, with tags and whitespace removed.
 
@@ -22,13 +27,21 @@ const HTML_FIELDS: [&str; 10] =
 
 /// Fragments where v1 let through HTML that the author meant as text (`echo "<h1>…</h1>"` in a hint,
 /// `docker logs <nom>` in an answer): the browser interpreted it and words went missing. The catalogue now
-/// writes them as code, so their text differs from v1's on purpose.
-const CORRECTED_SINCE_V1: [&str; 4] = [
+/// writes them as code, so their text differs from v1's on purpose. One exam question was true of the
+/// simulated terminal only.
+const CORRECTED_SINCE_V1: [&str; 5] = [
     "git-basics.lessons[3].lab.steps[1].hint",
     "git-basics.lessons[4].lab.steps[1].hint",
     "git-basics.lessons[5].lab.steps[4].hint",
     "docker-hello.lessons[3].quiz[0].options[1].html",
+    // `docker compose ps` hides exited containers: the question now says `ps -a`, as a real terminal needs.
+    "docker-advanced.exam.questions[30].question",
 ];
+
+/// Courses whose labs were simulated in v1 and are real here: their labs, environments and the texts that
+/// describe them changed on purpose. Their identifiers, order, durations, objectives, quizzes and exam are
+/// still compared.
+const REWRITTEN_SINCE_V1: [&str; 2] = ["docker-hello", "docker-advanced"];
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -162,6 +175,36 @@ fn translate_v1(course: &mut Value, names: &Value) {
     });
 }
 
+fn remove(value: &mut Value, keys: &[&str]) {
+    if let Value::Object(map) = value {
+        keys.iter().for_each(|key| {
+            map.remove(*key);
+        });
+    }
+}
+
+/// Drops from a v1 course what only existed for simulated labs. Returns whether it had simulated labs.
+fn drop_simulated(course: &mut Value) -> bool {
+    remove(course, &["engine", "scenarios"]);
+    let mut simulated = false;
+    each(&mut course["lessons"], |lesson| {
+        let lab = &mut lesson["lab"];
+        if !lab.is_object() {
+            return;
+        }
+        simulated |= lab["engine"] != "real";
+        remove(lab, &["engine", "server"]);
+        each(&mut lab["steps"], |step| remove(step, &["effect"]));
+    });
+    simulated
+}
+
+/// Leaves out of the comparison what a rewritten course changed on purpose.
+fn drop_rewritten(course: &mut Value) {
+    remove(course, &["environments", "description_html", "cheatsheet_html"]);
+    each(&mut course["lessons"], |lesson| remove(lesson, &["lab", "environment", "body_html"]));
+}
+
 fn read_json(relative: &str) -> Value {
     serde_json::from_str(&std::fs::read_to_string(root().join(relative)).unwrap()).unwrap()
 }
@@ -175,6 +218,14 @@ fn report() -> (Vec<String>, Vec<String>, usize) {
     assert_eq!(a.len(), b.len(), "number of courses");
     for (x, y) in a.iter_mut().zip(b) {
         translate_v1(x, &names);
+        let slug = x["slug"].as_str().unwrap().to_string();
+        let simulated = drop_simulated(x);
+        // Exactly the courses listed as rewritten had simulated labs: none is skipped by mistake.
+        assert_eq!(simulated, REWRITTEN_SINCE_V1.contains(&slug.as_str()), "{slug}: simulated labs in v1");
+        if simulated {
+            drop_rewritten(x);
+            drop_rewritten(y);
+        }
         // Exam warnings are diagnostics, now in English: only their number is compared.
         for exam in [&mut x["exam"], &mut y["exam"]] {
             if exam.is_object() {

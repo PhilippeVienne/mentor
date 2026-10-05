@@ -56,14 +56,7 @@ async fn imports_once_keeps_dates_and_stays_inside_the_tenant() {
     assert_eq!(tx.total_xp(alice).await.unwrap(), 70);
     assert_eq!(tx.badges_of(alice).await.unwrap().into_iter().collect::<Vec<_>>(), ["premier-pas"]);
     assert_eq!(tx.cohorts_of(alice).await.unwrap(), ["promo-2026"]);
-    let lesson = LessonRules {
-        course: "git-basics".into(),
-        slug: "introduction".into(),
-        tasks: 3,
-        questions: 3,
-        server_verified: false,
-        lab_available: false,
-    };
+    let lesson = LessonRules { course: "git-basics".into(), slug: "introduction".into(), tasks: 3, questions: 3, lab_available: false };
     let progress = tx.lesson_progress(alice, &lesson).await.unwrap();
     assert!(progress.completed && progress.tasks_done.len() == 3 && progress.quiz_best == 3);
     // The three events fall on three consecutive days: the streak survives the import because dates do.

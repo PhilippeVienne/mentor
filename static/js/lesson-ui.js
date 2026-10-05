@@ -1,5 +1,6 @@
-/* Page de leçon : amorce le labo, le quiz, les boutons de commande, les fichiers à créer, les schémas Mermaid
-   et l'envoi de la progression (XP, niveaux, badges) à l'API Django. */
+/* Page de leçon : amorce le quiz, les boutons de commande, les fichiers à créer, les schémas Mermaid et l'envoi
+   de la progression (XP, niveaux, badges) à l'API. Les labos tournent dans un environnement réel, vérifié par le
+   serveur : ce script ne simule aucun terminal et ne déclare jamais une étape de labo. */
 (function (root) {
     'use strict';
 
@@ -318,48 +319,23 @@
         });
     }
 
-    /* ── Sections vides (« Entraîne-toi » : le labo est dans le panneau voisin) ─ */
-    function hintEmptySections(hasLab) {
-        const body = doc.getElementById('lesson-body');
-        if (!body || !hasLab) return;
-        body.querySelectorAll('h2').forEach((h2) => {
-            const next = h2.nextElementSibling;
-            if (!next || next.tagName !== 'H2') return;
-            const hint = doc.createElement('p');
-            hint.className = 'labo-hint';
-            hint.textContent = 'Les étapes du labo sont dans le panneau « Labo » : à droite de la leçon sur grand écran, juste en dessous sur mobile. Chaque étape validée te rapporte de l\'XP.';
-            h2.after(hint);
-        });
+    /* ── Amorçage ───────────────────────────────────────────────────────── */
+    /* Copie un texte dans le presse-papiers ; `false` si le navigateur le refuse. */
+    function copy(text) {
+        if (!root.navigator || !root.navigator.clipboard) return Promise.resolve(false);
+        return root.navigator.clipboard.writeText(text).then(() => true, () => false);
     }
 
-    /* ── Amorçage ───────────────────────────────────────────────────────── */
     function init() {
         const data = readJson('lesson-data');
-        const labHost = doc.getElementById('lab-root');
         const quizHost = doc.getElementById('quiz-root');
-        let lab = null;
         const progress = data ? new Progress(data) : null;
         lessonState.data = data;
         let quizUi = null;
         const lockState = () => {
-            const done = new Set((data.lesson.tasksDone) || []);
-            if (lab && lab.session && lab.session.done) lab.session.done.forEach((i) => done.add(i));
             const required = data.lesson.labRequired !== false;
-            return root.QuizLogic.labProgress(required ? data.lesson.tasks : 0, [...done]);
+            return root.QuizLogic.labProgress(required ? data.lesson.tasks : 0, data.lesson.tasksDone || []);
         };
-
-        if (data && data.lab && labHost && root.LabCore && root.LabUI) {
-            const session = new root.LabCore.LabSession(data.lab.engine || data.course.engine, data.lab);
-            lab = new root.LabUI(labHost, session, {
-                title: 'Labo',
-                onTasksDone: (indices) => {
-                    indices.forEach((i) => progress.send({ type: 'task', task: i }));
-                    if (quizUi) quizUi.refresh();
-                },
-            });
-        } else if (labHost) {
-            labHost.hidden = true;
-        }
 
         if (data && quizHost && data.quiz && data.quiz.length) {
             quizUi = new QuizUI(quizHost, data.quiz, {
@@ -367,36 +343,28 @@
                 best: data.lesson.quizBest,
                 onScore: (score) => progress.send({ type: 'quiz', score }),
                 onGoLab: () => {
-                    const target = labHost || doc.getElementById('env-root') || doc.querySelector('.lesson-lab');
-                    if (!target) return;
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (lab && lab.input) lab.input.focus({ preventScroll: true });
+                    const target = doc.getElementById('env-root') || doc.querySelector('.lesson-lab');
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 },
             });
             lessonState.listeners.push(() => quizUi.refresh());
         }
 
+        /* Sans terminal relié à la page, les boutons du cours copient la commande ou le fichier. */
         doc.addEventListener('click', (event) => {
             const run = event.target.closest('.cmd__run[data-cmd]');
             if (run) {
-                if (!lab) { toast('info', 'Pas de labo ici', 'Cette leçon n\'a pas de terminal : tu peux copier la commande.'); return; }
-                const rect = lab.root.getBoundingClientRect();
-                if (rect.top < 0 || rect.top > root.innerHeight * 0.7) lab.root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                lab.exec(run.dataset.cmd);
-                lab.input.focus({ preventScroll: true });
+                copy(run.dataset.cmd).then((ok) => toast('info', ok ? 'Commande copiée' : 'Copie impossible', ok ? 'Colle-la dans le terminal de ton environnement.' : 'Sélectionne la commande pour la copier.'));
                 return;
             }
             const create = event.target.closest('.filebox__create');
             if (create) {
                 const box = create.closest('.filebox');
-                if (!box || !lab) { toast('info', 'Pas de labo ici', 'Cette leçon n\'a pas de dossier de travail.'); return; }
-                lab.writeFile(box.dataset.file, box.dataset.content || '');
-                toast('info', `Fichier ${box.dataset.file} créé`, 'Il est dans le dossier de travail du labo.');
+                if (!box) return;
+                copy(box.dataset.content || '').then((ok) => toast('info', ok ? `Contenu de ${box.dataset.file} copié` : 'Copie impossible', ok ? 'Colle-le dans ce fichier, dans ton environnement.' : 'Sélectionne le contenu pour le copier.'));
             }
         });
 
-        root.lessonLab = lab;
-        hintEmptySections(!!lab);
         keepShortCodeTogether();
         mountMermaid();
     }

@@ -1,6 +1,6 @@
 [package]
 name = "mentor-content"
-description = "Compilateur du catalogue de formation Mentor (Markdown, labos, quiz, examens)."
+description = "Compiler of the Mentor training catalogue (Markdown, labs, quizzes, exams)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -1,0 +1,8 @@
+# Images servies par le miroir local : `source  nom-servi`, une par ligne.
+# La source est épinglée ; le nom servi est celui que tapent les apprenant·e·s dans les leçons.
+python:3.13-slim       python:3.13-slim
+nginx:1.29-alpine      nginx:latest
+nginx:1.29-alpine      nginx:alpine
+postgres:16-alpine     postgres:16-alpine
+alpine:3.22            alpine:latest
+node:20-slim           node:20-slim

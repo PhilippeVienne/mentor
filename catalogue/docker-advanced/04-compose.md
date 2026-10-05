@@ -34,7 +34,7 @@ volumes:
 
 - **`services`** : un bloc par conteneur. Le nom du service est aussi son nom sur le réseau (`db`).
 - **`ports`** : les ports publiés (comme `-p`).
-- **`depends_on`** : l'ordre de démarrage. Attention, il n'attend **pas** que `db` soit prête à répondre ; pour cela on ajoute un `healthcheck` et `condition: service_healthy`. Attention, il n'attend **pas** que `db` soit prête à répondre ; pour cela on ajoute un `healthcheck` et `condition: service_healthy`.
+- **`depends_on`** : l'ordre de démarrage. Attention, il n'attend **pas** que `db` soit prête à répondre ; pour cela on ajoute un `healthcheck` et `condition: service_healthy`.
 - **`volumes`** (en bas) : les volumes nommés utilisés par les services.
 - Compose crée automatiquement un **réseau dédié** au projet : tout le monde se voit par son nom de service.
 
@@ -49,10 +49,14 @@ flowchart LR
 
 ```shell run
 docker compose up -d
-docker compose ps
+docker compose ps -a
 docker compose logs db
 docker compose down
 ```
+
+`docker compose ps` ne liste que les conteneurs en cours d'exécution : avec `-a`, tu vois aussi ceux qui se sont arrêtés (« Exited »), donc ceux qui posent problème.
+
+Compose préfixe ce qu'il crée par le **nom du projet**, par défaut celui du dossier. Dans le labo, le dossier s'appelle `workspace` : les conteneurs sont `workspace-web-1` et `workspace-db-1`, le volume `workspace_dbdata`.
 
 :::warning down et les volumes
 `docker compose down` supprime conteneurs et réseau, **mais pas les volumes** : tes données restent. `down -v` supprime aussi les volumes (à utiliser en connaissance de cause !).
@@ -74,6 +78,7 @@ Pour une valeur sensible (mot de passe), évite de l'écrire en dur dans le fich
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
   Un `compose.yml` est fourni… mais il y manque quelque chose pour que la base démarre. À toi de le découvrir.
 files:
@@ -96,21 +101,22 @@ steps:
   - text: 'Démarre la pile : `docker compose up -d`'
     hint: "Lis la section « Les commandes » : le `-d` fonctionne comme pour `docker run`."
     checks:
-      - compose-containers: 2
+      - output-contains: ['docker compose ps -a -q | wc -l', '^\s*2$']
     solution:
       - docker compose up -d
-  - text: "Regarde l'état avec `docker compose ps` : un service est « Exited » !"
-    hint: "Le service qui n'est pas « Up » est celui dont tu dois lire les logs (`docker compose logs NOM-DU-SERVICE`)."
+  - text: "Regarde l'état avec `docker compose ps -a` : un service est « Exited » ! Lis ses journaux pour comprendre, et garde-les : `docker compose logs db > journal-db.txt`"
+    hint: "Le service qui n'est pas « Up » est celui dont tu dois lire les logs (`docker compose logs NOM-DU-SERVICE`). Sans `-a`, `docker compose ps` ne montre que les conteneurs en cours d'exécution."
     after: [1]
     checks:
-      - command: ^docker compose ps
+      - env-file-contains: [journal-db.txt, 'POSTGRES_PASSWORD']
     solution:
-      - docker compose ps
+      - docker compose ps -a
       - docker compose logs db
-  - text: 'Lis les logs de `db` pour comprendre, puis ajoute `POSTGRES_PASSWORD` dans `compose.yml` (section `environment` de `db`)'
-    hint: 'Sous « db: », ajoute : environment: puis POSTGRES_PASSWORD: secret (indentation de 4 espaces pour environment, 6 pour la variable). Tu peux remplacer le fichier par celui de la leçon.'
+      - docker compose logs db > journal-db.txt
+  - text: 'Les logs de `db` donnent la cause : ajoute `POSTGRES_PASSWORD` dans `compose.yml` (section `environment` de `db`)'
+    hint: 'Avec `nano compose.yml` (ou VS Code) : sous « db: », ajoute `environment:` puis, à la ligne suivante, `POSTGRES_PASSWORD: secret` (indentation de 4 espaces pour `environment`, 6 pour la variable). `docker compose config` affiche la configuration telle que Compose la comprend.'
     checks:
-      - compose-variable: [db, POSTGRES_PASSWORD]
+      - output-contains: ['docker compose config', '^\s+POSTGRES_PASSWORD: "?[^"\s]']
     solution:
       - write:
           compose.yml: |
@@ -134,22 +140,24 @@ steps:
     hint: "Même commande qu'à l'étape 1 : Compose ne recrée que le service dont la configuration a changé."
     after: [3]
     checks:
-      - compose-running: 2
+      - output-contains: ['docker compose ps -q --status running | wc -l', '^\s*2$']
+      - command-succeeds: 'docker compose exec -T db pg_isready -U postgres'
     solution:
       - docker compose up -d
-  - text: 'Vérifie que le web répond : `curl localhost:8080`'
+  - text: 'Vérifie que le web répond avec `curl localhost:8080`, puis enregistre la page : `curl localhost:8080 > page.html`'
     hint: "Le port publié par `web` dans le `compose.yml`."
     after: [4]
     checks:
-      - command: '^curl .*8080'
+      - env-file-contains: [page.html, 'Welcome to nginx']
     solution:
       - 'curl localhost:8080'
+      - 'curl localhost:8080 > page.html'
   - text: 'Démonte tout, volumes compris : `docker compose down -v`'
-    hint: "`down` démonte tout ; le drapeau `-v` supprime aussi les volumes nommés."
+    hint: "`down` démonte tout ; le drapeau `-v` supprime aussi les volumes nommés (ici `workspace_dbdata`)."
     after: [4]
     checks:
-      - compose-empty: true
-      - volume-absent: projet_dbdata
+      - command-succeeds: 'docker info > /dev/null && test -z "$(docker compose ps -a -q)"'
+      - command-succeeds: 'docker info > /dev/null && ! docker volume inspect workspace_dbdata > /dev/null 2>&1'
     solution:
       - docker compose down -v
 :::

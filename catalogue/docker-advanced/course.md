@@ -2,7 +2,7 @@
 title: "Docker advanced"
 icon: "🚢"
 summary: "Dockerfile, volumes, réseaux, Compose et bonnes pratiques de production, comme sur l'infra de l'équipe."
-engine: docker
+environment: environnement
 requires: [docker-hello]
 published: true
 color: "#1D63ED"
@@ -23,5 +23,5 @@ Tu sais lancer des conteneurs : place à la **construction d'applications compl
 - Produire une image **légère et sûre** (multi-étapes, non-root) et la publier sur un registry.
 
 :::info Durée
-Environ **1 h 30** pour 5 leçons. Prépare-toi à écrire quelques fichiers (Dockerfile, `compose.yml`) : le labo propose un éditeur intégré et des boutons « Créer ce fichier ».
+Environ **1 h 30** pour 5 leçons. Prépare-toi à écrire quelques fichiers (Dockerfile, `compose.yml`) : dans l'environnement prêté par le portail (un vrai moteur Docker), tu les édites avec `nano` ou avec VS Code.
 :::

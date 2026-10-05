@@ -8,6 +8,10 @@ The catalogue is rewritten in place. Course content (lesson prose, titles, check
 translated: only the format is. YAML is edited with ruamel.yaml in round-trip mode, so comments, quoting
 and block scalars are preserved. Running the tool twice is harmless.
 
+Since v2 dropped simulated labs, the result only compiles for courses whose labs are all real (`moteur: reel`):
+labs of the simulated `git` and `docker` engines are converted in name, then refused by the compiler, and have
+to be rewritten as real labs by hand.
+
 Requires: ruamel.yaml (pip install ruamel.yaml).
 """
 

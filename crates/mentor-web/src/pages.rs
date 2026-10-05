@@ -414,7 +414,7 @@ fn script_json(value: &serde_json::Value) -> String {
 fn lesson_data(course: &Course, lesson: &Lesson, progress: &LessonProgress, next_url: &str) -> serde_json::Value {
     let rules = rules(course, lesson);
     serde_json::json!({
-        "course": { "slug": course.slug, "title": course.title, "engine": course.engine, "accent": course.accent },
+        "course": { "slug": course.slug, "title": course.title, "accent": course.accent },
         "lesson": {
             "slug": lesson.slug,
             "title": lesson.title,

@@ -82,6 +82,7 @@ Le `docker-compose.yml` de Vitrine monte à la fois du code en bind mount (pour 
 ## Entraîne-toi
 
 :::lab
+engine: real
 intro: |
   Prouve que les données survivent à la suppression des conteneurs, puis sers ta propre page avec nginx.
 files:
@@ -91,39 +92,39 @@ steps:
   - text: 'Crée le volume `donnees`'
     hint: "Le sous-ensemble `volume` de la CLI a une action `create`."
     checks:
-      - volume-exists: donnees
+      - command-succeeds: 'docker volume inspect donnees'
     solution:
       - docker volume create donnees
   - text: 'Écris `hello.txt` dans le volume depuis un conteneur `alpine` jetable'
     hint: "`-v nom-du-volume:/data` monte le volume ; la commande `sh -c \"…\"` écrit un fichier dans `/data` avec `echo … > fichier`."
     checks:
-      - volume-contains: [donnees, hello.txt]
+      - command-succeeds: 'docker volume inspect donnees > /dev/null && docker run --rm -v donnees:/data:ro alpine test -s /data/hello.txt'
     solution:
       - 'docker run --rm -v donnees:/data alpine sh -c "echo Mentor > /data/hello.txt"'
-  - text: 'Relis-le depuis un *autre* conteneur avec `cat`'
-    hint: "Même montage `-v`, mais cette fois la commande lit le fichier au lieu de l'écrire."
+  - text: 'Relis-le depuis un *autre* conteneur avec `cat`, en gardant ce qu''il affiche dans `lecture.txt` (termine la commande par `> lecture.txt`)'
+    hint: "Même montage `-v`, mais cette fois la commande lit le fichier au lieu de l'écrire. Le `> lecture.txt` final est interprété par ton terminal, pas par le conteneur."
     after: [2]
     checks:
-      - command: '^docker run .*cat /data/hello\.txt'
+      - env-file-contains: [lecture.txt, '\S']
+      - command-succeeds: 'docker volume inspect donnees > /dev/null && test "$(docker run --rm -v donnees:/data:ro alpine cat /data/hello.txt)" = "$(cat lecture.txt)"'
     solution:
       - 'docker run --rm -v donnees:/data alpine cat /data/hello.txt'
-  - text: 'Sers ton dossier avec nginx (bind mount) sur le port `8081`'
-    hint: "Le bind mount est un `-v` dont la source est un chemin de ta machine : `$(pwd)` désigne le dossier courant."
+      - 'docker run --rm -v donnees:/data alpine cat /data/hello.txt > lecture.txt'
+  - text: 'Sers ton dossier avec nginx (conteneur `site`, bind mount) sur le port `8081`'
+    hint: "Le bind mount est un `-v` dont la source est un chemin de ta machine : `$(pwd)` désigne le dossier courant. La destination est le dossier que sert nginx : `/usr/share/nginx/html`."
     checks:
-      - container-running: site
-      - container-bind: site
+      - output-contains: ['docker inspect -f "{{.State.Running}}" site', '^true$']
+      - output-contains: ['docker inspect -f "{{range .Mounts}}{{.Type}}:{{.Destination}} {{end}}" site', 'bind:/usr/share/nginx/html( |$)']
+      - output-contains: ['docker port site 80', ':8081$']
     solution:
       - 'docker run -d --name site -p 8081:80 -v $(pwd):/usr/share/nginx/html nginx'
-  - text: 'Modifie `index.html` puis vérifie avec `curl localhost:8081` : le changement est instantané'
-    hint: "Modifie `index.html` avec l'éditeur du labo, puis refais le `curl` : aucun rebuild nécessaire."
+  - text: 'Modifie le titre dans `index.html` puis vérifie avec `curl localhost:8081` : le changement est instantané'
+    hint: "Modifie `index.html` avec `nano index.html` (ou VS Code), puis refais le `curl` : aucun rebuild nécessaire."
     after: [4]
     checks:
-      - file-modified: index.html
-      - command: '^curl .*8081'
+      - command-succeeds: 'page=$(curl -fs localhost:8081) && test -n "$page" && ! printf "%s" "$page" | grep -q "Mon site Mentor"'
     solution:
-      - write:
-          index.html: |
-            <h1>Bonjour l'équipe</h1>
+      - "echo \"<h1>Bonjour l'équipe</h1>\" > index.html"
       - 'curl localhost:8081'
 :::
 
