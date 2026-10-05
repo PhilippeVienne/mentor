@@ -11,6 +11,7 @@
 pub mod badges;
 pub mod cohorts;
 pub mod exam;
+pub mod import_v1;
 pub mod platform;
 pub mod progress;
 mod tenant;
@@ -25,6 +26,9 @@ pub enum Error {
     Database(#[from] sqlx::Error),
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
+    /// The v1 export could not be read.
+    #[error("invalid v1 export: {0}")]
+    InvalidExport(String),
     /// The event was refused by the progress rules; nothing was written.
     #[error("event refused: {0:?}")]
     Refused(mentor_core::progress::RecordError),

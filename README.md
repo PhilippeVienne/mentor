@@ -16,9 +16,10 @@ Phase 0 (foundations) is in progress. What exists today:
 | [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
 | [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams |
 
-| [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, lesson progress and XP. Tenant isolation is enforced by row-level security |
+| [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
+| [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export |
 
-Not built yet: the web server, the catalogue linter, lab orchestration; in the database, cohorts, badges earned and exam attempts.
+Not built yet: the web server, the catalogue linter, lab orchestration.
 
 Real labs run in Firecracker microVMs, but Mentor does not implement that isolation: it will come from a base
 shared with the [Atelier](https://github.com/PhilippeVienne/atelier) project, on Kubernetes. The integration
@@ -56,6 +57,25 @@ PostgreSQL 16 or later is required.
 
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
+
+## Moving a v1 portal into a tenant
+
+```shell
+# on the v1 side: Django's own export, no change to v1 needed
+python manage.py dumpdata auth.user training.lesson training.lessonprogress training.xpevent \
+    training.userbadge training.cohort training.cohortmembership training.examattempt -o v1.json
+
+# on the v2 side, with the role that owns the database
+export MENTOR_DATABASE_URL=postgres://owner:…@host/mentor
+mentor migrate
+mentor tenant-create acme "Acme" --host acme.mentor.example
+mentor import-v1 v1.json --tenant acme --v1-catalogue conformance/v1-catalogue.json --catalogue catalogue
+```
+
+The import runs in one transaction and can be replayed. Dates are kept. Tried on v1's demonstration data (5
+users, 210 XP events): XP totals, badges and completed lessons came out identical for every user. Imported
+accounts get a placeholder identity (`v1:<username>`) until their first login, which the web server will have
+to reconcile; that part does not exist yet.
 
 ## Language and catalogue format
 

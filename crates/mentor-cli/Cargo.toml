@@ -1,0 +1,18 @@
+[package]
+name = "mentor-cli"
+description = "Administration of a Mentor platform: database migrations, tenants, import of v1 data."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "mentor"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+mentor-content = { path = "../mentor-content" }
+mentor-db = { path = "../mentor-db" }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }

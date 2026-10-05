@@ -127,9 +127,11 @@ dedicated CI job runs on a KVM-capable runner.
 forced*, keyed on a transaction-local setting; with no tenant set, a query sees nothing. The application role
 owns no table and cannot create tenants. Foreign keys include `tenant_id`, so a row cannot reference another
 tenant's learner even if a policy were wrong. Resolving a tenant from a host name, which happens before any
-tenant is known, goes through one `SECURITY DEFINER` function that returns only the identifier. Seven tests
-against a real PostgreSQL check this, including a forged insert into another tenant and four concurrent requests
-for the same XP.
+tenant is known, goes through one `SECURITY DEFINER` function that returns only the identifier. Platform
+administration has its own role, `mentor_platform`: because the policies are forced, even the owning role
+needs it to act across tenants. Tests against a real PostgreSQL check all this, running migrations as an
+ordinary owner and the application as an unprivileged role; they include a forged insert into another tenant
+and four concurrent requests for the same XP.
 
 RLS is preferred to "one schema per tenant": a single set of migrations, no practical limit on the number of
 tenants, and isolation does not depend on a forgotten filter in the code. Its cost: every query goes through an
@@ -145,7 +147,7 @@ application, then replaces the rest slice by slice.
 | --- | --- | --- |
 | **0. Foundations** | Cargo workspace, CI, `mentor-core` and `mentor-content` | The Rust compiler matches v1's `export_catalogue` output for the 19 courses (see §6.1) |
 | **1. Isolation** | The base extracted from Atelier, and Mentor driving it for real labs ([execution-plane.md](execution-plane.md)) | The real labs of the catalogue replay successfully in microVMs; v1's Docker broker is removed |
-| **2. Tenants** | PostgreSQL schema with `tenant_id` and RLS, migration of existing data into a first tenant | Isolation tests: no query from one tenant reads another. *Started: tenants, learners, progress and XP are in `mentor-db` with their isolation tests; cohorts, badges, exam attempts and the v1 data migration are not* |
+| **2. Tenants** | PostgreSQL schema with `tenant_id` and RLS, migration of existing data into a first tenant | Isolation tests: no query from one tenant reads another. *Done in `mentor-db` and `mentor-cli`: the full v1 data model with isolation tests, and `mentor import-v1`, checked against v1's demonstration data. Left for the web tier: adopting an imported account at its first login* |
 | **3. Read-only web** | `mentor-web` serves home, catalogue, lessons, help, with per-tenant OIDC | Rendered pages are equivalent to Django's (automated HTML comparison) |
 | **4. Read-write web** | Progress, XP, quiz, exam, badges, management, reports | The scenarios of the Python tests are replayed against the Rust API |
 | **5. Switch-over** | Django retired, documentation and deployment updated | A full acceptance run on a KVM host with two tenants |
