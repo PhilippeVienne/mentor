@@ -1,6 +1,6 @@
 # Mentor v2: Rust, Firecracker, multi-tenant
 
-> **Status: direction approved on 4 October 2026; phase 0 in progress.** This document frames the decision:
+> **Status: direction approved on 4 October 2026; phase 0 mostly done, phase 1 prototyped.** This document frames the decision:
 > scope, target architecture, threat model, migration plan, risks, decisions taken and open points (§10).
 > v1 is the Python/Django portal; its repository stays the reference implementation during the migration.
 
@@ -96,6 +96,24 @@ Chosen stack (§10): `axum` + `tokio` for the web tier, `sqlx` for PostgreSQL (q
 | **Docker-in-Docker** | An ordinary Docker daemon **inside** the microVM: Sysbox is no longer needed |
 | **VS Code web** | code-server inside the VM, relayed over `vsock` (replaces the `mentor_bridge.py` bridge) |
 | **Memory** | Fixed size per VM, admission by the scheduler before start; ballooning to be evaluated later |
+
+#### Prototype status (October 2026)
+
+`mentor-host` and `mentor-guest` prove the core of this table on one machine: a microVM boots from a read-only
+ext4 rootfs exported from a container image, with `mentor-guest` as its init process, and the host runs commands
+and interactive pseudo-terminals in it over vsock. Measured on the development machine: the guest agent answers
+about 550 ms after Firecracker starts (cold boot); five end-to-end tests booting six microVMs run in 1.2 s.
+
+| In the prototype | Not yet |
+| --- | --- |
+| Read-only rootfs built from a container image, without root privilege | Build inside a microVM; images addressed by digest |
+| vsock control channel: exec, terminal (real PTY), shutdown | Files, checks, VS Code relay; output size limits; a non-root user in the guest |
+| No network interface at all in the guest | Per-tenant network namespace and controlled egress |
+| Writable `/workspace`, `/tmp`, `/run` as tmpfs | Per-session disk with a hard quota |
+| VM killed with its host process, run directory removed | The `jailer`, cgroups, seccomp profile review, snapshots |
+
+The prototype therefore **must not run untrusted workloads yet**: without the jailer, a Firecracker escape would
+land in the developer's own account.
 
 The interface between `mentor-web` and the execution plane keeps the **allow-list** of the v1 broker
 (`broker/base.py`: create, remove, status, exec, terminal, SSH, build, inventory). No raw Firecracker parameter

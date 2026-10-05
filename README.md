@@ -16,7 +16,12 @@ Phase 0 (foundations) is in progress. What exists today:
 | [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
 | [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams |
 
-Not built yet: the web server, the database layer, the execution plane (Firecracker), the catalogue linter.
+| [`mentor-guest`](crates/mentor-guest) | **Prototype.** Init process and agent of a microVM: runs commands and interactive terminals requested over vsock |
+| [`mentor-host`](crates/mentor-host) | **Prototype.** Starts Firecracker microVMs and talks to their guest agent |
+
+Not built yet: the web server, the database layer, the scheduler, the catalogue linter. The execution plane is
+a prototype: it proves the chain kernel → read-only rootfs → guest agent → vsock, without the jailer, per-session
+disks, snapshots or networking yet.
 The details of what is and is not ported are in [doc/architecture.md §6.1](doc/architecture.md#61-phase-0-conformance-what-matches-v1-means).
 
 ## Layout
@@ -24,7 +29,7 @@ The details of what is and is not ported are in [doc/architecture.md §6.1](doc/
 ```text
 crates/          Rust workspace
 catalogue/       the 19 courses, converted from v1 (French content, English format)
-tools/           one-off tools (v1 catalogue migration)
+tools/           development tools (microVM setup, rootfs build, v1 catalogue migration)
 conformance/     reference output exported from v1, and the v1 commit it comes from
 doc/             architecture and decisions
 ```
@@ -39,6 +44,22 @@ cargo clippy --all-targets && cargo fmt --check
 
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
+
+## Running a microVM
+
+Requirements: Linux on x86_64 with KVM accessible to your user, Docker (to export a base image), `fakeroot`,
+`mke2fs`, and the Rust target `x86_64-unknown-linux-musl` (`rustup target add x86_64-unknown-linux-musl`).
+
+```shell
+tools/setup-dev.sh        # downloads Firecracker (checksum verified) and a guest kernel into .dev/
+tools/build-rootfs.sh     # builds .dev/rootfs.ext4 from alpine, with mentor-guest as init
+cargo run -p mentor-host -- exec -- sh -c 'uname -a; id'
+cargo run -p mentor-host -- shell
+cargo test -p mentor-host # end-to-end tests; skipped when KVM or .dev/ is missing
+```
+
+On the development machine the guest agent answers about 550 ms after Firecracker starts (cold boot, no
+snapshot), and a full `exec` round trip, boot and shutdown included, takes about 0.6 s.
 
 ## Language and catalogue format
 

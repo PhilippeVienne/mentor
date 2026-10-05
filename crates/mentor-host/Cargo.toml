@@ -1,0 +1,11 @@
+[package]
+name = "mentor-host"
+description = "Host agent of the Mentor execution plane: starts Firecracker microVMs and talks to their guest agent."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+libc = { workspace = true }
+mentor-guest = { path = "../mentor-guest" }
+serde_json = { workspace = true }
