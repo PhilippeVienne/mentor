@@ -53,6 +53,8 @@ pub enum Submitted {
     },
     Graded {
         grade: Grade,
+        /// The questions as they were shown, to present the correction in the same order.
+        questions: Vec<DrawnQuestion>,
         /// XP credited for passing; 0 when failed, or when the course was already completed by practising.
         xp_gained: u32,
         /// Lessons this exam marked as completed.
@@ -60,7 +62,35 @@ pub enum Submitted {
     },
 }
 
+/// Where a learner stands with the exam of a course, before starting anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExamStatus {
+    /// An attempt is running and its time is not over.
+    pub open: bool,
+    /// Seconds to wait before a new attempt; 0 when one is open or allowed.
+    pub retry_after: i64,
+}
+
 impl TenantTx {
+    /// Reads the state of the exam without changing anything. An attempt whose time ran out is only closed
+    /// by the next start, from which the delay will run: it counts here as failing now.
+    pub async fn exam_status(&mut self, learner: Uuid, course: &str, cooldown_seconds: i64, now: i64) -> Result<ExamStatus> {
+        let row = sqlx::query(
+            "SELECT coalesce(bool_or(finished_at IS NULL AND deadline > to_timestamp($3)), false) AS open, \
+                    extract(epoch FROM max(CASE WHEN finished_at IS NULL THEN to_timestamp($3) ELSE finished_at END) \
+                                       FILTER (WHERE NOT passed AND (finished_at IS NOT NULL OR deadline <= to_timestamp($3))))::bigint AS failed_at \
+             FROM exam_attempt WHERE learner_id = $1 AND course = $2",
+        )
+        .bind(learner)
+        .bind(course)
+        .bind(now as f64)
+        .fetch_one(&mut *self.tx)
+        .await?;
+        let open: bool = row.get("open");
+        let wait = if open { 0 } else { retry_after(row.get::<Option<i64>, _>("failed_at"), cooldown_seconds, now) };
+        Ok(ExamStatus { open, retry_after: wait })
+    }
+
     /// Starts an attempt, or returns the open one. Attempts whose time ran out are closed first.
     pub async fn start_exam(
         &mut self,
@@ -172,7 +202,7 @@ impl TenantTx {
         .execute(&mut *self.tx)
         .await?;
         if !result.passed {
-            return Ok(Submitted::Graded { grade: result, xp_gained: 0, lessons_validated: 0 });
+            return Ok(Submitted::Graded { grade: result, questions, xp_gained: 0, lessons_validated: 0 });
         }
 
         let mut lessons_validated = 0;
@@ -197,6 +227,6 @@ impl TenantTx {
         }
         // A course finished by practising already paid its own XP: the exam adds nothing to it.
         let xp_gained = if lessons_validated > 0 { self.grant(learner, &Award::exam(course)).await? } else { 0 };
-        Ok(Submitted::Graded { grade: result, xp_gained, lessons_validated })
+        Ok(Submitted::Graded { grade: result, questions, xp_gained, lessons_validated })
     }
 }

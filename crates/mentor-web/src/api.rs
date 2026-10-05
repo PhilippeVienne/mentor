@@ -1,19 +1,24 @@
-//! JSON API used by the lesson page: recording what a learner did.
+//! JSON API used by the lesson and exam pages: recording what a learner did.
 
-use axum::extract::State;
+use std::collections::BTreeMap;
+
+use axum::extract::{Path, State};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use mentor_content::{Course, Exam};
 use mentor_core::badges::{default_badges, BadgeDef, COURSE_BADGE_PREFIX};
 use mentor_core::gamification::{level_info, DEFAULT_LEVEL_TITLES};
 use mentor_core::progress::{completed_courses, Award, Event, RecordError, Source};
+use mentor_db::exam::{Started, Submitted};
 use mentor_db::{Error, TenantTx};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
-use crate::learning::{rules, UTC_OFFSET_MINUTES};
-use crate::site::{same_origin, Site};
+use crate::learning::{exam_pool, exam_settings, rules, OsRandom, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
+use crate::site::{now, same_origin, Site};
 use crate::AppState;
 
 #[derive(Deserialize)]
@@ -130,4 +135,173 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
         eprintln!("mentor-web: progress not recorded: {err}");
         refuse(StatusCode::SERVICE_UNAVAILABLE, "Progression non enregistrée : réessaie dans un instant.")
     })
+}
+
+/// A published course and its exam.
+fn course_with_exam<'a>(state: &'a AppState, slug: &str) -> Option<(&'a Course, &'a Exam)> {
+    let course = state.catalogue.courses.iter().find(|course| course.slug == slug && course.published)?;
+    Some((course, course.exam.as_ref()?))
+}
+
+fn unavailable(err: Error) -> Response {
+    eprintln!("mentor-web: exam request failed: {err}");
+    refuse(StatusCode::SERVICE_UNAVAILABLE, "Service momentanément indisponible : réessaie dans un instant.")
+}
+
+/// `POST /api/exam/{course}/start`: starts an attempt or resumes the open one. The answer carries the drawn
+/// questions in the order they are shown, without correct answers or explanations.
+pub async fn exam_start(site: Site, State(state): State<AppState>, parts: Parts, Path(slug): Path<String>) -> Response {
+    if !same_origin(&parts) {
+        return refuse(StatusCode::FORBIDDEN, "Requête refusée : origine inattendue.");
+    }
+    let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
+    let learner = viewer.learner.id;
+    let Some((course, exam)) = course_with_exam(&state, &slug) else {
+        return refuse(StatusCode::NOT_FOUND, "Ce parcours n'a pas d'examen de validation.");
+    };
+    let at = now();
+    let outcome: Result<Response, Error> = async {
+        let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
+        let courses_done = completed_courses(&state.view.courses, &tx.completed_lessons(learner).await?);
+        let shape = state.view.courses.iter().find(|shape| shape.slug == course.slug);
+        if !shape.is_some_and(|shape| shape.is_unlocked(&courses_done)) {
+            return Ok(refuse(StatusCode::FORBIDDEN, "Ce parcours n'est pas encore débloqué."));
+        }
+        if courses_done.contains(&course.slug) {
+            return Ok(refuse(StatusCode::CONFLICT, "Ce parcours est déjà validé."));
+        }
+        let started = tx.start_exam(learner, &course.slug, &exam_pool(exam), exam_settings(exam), at, &mut OsRandom).await?;
+        // Committed in every case: closing an attempt whose time ran out must stay recorded even when the
+        // new attempt is refused.
+        tx.commit().await?;
+        let attempt = match started {
+            Started::Attempt(attempt) => attempt,
+            Started::RetryAfter(seconds) => {
+                let body = json!({ "error": "Tu pourras retenter l'examen dans quelques instants.", "retry_after": seconds });
+                return Ok((StatusCode::TOO_MANY_REQUESTS, Json(body)).into_response());
+            }
+        };
+        let questions: Vec<serde_json::Value> = attempt
+            .questions
+            .iter()
+            .filter_map(|drawn| {
+                let source = exam.questions.iter().find(|question| question.id == drawn.id)?;
+                let options: Vec<serde_json::Value> =
+                    drawn.option_order.iter().filter_map(|&original| Some(json!({ "html": source.options.get(original)?.html }))).collect();
+                Some(json!({ "id": drawn.id, "question": source.question, "options": options }))
+            })
+            .collect();
+        Ok(Json(json!({
+            "attempt": attempt.id.to_string(),
+            "title": exam.title,
+            "seconds_left": (attempt.deadline - at).max(0),
+            "pass_mark": exam.pass_mark,
+            "total": questions.len(),
+            "questions": questions,
+        }))
+        .into_response())
+    }
+    .await;
+    outcome.unwrap_or_else(unavailable)
+}
+
+#[derive(Deserialize)]
+pub struct ExamSubmission {
+    attempt: String,
+    /// Question id → shown position chosen. Anything that is not a position counts as no answer.
+    #[serde(default)]
+    answers: BTreeMap<String, serde_json::Value>,
+}
+
+/// `POST /api/exam/{course}/submit`: grades an attempt on the server and, when it is passed, validates the
+/// course. The correction is only given here, once the attempt is closed.
+pub async fn exam_submit(
+    site: Site,
+    State(state): State<AppState>,
+    parts: Parts,
+    Path(slug): Path<String>,
+    Json(submission): Json<ExamSubmission>,
+) -> Response {
+    if !same_origin(&parts) {
+        return refuse(StatusCode::FORBIDDEN, "Requête refusée : origine inattendue.");
+    }
+    let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
+    let learner = viewer.learner.id;
+    let Some((course, exam)) = course_with_exam(&state, &slug) else {
+        return refuse(StatusCode::NOT_FOUND, "Ce parcours n'a pas d'examen de validation.");
+    };
+    let Ok(attempt) = Uuid::parse_str(&submission.attempt) else { return refuse(StatusCode::NOT_FOUND, "Tentative inconnue.") };
+    let answers: BTreeMap<String, usize> =
+        submission.answers.iter().filter_map(|(id, value)| Some((id.clone(), value.as_u64()? as usize))).collect();
+    let lessons: Vec<_> = course.lessons.iter().map(|lesson| rules(course, lesson)).collect();
+
+    let outcome: Result<Response, Error> = async {
+        let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
+        let submitted =
+            tx.submit_exam(learner, &course.slug, attempt, &answers, &exam_pool(exam), exam_settings(exam), &lessons, now()).await?;
+        let (grade, shown, xp_gained, lessons_validated) = match submitted {
+            Submitted::Unknown => return Ok(refuse(StatusCode::NOT_FOUND, "Tentative inconnue.")),
+            Submitted::AlreadyFinished => return Ok(refuse(StatusCode::CONFLICT, "Cette tentative est déjà terminée.")),
+            Submitted::Expired { retry_after } => {
+                tx.commit().await?;
+                let body = json!({
+                    "expired": true, "passed": false, "score": 0, "total": exam.draw.min(exam.questions.len() as u32),
+                    "retry_after": retry_after, "error": "Temps écoulé : la tentative est expirée.",
+                });
+                return Ok((StatusCode::GONE, Json(body)).into_response());
+            }
+            Submitted::Graded { grade, questions, xp_gained, lessons_validated } => (grade, questions, xp_gained, lessons_validated),
+        };
+        let results: Vec<serde_json::Value> = grade
+            .results
+            .iter()
+            .filter_map(|result| {
+                let source = exam.questions.iter().find(|question| question.id == result.id)?;
+                let order = &shown.iter().find(|drawn| drawn.id == result.id)?.option_order;
+                let options: Vec<&str> = order.iter().filter_map(|&original| Some(source.options.get(original)?.html.as_str())).collect();
+                Some((result, source, options))
+            })
+            .map(|(result, source, options)| {
+                json!({
+                    "id": result.id,
+                    "question": source.question,
+                    "options": options,
+                    "chosen": result.chosen,
+                    "correct_position": result.correct_position,
+                    "correct": result.correct,
+                    "explanation": source.explanation,
+                })
+            })
+            .collect();
+        let mut body = json!({
+            "expired": false,
+            "passed": grade.passed,
+            "score": grade.score,
+            "total": grade.total,
+            "pass_mark": exam.pass_mark,
+            "results": results,
+        });
+        if grade.passed {
+            let definitions = default_badges();
+            let new_badges: Vec<serde_json::Value> = tx
+                .award_badges(learner, &definitions, &state.view, UTC_OFFSET_MINUTES)
+                .await?
+                .iter()
+                .map(|slug| describe_badge(slug, &definitions, &state))
+                .collect();
+            let level = level_info(tx.total_xp(learner).await?, &DEFAULT_LEVEL_TITLES);
+            body["course_validated"] = json!(true);
+            body["lessons_validated"] = json!(lessons_validated);
+            body["xp_gained"] = json!(xp_gained);
+            body["level_up"] = json!(level.level > viewer.level.level);
+            body["level"] = json!(level);
+            body["new_badges"] = json!(new_badges);
+        } else {
+            body["retry_after"] = json!(EXAM_COOLDOWN_SECONDS);
+        }
+        tx.commit().await?;
+        Ok(Json(body).into_response())
+    }
+    .await;
+    outcome.unwrap_or_else(unavailable)
 }

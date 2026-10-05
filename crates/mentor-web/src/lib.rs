@@ -2,7 +2,7 @@
 //!
 //! It resolves the tenant from the request's host name and serves the home page, the catalogue, courses and
 //! lessons with that tenant's brand. A signed-in learner can answer lesson quizzes and earns XP, levels and
-//! badges, and follows them on a dashboard. Sign-in is a development one for now (see [`dev`]); labs are not run yet.
+//! badges, follows them on a dashboard, and can validate a course through its exam. Sign-in is a development one for now (see [`dev`]); labs are not run yet.
 //!
 //! One catalogue is loaded at start-up and shown to every tenant; per-tenant catalogues come later. Lesson
 //! HTML is trusted as compiled: it is not sanitised yet, which is acceptable only while catalogues are written
@@ -58,7 +58,10 @@ pub fn router(state: AppState, static_dir: &Path, catalogue_dir: &Path) -> Route
         .route("/dashboard/", get(pages::dashboard))
         .route("/badges/", get(pages::badges))
         .route("/healthz", get(pages::health))
+        .route("/courses/{course}/exam/", get(pages::exam))
         .route("/api/progress", post(api::progress))
+        .route("/api/exam/{course}/start", post(api::exam_start))
+        .route("/api/exam/{course}/submit", post(api::exam_submit))
         .route("/logout", post(dev::sign_out));
     if state.dev_login {
         app = app.route("/dev/login", get(dev::form).post(dev::sign_in));

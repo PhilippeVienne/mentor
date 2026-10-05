@@ -15,7 +15,8 @@ use mentor_db::progress::LessonState;
 use mentor_db::TenantTx;
 
 use crate::brand::Brand;
-use crate::learning::{rules, UTC_OFFSET_MINUTES};
+use crate::learning::{rules, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
+use crate::site::now;
 use crate::site::{Site, Viewer};
 use crate::AppState;
 
@@ -195,6 +196,74 @@ struct CoursePage<'a> {
     minutes: u32,
     progress: Option<CourseProgress<'a>>,
     lessons: Vec<LessonRow<'a>>,
+    /// The exam of the course, for a signed-in learner.
+    exam: Option<ExamInfo<'a>>,
+}
+
+/// The exam of a course and where the viewer stands with it.
+struct ExamInfo<'a> {
+    title: &'a str,
+    /// Number of questions of an attempt.
+    count: usize,
+    pass_mark: u32,
+    minutes: u32,
+    /// The course is completed, whichever way.
+    validated: bool,
+    validated_by_exam: bool,
+    locked: bool,
+}
+
+impl<'a> ExamInfo<'a> {
+    fn new(state: &'a AppState, course: &'a Course, progress: &Progress) -> Option<Self> {
+        let exam = course.exam.as_ref()?;
+        let advancement = CourseProgress::new(state, course, progress);
+        Some(Self {
+            title: &exam.title,
+            count: (exam.draw as usize).min(exam.questions.len()),
+            pass_mark: exam.pass_mark,
+            minutes: exam.minutes,
+            validated: advancement.completed,
+            validated_by_exam: course.lessons.iter().any(|lesson| progress.lesson(course, lesson).validated_by_exam),
+            locked: !advancement.unlocked,
+        })
+    }
+
+    fn available(&self) -> bool {
+        !self.validated && !self.locked
+    }
+}
+
+#[derive(Template)]
+#[template(path = "exam.html")]
+struct ExamPage<'a> {
+    brand: &'a Brand,
+    section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
+    course: &'a Course,
+    info: ExamInfo<'a>,
+    intro_html: &'a str,
+    /// What the exam script needs, as JSON safe to embed in a `<script>` element.
+    exam_data: String,
+}
+
+/// The introduction of an exam without the headings left at its very end: they introduced the question pool,
+/// which is not shown.
+fn without_trailing_headings(html: &str) -> &str {
+    let mut kept = html.trim_end();
+    loop {
+        // Looked at as bytes: a closing heading tag is ASCII, so cutting before it stays on a character boundary.
+        let closes_heading = kept.len().checked_sub(5).is_some_and(|start| {
+            let tail = &kept.as_bytes()[start..];
+            tail.starts_with(b"</h") && (b'1'..=b'6').contains(&tail[3]) && tail[4] == b'>'
+        });
+        if !closes_heading {
+            return kept;
+        }
+        let level = &kept[kept.len() - 3..kept.len() - 1];
+        let Some(start) = kept.rfind(&format!("<{level}")) else { return kept };
+        kept = kept[..start].trim_end();
+    }
 }
 
 /// A lesson in the programme of its course.
@@ -473,6 +542,7 @@ pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<
         banner: banner_url(course),
         lessons_label: lessons_label(course.lessons.len()),
         minutes: minutes(course),
+        exam: progress.as_ref().and_then(|progress| ExamInfo::new(&state, course, progress)),
         progress: progress.as_ref().map(|progress| CourseProgress::new(&state, course, progress)),
         lessons,
     };
@@ -599,6 +669,48 @@ pub async fn badges(site: Site, State(state): State<AppState>) -> Response {
     render(StatusCode::OK, page)
 }
 
+/// The validation exam of a course: its rules, then the attempt itself, run by the page script.
+pub async fn exam(site: Site, State(state): State<AppState>, Path(slug): Path<String>) -> Response {
+    let Some(course) = published_course(&state, &slug) else { return missing(&site) };
+    let Some(exam) = &course.exam else { return missing(&site) };
+    let Some(viewer) = &site.viewer else { return sign_in_first(&site) };
+    let progress = match load_progress(&state, &site).await {
+        Ok(Some(progress)) => progress,
+        Ok(None) => return sign_in_first(&site),
+        Err(err) => return unavailable(err),
+    };
+    let Some(info) = ExamInfo::new(&state, course, &progress) else { return missing(&site) };
+    let status = async {
+        let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
+        let status = tx.exam_status(viewer.learner.id, &course.slug, EXAM_COOLDOWN_SECONDS, now()).await?;
+        tx.commit().await?;
+        Ok::<_, mentor_db::Error>(status)
+    };
+    let status = match status.await {
+        Ok(status) => status,
+        Err(err) => return unavailable(err),
+    };
+    let exam_data = serde_json::json!({
+        "course": { "slug": course.slug, "title": course.title },
+        "exam": { "title": info.title, "count": info.count, "passMark": info.pass_mark, "minutes": info.minutes },
+        "state": { "validated": info.validated, "locked": info.locked, "open": status.open, "retryAfter": status.retry_after },
+        "startUrl": format!("/api/exam/{}/start", course.slug),
+        "submitUrl": format!("/api/exam/{}/submit", course.slug),
+        "courseUrl": format!("/courses/{}/", course.slug),
+    });
+    let page = ExamPage {
+        brand: &site.brand,
+        section: "dashboard",
+        viewer: site.viewer.as_ref(),
+        dev_login: site.dev_login,
+        course,
+        info,
+        intro_html: without_trailing_headings(&exam.intro_html),
+        exam_data: script_json(&exam_data),
+    };
+    render(StatusCode::OK, page)
+}
+
 pub async fn not_found(site: Site) -> Response {
     missing(&site)
 }
@@ -623,6 +735,18 @@ mod tests {
         assert_eq!(french_date(1_709_249_400, 0), "29 février 2024");
         assert_eq!(french_date(1_709_249_400, 60), "1er mars 2024");
         assert_eq!(french_date(0, 0), "1er janvier 1970");
+    }
+
+    #[test]
+    fn headings_that_end_an_exam_introduction_are_dropped() {
+        assert_eq!(without_trailing_headings("<p>Bonne chance.</p>\n<h2>Questions</h2>\n"), "<p>Bonne chance.</p>");
+        assert_eq!(
+            without_trailing_headings("<h1>Examen</h1><p>Règles.</p><h2 id=\"a\">A</h2> <h3>B</h3>"),
+            "<h1>Examen</h1><p>Règles.</p>"
+        );
+        assert_eq!(without_trailing_headings("<h2>Règles</h2><p>Une seule réponse.</p>"), "<h2>Règles</h2><p>Une seule réponse.</p>");
+        assert_eq!(without_trailing_headings("<h2>Seul</h2>"), "");
+        assert_eq!(without_trailing_headings("é"), "é");
     }
 
     #[test]

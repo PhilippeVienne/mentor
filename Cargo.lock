@@ -993,6 +993,7 @@ dependencies = [
  "askama",
  "axum",
  "clap",
+ "getrandom 0.4.3",
  "hmac",
  "mentor-content",
  "mentor-core",

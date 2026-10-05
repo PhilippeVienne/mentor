@@ -397,3 +397,125 @@ async fn learner_pages_need_a_session_and_show_only_that_tenants_progress() {
     let crossed = call(&app, Call { host: "plain.test", path: "/dashboard/", cookie: Some(&acme), body: None, origin: None }).await;
     assert_eq!(crossed.status, StatusCode::SEE_OTHER);
 }
+
+async fn post_json(app: &Router, cookie: Option<&str>, path: &str, json: &str) -> (StatusCode, serde_json::Value) {
+    let answer = call(app, Call { host: "acme.test", path, cookie, body: Some(("application/json", json)), origin: None }).await;
+    (answer.status, serde_json::from_str(&answer.body).unwrap_or(serde_json::Value::Null))
+}
+
+/// Answers of an attempt: the right option of every question, or a wrong one, found in the catalogue by the
+/// text of the options since the page never receives which one is right.
+fn exam_answers(attempt: &serde_json::Value, right: bool) -> serde_json::Value {
+    let catalogue = mentor_content::load_catalogue(&root().join("catalogue")).unwrap();
+    let pool = &catalogue.courses.iter().find(|course| course.slug == "git-basics").unwrap().exam.as_ref().unwrap().questions;
+    let mut answers = serde_json::Map::new();
+    for question in attempt["questions"].as_array().unwrap() {
+        let source = pool.iter().find(|candidate| candidate.id == question["id"].as_str().unwrap()).unwrap();
+        let correct = &source.options.iter().find(|option| option.correct).unwrap().html;
+        let shown = question["options"].as_array().unwrap();
+        let position = shown.iter().position(|option| (option["html"].as_str() == Some(correct.as_str())) == right).unwrap();
+        answers.insert(source.id.clone(), position.into());
+    }
+    serde_json::json!({ "attempt": attempt["attempt"], "answers": answers })
+}
+
+#[tokio::test]
+async fn an_exam_is_drawn_once_graded_on_the_server_and_validates_the_course() {
+    let Some(app) = app().await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+
+    let course = page(&app, &cookie, "/courses/git-basics/").await;
+    assert!(course.contains(r#"href="/courses/git-basics/exam/">Passer l'examen de validation"#));
+    let exam_page = page(&app, &cookie, "/courses/git-basics/exam/").await;
+    assert!(exam_page.contains(r#"id="exam-root""#) && exam_page.contains(r#""startUrl":"/api/exam/git-basics/start""#));
+    assert!(exam_page.contains(r#""open":false"#) && exam_page.contains(r#""retryAfter":0"#));
+
+    let (status, attempt) = post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await;
+    assert_eq!(status, StatusCode::OK, "{attempt}");
+    let questions = attempt["questions"].as_array().unwrap();
+    assert!(!questions.is_empty() && attempt["total"] == questions.len() && attempt["seconds_left"].as_i64().unwrap() > 60);
+    // Nothing tells which option is right, and no explanation is sent before grading.
+    for question in questions {
+        let keys: Vec<&String> = question.as_object().unwrap().keys().collect();
+        assert_eq!(keys, ["id", "options", "question"]);
+        assert!(question["options"].as_array().unwrap().iter().all(|option| option.as_object().unwrap().len() == 1));
+    }
+    // Starting again resumes the same attempt, with the same questions in the same order.
+    let (_, resumed) = post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await;
+    assert_eq!((&resumed["attempt"], &resumed["questions"]), (&attempt["attempt"], &attempt["questions"]));
+    assert!(page(&app, &cookie, "/courses/git-basics/exam/").await.contains(r#""open":true"#));
+
+    // An attempt cannot be submitted by someone else, nor for another course.
+    let answers = exam_answers(&attempt, true).to_string();
+    let bob = sign_in(&app, "acme.test", "bob").await;
+    assert_eq!(post_json(&app, Some(&bob), "/api/exam/git-basics/submit", &answers).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/docker-hello/submit", &answers).await.0, StatusCode::NOT_FOUND);
+
+    let (status, result) = post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", &answers).await;
+    assert_eq!(status, StatusCode::OK, "{result}");
+    assert_eq!(
+        (result["passed"].as_bool(), &result["score"], result["course_validated"].as_bool()),
+        (Some(true), &result["total"], Some(true))
+    );
+    assert_eq!((result["lessons_validated"].as_u64(), result["xp_gained"].as_u64()), (Some(7), Some(100)));
+    // The correction comes with the result: options as shown, the right one, the explanation.
+    let first = &result["results"][0];
+    assert_eq!(first["options"].as_array().unwrap().len(), questions[0]["options"].as_array().unwrap().len());
+    assert!(first["correct"] == true && first["chosen"] == first["correct_position"] && first["explanation"].is_string());
+    assert!(result["new_badges"].as_array().unwrap().iter().any(|badge| badge["slug"] == "parcours-git-basics"));
+
+    // Closed for good, and the course is validated everywhere.
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", &answers).await.0, StatusCode::CONFLICT);
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await.0, StatusCode::CONFLICT);
+    let exam_page = page(&app, &cookie, "/courses/git-basics/exam/").await;
+    assert!(exam_page.contains("Parcours déjà validé") && exam_page.contains("par examen") && !exam_page.contains("exam-data"));
+    let course = page(&app, &cookie, "/courses/git-basics/").await;
+    assert!(
+        course.contains("✓ Parcours validé par examen") && course.contains("Validée par examen") && course.contains("7 / 7 leçons · 100 %")
+    );
+    assert!(page(&app, &cookie, "/dashboard/").await.contains("Niv. 2 · 100 XP"));
+}
+
+#[tokio::test]
+async fn a_failed_exam_validates_nothing_and_must_wait() {
+    let Some(app) = app().await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+    let (_, attempt) = post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await;
+    let (status, result) = post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", &exam_answers(&attempt, false).to_string()).await;
+    assert_eq!(status, StatusCode::OK, "{result}");
+    assert_eq!((result["passed"].as_bool(), result["score"].as_u64(), result["retry_after"].as_i64()), (Some(false), Some(0), Some(600)));
+    assert!(result.get("course_validated").is_none() && result["results"][0]["correct"] == false);
+
+    let (status, refused) = post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert!((590..=600).contains(&refused["retry_after"].as_i64().unwrap()));
+    let exam_page = page(&app, &cookie, "/courses/git-basics/exam/").await;
+    assert!(exam_page.contains(r#""open":false"#) && !exam_page.contains(r#""retryAfter":0"#));
+    assert!(page(&app, &cookie, "/dashboard/").await.contains("0 / 7 leçons · 0 %"));
+}
+
+#[tokio::test]
+async fn exams_are_refused_to_visitors_other_sites_and_locked_courses() {
+    let Some(app) = app().await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+    assert_eq!(post_json(&app, None, "/api/exam/git-basics/start", "{}").await.0, StatusCode::UNAUTHORIZED);
+    let forged = Call {
+        host: "acme.test",
+        path: "/api/exam/git-basics/start",
+        cookie: Some(&cookie),
+        body: Some(("application/json", "{}")),
+        origin: Some("https://evil.test"),
+    };
+    assert_eq!(call(&app, forged).await.status, StatusCode::FORBIDDEN);
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/nope/start", "{}").await.0, StatusCode::NOT_FOUND);
+    // `docker-advanced` requires `docker-hello`.
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/docker-advanced/start", "{}").await.0, StatusCode::FORBIDDEN);
+    let locked = page(&app, &cookie, "/courses/docker-advanced/exam/").await;
+    assert!(locked.contains("Parcours verrouillé") && !locked.contains("exam-data"));
+    assert!(page(&app, &cookie, "/courses/docker-advanced/").await.contains("Il se débloque avec ce parcours"));
+    assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", r#"{"attempt": "not-an-id"}"#).await.0, StatusCode::NOT_FOUND);
+
+    let visitor = call(&app, Call { host: "acme.test", path: "/courses/git-basics/exam/", cookie: None, body: None, origin: None }).await;
+    assert_eq!(visitor.status, StatusCode::SEE_OTHER);
+    assert!(!get(&app, "acme.test", "/courses/git-basics/").await.1.contains("exam-cta"));
+}

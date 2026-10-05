@@ -9,6 +9,7 @@ license.workspace = true
 askama = { workspace = true }
 axum = { workspace = true }
 clap = { workspace = true }
+getrandom = { workspace = true }
 hmac = { workspace = true }
 mentor-content = { path = "../mentor-content" }
 mentor-core = { path = "../mentor-core" }

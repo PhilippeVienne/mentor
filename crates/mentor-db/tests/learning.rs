@@ -10,7 +10,7 @@ use mentor_core::exam::{PoolQuestion, Randomness};
 use mentor_core::gamification::{XP_EXAM, XP_LESSON, XP_TASK};
 use mentor_core::progress::{CourseShape, Event, LessonRules, Source};
 use mentor_db::badges::CatalogueView;
-use mentor_db::exam::{Attempt, ExamSettings, Started, Submitted};
+use mentor_db::exam::{Attempt, ExamSettings, ExamStatus, Started, Submitted};
 use mentor_db::{platform, TenantTx};
 use uuid::Uuid;
 
@@ -131,15 +131,20 @@ async fn a_failed_exam_validates_nothing_and_imposes_a_delay() {
     let (tenant, alice) = tenant_with_learner(&db, "acme").await;
     let lessons = [lesson("intro", 2)];
     let mut tx = TenantTx::begin(&db.app, tenant).await.unwrap();
+    assert_eq!(tx.exam_status(alice, "git", 600, NOW).await.unwrap(), ExamStatus { open: false, retry_after: 0 });
     let attempt = attempt_of(start(&mut tx, alice, NOW).await);
+    assert_eq!(tx.exam_status(alice, "git", 600, NOW + 30).await.unwrap(), ExamStatus { open: true, retry_after: 0 });
     let outcome = tx.submit_exam(alice, "git", attempt.id, &answers(&attempt, false), &pool(), SETTINGS, &lessons, NOW + 60).await.unwrap();
     match outcome {
-        Submitted::Graded { grade, xp_gained, lessons_validated } => {
+        Submitted::Graded { grade, xp_gained, lessons_validated, .. } => {
             assert_eq!((grade.score, grade.passed, xp_gained, lessons_validated), (0, false, 0, 0));
         }
         other => panic!("unexpected {other:?}"),
     }
     assert_eq!(start(&mut tx, alice, NOW + 160).await, Started::RetryAfter(500));
+    assert_eq!(tx.exam_status(alice, "git", 600, NOW + 160).await.unwrap(), ExamStatus { open: false, retry_after: 500 });
+    // Another course is another exam.
+    assert_eq!(tx.exam_status(alice, "docker", 600, NOW + 160).await.unwrap(), ExamStatus { open: false, retry_after: 0 });
     assert!(matches!(start(&mut tx, alice, NOW + 60 + 600).await, Started::Attempt(_)));
 }
 
@@ -154,7 +159,7 @@ async fn a_passed_exam_validates_the_course_once() {
     let attempt = attempt_of(start(&mut tx, alice, NOW).await);
     let outcome = tx.submit_exam(alice, "git", attempt.id, &answers(&attempt, true), &pool(), SETTINGS, &lessons, NOW + 60).await.unwrap();
     match outcome {
-        Submitted::Graded { grade, xp_gained, lessons_validated } => {
+        Submitted::Graded { grade, xp_gained, lessons_validated, .. } => {
             assert!(grade.passed);
             assert_eq!((grade.score, xp_gained, lessons_validated), (2, XP_EXAM, 1));
         }

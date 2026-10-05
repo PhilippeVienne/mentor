@@ -1,0 +1,113 @@
+/* Examen de validation d'un parcours + encart d'invitation sur la page du parcours.
+   Réutilise les classes de portail.css et les styles de quiz de lab.css (.quiz__question, .quiz__option…). */
+.exam {
+    --lab-primary: var(--primary, #4f46e5);
+    --lab-bg: var(--bg, #020617);
+    --lab-surface: var(--surface, #0f172a);
+    --lab-surface-2: var(--surface-2, #131c2e);
+    --lab-text: var(--text, #e2e8f0);
+    --lab-muted: var(--muted, #94a3b8);
+    --lab-border: var(--border, #263247);
+    --lab-ok: #22c55e;
+    --lab-warn: #eab308;
+    --lab-info: #38bdf8;
+    --lab-radius: 12px;
+    padding-block: 24px 72px;
+}
+.exam__head { margin: 8px 0 28px; }
+.exam__head h1 { margin: .2em 0 0; }
+.exam__notice { max-width: 46rem; }
+.exam__notice p:last-child { margin-bottom: 0; }
+
+/* Caractéristiques */
+.exam__facts { display: grid; gap: 16px; margin: 0 0 32px; padding: 0; list-style: none; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.exam__facts li { display: flex; flex-direction: column; gap: 4px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--primary); border-radius: 12px; }
+.exam__facts strong { font-size: 1.7rem; line-height: 1.1; }
+.exam__facts span { color: var(--muted); font-size: .92rem; }
+
+/* Disposition : consignes + panneau d'examen */
+.exam__layout { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1000px) { .exam__layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+.exam__intro > :first-child { margin-top: 0; }
+.exam__panel { min-width: 0; }
+@media (max-width: 999px) { .exam__panel { order: -1; } } /* mobile : l'examen d'abord, les consignes dessous */
+
+.exam__card { padding: 28px 30px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow, none); }
+.exam__card > * + * { margin-top: 18px; }
+.exam__title { margin: 0; font-size: 1.4rem; }
+.exam__title:focus { outline: none; }
+.exam__title:focus-visible { outline: 1px dashed var(--muted); outline-offset: 6px; border-radius: 6px; }
+.exam__question:focus-visible { outline: 1px dashed var(--border); outline-offset: 10px; border-radius: 8px; }
+.exam__lead { margin: 0; color: var(--muted); }
+.exam__retry { margin: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+.exam__start { align-self: flex-start; padding: 12px 22px; font-size: 1rem; }
+.exam__start:disabled, .exam__result .lab__btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* En-tête de question : compteur + chronomètre */
+.exam__head-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.exam__counter { display: flex; flex-direction: column; gap: 2px; }
+.exam__count { font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.exam__answered { font-size: .9rem; color: var(--muted); }
+.exam__timer { display: flex; flex-direction: column; align-items: flex-end; gap: 0; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; font-variant-numeric: tabular-nums; }
+.exam__timer-label { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.exam__timer-value { font-size: 1.4rem; line-height: 1.2; }
+.exam__timer.is-low { border-color: var(--lab-warn); }
+.exam__timer.is-low .exam__timer-value { color: var(--lab-warn); }
+.exam__timer.is-critical { border-color: #f87171; }
+.exam__timer.is-critical .exam__timer-value { color: #f87171; }
+@media (prefers-reduced-motion: no-preference) { .exam__timer.is-critical .exam__timer-value { animation: exam-pulse 1s ease-in-out infinite; } }
+@keyframes exam-pulse { 50% { opacity: .55; } }
+
+/* Pastilles de navigation */
+.exam__dots { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.exam__dot { min-width: 40px; min-height: 40px; padding: 0; font-weight: 700; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 50%; cursor: pointer; }
+.exam__dot:hover { border-color: var(--primary); color: var(--text); }
+.exam__dot.is-answered { color: var(--text); background: var(--surface-2); border-color: var(--lab-ok); }
+.exam__dot.is-current { color: #fff; background: var(--primary); border-color: var(--primary); }
+.exam__question { margin-top: 24px; }
+.exam__question .quiz__option { margin-top: 12px; }
+
+.exam__actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 26px; }
+.exam__actions .lab__btn, .exam__actions .btn { min-width: 9.5rem; padding: 10px 18px; }
+.exam__actions .lab__btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Récapitulatif */
+.exam__recap { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.exam__recap-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 14px; align-items: center; padding: 14px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; }
+.exam__recap-item.is-missing { border-color: var(--lab-warn); }
+.exam__recap-state { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.exam__recap-item.is-missing .exam__recap-state { color: var(--lab-warn); font-weight: 600; }
+@media (max-width: 560px) { .exam__recap-item { grid-template-columns: minmax(0, 1fr) auto; } .exam__recap-text { grid-column: 1 / -1; } }
+
+/* Résultats */
+.exam__result.is-passed { border-color: var(--lab-ok); }
+.exam__result.is-failed { border-color: #f87171; }
+.exam__score { margin: 0; font-size: 1.05rem; }
+.exam__score strong { font-size: 2rem; margin-right: .3em; }
+.exam__review h3 { margin: 12px 0 0; }
+.exam__review-list { display: flex; flex-direction: column; gap: 18px; margin: 18px 0 0; padding: 0; list-style: none; }
+.exam__review-item { padding: 20px 22px; background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; }
+.exam__review-item.is-ok { border-left-color: var(--lab-ok); }
+.exam__review-item.is-ko { border-left-color: #f87171; }
+.exam__review-q { font-weight: 600; line-height: 1.5; }
+.exam__review-options { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.exam__review-options li { padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; }
+.exam__review-options li.is-correct { border-color: var(--lab-ok); background: rgba(34, 197, 94, .12); }
+.exam__review-options li.is-wrong { border-color: #f87171; background: rgba(248, 113, 113, .12); }
+.exam__mark { font-weight: 800; }
+.exam__missed { margin: 12px 0 0; color: var(--lab-warn); font-weight: 600; }
+.exam__why { margin: 14px 0 0; color: var(--muted); }
+
+/* Encart d'invitation sur la page du parcours */
+.exam-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 0 0 32px; padding: 26px 28px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 14px; }
+.exam-cta h2 { margin: 0; font-size: 1.25rem; }
+.exam-cta p { margin: 0; color: var(--muted); max-width: 52rem; }
+.exam-cta--done { border-left-color: var(--lab-ok, #22c55e); }
+
+@media (max-width: 560px) { .exam__card { padding: 22px 18px; } .exam__actions .lab__btn, .exam__actions .btn { flex: 1 1 100%; } }
+
+/* Grands écrans : consignes et questions plus aérées. */
+@media (min-width: 1500px) {
+    .exam__layout { gap: 56px; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    .exam__card { padding: 36px 40px; }
+}
