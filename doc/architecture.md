@@ -1,6 +1,7 @@
 # Mentor v2: Rust, Firecracker, multi-tenant
 
-> **Status: direction approved on 4 October 2026; phase 0 mostly done, phase 1 prototyped.** This document frames the decision:
+> **Status: direction approved on 4 October 2026; phase 0 mostly done. The execution plane is no longer built
+> here: it is shared with the Atelier project, see [execution-plane.md](execution-plane.md).** This document frames the decision:
 > scope, target architecture, threat model, migration plan, risks, decisions taken and open points (§10).
 > v1 is the Python/Django portal; its repository stays the reference implementation during the migration.
 
@@ -9,7 +10,7 @@
 | Decision | Reason |
 | --- | --- |
 | **Whole platform in Rust** | One language for the web tier and the execution plane, one binary per role to deploy, memory safety in the code that drives microVMs |
-| **Firecracker only** for real labs | One kernel per session: a container escape no longer yields the host. The Docker broker goes away |
+| **Firecracker only** for real labs, **through a base shared with Atelier, on Kubernetes** | One kernel per session: a container escape no longer yields the host. The Docker broker goes away. The isolation layer is not rebuilt here ([execution-plane.md](execution-plane.md)) |
 | **Multi-tenant** | One instance hosts several organisations, each with its own brand, catalogue, identity provider and quotas |
 
 What changes compared with v1: the security boundary is no longer "a hardened container on a dedicated Docker
@@ -57,13 +58,12 @@ Direct consequences for the design:
 flowchart LR
     N[Browser] -->|HTTPS, tenant origin| W[mentor-web]
     W --> DB[(PostgreSQL<br/>RLS per tenant)]
-    W -->|mTLS, allow-list| S[mentor-scheduler]
-    S -->|mTLS| A1[mentor-host<br/>KVM host 1]
-    S -->|mTLS| A2[mentor-host<br/>KVM host 2]
-    A1 -->|jailer| VM1[microVM<br/>session]
-    A1 -->|jailer| VMB[microVM<br/>build]
-    VM1 -.vsock.- G[mentor-guest]
-    W -->|terminal and VS Code streams| A1
+    W -->|sandbox lifecycle, exec| B[Shared base API<br/>from Atelier]
+    N -->|terminal and VS Code tunnels| B
+    B --> K[Kubernetes controller]
+    K --> P1[Parent pod<br/>supervisor + net proxy]
+    K --> J[Image build<br/>in a build microVM]
+    P1 -->|jailer| VM1[microVM<br/>learner session]
 ```
 
 One Cargo workspace, one binary per role:
@@ -74,9 +74,8 @@ One Cargo workspace, one binary per role:
 | `mentor-content` | Catalogue compiler and linter, sanitised Markdown rendering | `content.py`, `lint.py`, `aide.py` |
 | `mentor-db` | PostgreSQL access, migrations, tenant context | Django models and ORM |
 | `mentor-web` | HTTP server: pages, API, OIDC, management, stream proxy | Django views, uWSGI, the ASGI service |
-| `mentor-scheduler` | Admission, placement, quotas, reaper | `environments/services.py` |
-| `mentor-host` | Host agent: jailer, disks, network, builds | `docker_broker.py`, `hardening.py`, `buildplan.py` |
-| `mentor-guest` | Agent **inside** the microVM: exec, terminal, files, checks | `docker exec`, `mentor_bridge.py` |
+| *shared base (from Atelier)* | Sandbox lifecycle on Kubernetes: images, microVMs, network, terminal and exec | `environments/services.py`, `docker_broker.py`, `hardening.py`, `buildplan.py`, `mentor_bridge.py` |
+| `mentor-labs` (to come) | Drives the base for a lab: session policy, steps, checks | the lab part of `environments/services.py`, `verifications.py` |
 | `mentor-cli` | Administration: tenants, catalogue sync, migration | `manage.py` commands |
 
 Chosen stack (§10): `axum` + `tokio` for the web tier, `sqlx` for PostgreSQL (queries checked at compile time),
@@ -92,43 +91,15 @@ Chosen stack (§10): `axum` + `tokio` for the web tier, `sqlx` for PostgreSQL (q
 | **Session disk** | One writable disk per session (sparse file), mounted as an overlay: its size **is** the quota, and it is hard |
 | **Start-up** | Restore from a **snapshot** of the already booted image (hundreds of ms); cold boot as a fallback |
 | **Network** | One `tap` interface per VM in a per-tenant network namespace; egress closed by default (nftables) |
-| **Control channel** | `vsock` host ↔ `mentor-guest`: exec, terminal, files, checks. No SSH and no open port for control |
+| **Control channel** | Commands, files and checks reach the guest through the base, never through a port the learner could open; which channel (vsock or SSH) is discussed in [execution-plane.md §2](execution-plane.md#2-where-the-line-could-be-drawn) |
 | **Docker-in-Docker** | An ordinary Docker daemon **inside** the microVM: Sysbox is no longer needed |
 | **VS Code web** | code-server inside the VM, relayed over `vsock` (replaces the `mentor_bridge.py` bridge) |
 | **Memory** | Fixed size per VM, admission by the scheduler before start; ballooning to be evaluated later |
 
-#### Prototype status (October 2026)
-
-`mentor-host` and `mentor-guest` prove the core of this table on one machine: a microVM boots from a read-only
-ext4 rootfs exported from a container image, with `mentor-guest` as its init process; the host runs commands and
-interactive pseudo-terminals in it over vsock; the workspace is a per-session disk; a VM can be saved as a
-snapshot and restored any number of times.
-
-Measured on the development machine (1 vCPU, 256 MiB):
-
-| Start | Guest agent answers after | Full `exec` round trip, start and stop included |
-| --- | --- | --- |
-| Cold boot | about 550 ms | about 0.6 s |
-| Restore from a snapshot | about 6 ms | about 0.05 s |
-
-Seven end-to-end tests, booting or restoring ten microVMs, run in 1.2 s.
-
-| In the prototype | Not yet |
-| --- | --- |
-| Read-only rootfs built from a container image, without root privilege | Build inside a microVM; images addressed by digest |
-| vsock control channel: exec, terminal (real PTY), resume, shutdown | Files, checks, VS Code relay; output size limits; a non-root user in the guest |
-| No network interface at all in the guest | Per-tenant network namespace and controlled egress |
-| Per-session ext4 disk on `/workspace`: its size is a hard quota (formatting 256 MiB takes about 13 ms) | Quota on `/tmp` and `/run` beyond their tmpfs size; disk kept across reconnections |
-| Snapshots: full VM state plus the session disk; each restored VM gets its own disk copy | Snapshots keyed by image digest and built automatically; differential snapshots |
-| After a restore: clock set by the host, random generator reseeded by the kernel (VMGenID) | Review of everything else that must be unique per VM (machine id, host keys when SSH comes) |
-| VM killed with its host process, run directory removed | The `jailer`, cgroups, seccomp profile review |
-
-Two costs to keep in mind for sizing: a snapshot stores the **whole guest memory** (256 MiB of RAM gives a
-256 MiB file per image), and restored VMs map that file privately, so memory is only really consumed as each VM
-touches its pages.
-
-The prototype **must not run untrusted workloads yet**: without the jailer, a Firecracker escape would land in
-the developer's own account.
+> **This section describes the target properties, not Mentor's own code.** Since 5 October 2026 the execution
+> plane comes from a base shared with Atelier, which already implements most of this table on Kubernetes. A
+> prototype built here beforehand was removed; its measurements are in
+> [execution-plane.md §6](execution-plane.md#6-what-the-removed-prototype-measured).
 
 The interface between `mentor-web` and the execution plane keeps the **allow-list** of the v1 broker
 (`broker/base.py`: create, remove, status, exec, terminal, SSH, build, inventory). No raw Firecracker parameter
@@ -165,7 +136,7 @@ application, then replaces the rest slice by slice.
 | Phase | Deliverable | Exit criterion |
 | --- | --- | --- |
 | **0. Foundations** | Cargo workspace, CI, `mentor-core` and `mentor-content` | The Rust compiler matches v1's `export_catalogue` output for the 19 courses (see §6.1) |
-| **1. Firecracker** | `mentor-host`, `mentor-guest`, `mentor-scheduler`; a Python adapter implementing v1's `Broker` by calling the Rust plane | v1's `tools/rejouer_labos.py` passes on the 14 real-lab courses, in microVMs; the Docker broker is removed |
+| **1. Isolation** | The base extracted from Atelier, and Mentor driving it for real labs ([execution-plane.md](execution-plane.md)) | The real labs of the catalogue replay successfully in microVMs; v1's Docker broker is removed |
 | **2. Tenants** | PostgreSQL schema with `tenant_id` and RLS, migration of existing data into a first tenant | Isolation tests: no query from one tenant reads another |
 | **3. Read-only web** | `mentor-web` serves home, catalogue, lessons, help, with per-tenant OIDC | Rendered pages are equivalent to Django's (automated HTML comparison) |
 | **4. Read-write web** | Progress, XP, quiz, exam, badges, management, reports | The scenarios of the Python tests are replayed against the Rust API |
@@ -194,11 +165,12 @@ Two consequences to handle before phase 4:
 
 ## 7. Target deployment
 
-- `mentor-web` and `mentor-scheduler`: ordinary containers or binaries, unprivileged, without access to KVM.
-- `mentor-host`: one per KVM host, the only privileged component. It listens only to the scheduler (mTLS) and never
-  talks to the browser directly for control.
+- `mentor-web`: an ordinary unprivileged deployment, without access to KVM.
+- The shared base: its controller, API and image builder, and one parent pod per learner session on nodes
+  exposing KVM. It is the only part that touches microVMs.
 - PostgreSQL, object storage (rootfs images, snapshots, logos), the tenants' OIDC providers.
-- KVM hosts sit on a separate network, with no route to the database or to the operator's internal network.
+- Nodes running learner sessions are isolated from the database and from the operator's internal network
+  (network policies, dedicated node pool).
 
 ## 8. What gets simpler, what gets harder
 
@@ -232,6 +204,7 @@ Decided on 4 October 2026:
 | Web stack | `axum` + `sqlx` + `askama` |
 | Data isolation | PostgreSQL **row-level security**, a `tenant_id` column everywhere |
 | Repository | **A new repository**: `PhilippeVienne/mentor` holds only the Rust code; the v1 repository stays as the reference |
+| Execution plane | **Shared with Atelier** through a common base extracted from it; **Kubernetes is required** for real labs. Mentor's own prototype was removed (5 October 2026) |
 | Language | **Everything in English**: code, comments, tests, documentation, compiler diagnostics and the catalogue format (file names, keys, directive and check names). Course content keeps its authors' language |
 
 Consequence of the new repository: the catalogue, static files (JavaScript, CSS) and conformance tools are no
@@ -239,10 +212,12 @@ longer shared by construction. v2 **copies** them at the start, and its CI compa
 files exported from v1; during phase 1, the Python adapter lives in the v1 repository and calls the Rust
 execution plane through its API.
 
-Still open (they do not block phases 0 and 1):
+Still open:
 
-1. **Hosting**: which KVM hosts (physical machines, nested virtualisation at a provider); this drives network
-   design and CI.
+1. **Hosting**: which Kubernetes cluster with KVM nodes (physical machines, nested virtualisation at a
+   provider); this drives network design and CI.
 2. **Shared catalogue**: are the 19 current courses offered to every tenant, or does each tenant bring its own?
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
+4. **The cut between the shared base and Atelier**, and what a lab check costs through it: see
+   [execution-plane.md](execution-plane.md) §2, §4 and §7.
