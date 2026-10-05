@@ -11,14 +11,23 @@ use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{ConnectOptions, PgPool};
 use uuid::Uuid;
 
+const OWNER_LOGIN: &str = "mentor_test_owner";
 const APP_LOGIN: &str = "mentor_test_app";
-const APP_PASSWORD: &str = "mentor-test-app";
+const PASSWORD: &str = "mentor-test";
 
 pub struct TestDb {
     /// Owning role: migrations and platform administration.
     pub owner: PgPool,
     /// Application role: subject to row-level security.
     pub app: PgPool,
+}
+
+/// Creates a cluster-wide role; tests run in parallel, so another test may create it at the same moment.
+async fn ensure_role(admin: &PgPool, definition: &str) {
+    if let Err(err) = sqlx::query(&format!("CREATE ROLE {definition}")).execute(admin).await {
+        let message = err.to_string();
+        assert!(message.contains("already exists") || message.contains("duplicate"), "{message}");
+    }
 }
 
 pub async fn database() -> Option<TestDb> {
@@ -28,16 +37,15 @@ pub async fn database() -> Option<TestDb> {
     };
     let admin_options: PgConnectOptions = url.parse().expect("valid MENTOR_TEST_DATABASE_URL");
     let admin = PgPoolOptions::new().max_connections(1).connect_with(admin_options.clone()).await.expect("PostgreSQL reachable");
+    // The superuser only sets the stage. Migrations and platform operations run as an ordinary owning role,
+    // as they would in production: a superuser would hide any mistake in the policies.
+    ensure_role(&admin, &format!("{OWNER_LOGIN} LOGIN CREATEROLE PASSWORD '{PASSWORD}'")).await;
     let name = format!("mentor_test_{}", Uuid::new_v4().simple());
-    sqlx::query(&format!("CREATE DATABASE {name}")).execute(&admin).await.unwrap();
-    let owner = PgPoolOptions::new().max_connections(2).connect_with(admin_options.clone().database(&name)).await.unwrap();
+    sqlx::query(&format!("CREATE DATABASE {name} OWNER {OWNER_LOGIN}")).execute(&admin).await.unwrap();
+    let connect = |login: &str| admin_options.clone().database(&name).username(login).password(PASSWORD).disable_statement_logging();
+    let owner = PgPoolOptions::new().max_connections(2).connect_with(connect(OWNER_LOGIN)).await.unwrap();
     mentor_db::migrate(&owner).await.expect("migrations apply");
-    // Roles are shared by the whole cluster and tests run in parallel: creating the login role may race.
-    let created = sqlx::query(&format!("CREATE ROLE {APP_LOGIN} LOGIN PASSWORD '{APP_PASSWORD}' IN ROLE mentor_app")).execute(&owner).await;
-    if let Err(err) = created {
-        assert!(err.to_string().contains("already exists") || err.to_string().contains("duplicate"), "{err}");
-    }
-    let app_options = admin_options.database(&name).username(APP_LOGIN).password(APP_PASSWORD).disable_statement_logging();
-    let app = PgPoolOptions::new().max_connections(4).connect_with(app_options).await.unwrap();
+    ensure_role(&admin, &format!("{APP_LOGIN} LOGIN PASSWORD '{PASSWORD}' IN ROLE mentor_app")).await;
+    let app = PgPoolOptions::new().max_connections(4).connect_with(connect(APP_LOGIN)).await.unwrap();
     Some(TestDb { owner, app })
 }

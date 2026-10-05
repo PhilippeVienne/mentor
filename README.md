@@ -49,8 +49,10 @@ docker run -d --name mentor-test-pg -e POSTGRES_PASSWORD=mentor-test -p 127.0.0.
 MENTOR_TEST_DATABASE_URL=postgres://postgres:mentor-test@127.0.0.1:55439/postgres cargo test -p mentor-db
 ```
 
-Each test creates its own database, and connects as an ordinary role for the application side: a superuser
-would bypass row-level security and the isolation tests would prove nothing.
+The superuser of that URL only creates a database and two ordinary roles per test. Migrations and platform
+operations then run as a non-superuser owner, and the application side as a role that is only a member of
+`mentor_app`: a superuser would bypass row-level security and the isolation tests would prove nothing.
+PostgreSQL 16 or later is required.
 
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
