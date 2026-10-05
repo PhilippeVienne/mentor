@@ -1,7 +1,7 @@
 //! Wire protocol between the host agent and the guest agent.
 //!
-//! The host opens one vsock connection per request and sends one JSON line. `exec` and `shutdown` answer with
-//! one JSON line. `terminal` answers nothing: after the request line the connection carries the raw bytes of
+//! The host opens one vsock connection per request and sends one JSON line. `exec`, `resume` and `shutdown` answer
+//! with one JSON line. `terminal` answers nothing: after the request line the connection carries the raw bytes of
 //! a pseudo-terminal, in both directions, until the shell exits.
 
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,11 @@ pub enum Request {
     },
     /// Opens an interactive shell on a pseudo-terminal.
     Terminal { cols: u16, rows: u16 },
+    /// Sent once after the microVM was restored from a snapshot: its clock stopped when the snapshot was taken.
+    Resume {
+        /// Current time, in milliseconds since the Unix epoch.
+        unix_millis: u64,
+    },
     /// Stops the microVM.
     Shutdown,
 }

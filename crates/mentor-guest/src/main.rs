@@ -3,6 +3,9 @@
 //! It mounts the pseudo file systems, then serves host requests on a vsock port (see [`mentor_guest::protocol`]).
 //! The control channel is vsock only: the microVM needs no network interface and no SSH server.
 //!
+//! Randomness after a snapshot restore is handled by the kernel (VMGenID reseeds its generator); the clock is
+//! set by the host with a `resume` request.
+//!
 //! Prototype limits: commands run as root, orphaned processes are not reaped, output is not size-limited.
 
 use std::ffi::CString;
@@ -15,6 +18,8 @@ use std::process::{Command, Stdio};
 use mentor_guest::protocol::{ExecResult, Request, PORT};
 
 const WORKDIR: &str = "/workspace";
+/// Second virtio block device: the writable disk of the session.
+const SESSION_DISK: &str = "/dev/vdb";
 const MAX_REQUEST_BYTES: usize = 64 * 1024;
 
 fn check(result: libc::c_int, what: &str) -> std::io::Result<libc::c_int> {
@@ -50,7 +55,12 @@ fn init_system() {
     // The root file system is read-only: everything writable is a tmpfs for now (a per-session disk later).
     mount("tmpfs", "/tmp", "tmpfs", "size=64m,mode=1777");
     mount("tmpfs", "/run", "tmpfs", "size=16m,mode=0755");
-    mount("tmpfs", WORKDIR, "tmpfs", "size=128m,mode=0755");
+    // The session disk, when the host attached one, is the learner's workspace: its size is a hard quota.
+    if std::path::Path::new(SESSION_DISK).exists() {
+        mount(SESSION_DISK, WORKDIR, "ext4", "");
+    } else {
+        mount("tmpfs", WORKDIR, "tmpfs", "size=128m,mode=0755");
+    }
     std::env::set_var("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
     std::env::set_var("HOME", "/root");
     std::env::set_var("TERM", "xterm-256color");
@@ -153,6 +163,13 @@ fn handle(connection: File) -> std::io::Result<()> {
             writeln!(connection, "{}", serde_json::to_string(&exec(&argv, workdir.as_deref()))?)?;
         }
         Ok(Request::Terminal { cols, rows }) => terminal(connection, cols, rows)?,
+        Ok(Request::Resume { unix_millis }) => {
+            let time =
+                libc::timespec { tv_sec: (unix_millis / 1000) as libc::time_t, tv_nsec: (unix_millis % 1000 * 1_000_000) as libc::c_long };
+            // SAFETY: `time` is a valid `timespec` for the duration of the call.
+            let ok = unsafe { libc::clock_settime(libc::CLOCK_REALTIME, &time) } == 0;
+            writeln!(connection, "{}", serde_json::json!({ "ok": ok }))?;
+        }
         Ok(Request::Shutdown) => {
             writeln!(connection, "{{\"ok\":true}}")?;
             drop(connection);

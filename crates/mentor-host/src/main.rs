@@ -3,19 +3,24 @@
 //! ```text
 //! mentor-host exec  [options] -- <command> [args…]   boot a microVM, run one command, print its output, stop
 //! mentor-host shell [options]                        boot a microVM and attach an interactive shell
+//! mentor-host snapshot <directory> [options]         boot a microVM and save it as a snapshot
 //!
-//! options: --firecracker <path> --kernel <path> --rootfs <path> --vcpus <n> --memory <MiB>
-//! defaults: .dev/firecracker, .dev/vmlinux, .dev/rootfs.ext4, 1 vCPU, 256 MiB
+//! exec and shell accept `--from <directory>` to start from a snapshot instead of booting the kernel.
+//!
+//! options: --firecracker <path> --kernel <path> --rootfs <path> --vcpus <n> --memory <MiB> --disk <MiB>
+//! defaults: .dev/firecracker, .dev/vmlinux, .dev/rootfs.ext4, 1 vCPU, 256 MiB of memory, 256 MiB of session disk
 //! ```
 
 use std::io::{IsTerminal, Read, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use mentor_host::microvm::{Config, MicroVm};
+use mentor_host::microvm::{Config, MicroVm, Snapshot};
 
 fn usage() -> ExitCode {
-    eprintln!("usage: mentor-host <exec|shell> [--firecracker P] [--kernel P] [--rootfs P] [--vcpus N] [--memory MiB] [-- command…]");
+    eprintln!(
+        "usage: mentor-host <exec|shell|snapshot DIR> [--from DIR] [--firecracker P] [--kernel P] [--rootfs P] [--vcpus N] [--memory MiB] [--disk MiB] [-- command…]"
+    );
     ExitCode::from(2)
 }
 
@@ -73,16 +78,21 @@ fn run() -> std::io::Result<ExitCode> {
         rootfs: PathBuf::from(".dev/rootfs.ext4"),
         vcpus: 1,
         memory_mib: 256,
+        session_disk_mib: Some(256),
     };
     let mut command: Vec<String> = Vec::new();
+    let mut from: Option<PathBuf> = None;
+    let snapshot_dir: Option<PathBuf> = if mode == "snapshot" { args.next().map(PathBuf::from) } else { None };
     while let Some(arg) = args.next() {
         let mut value = || args.next().ok_or_else(|| std::io::Error::other(format!("{arg} needs a value")));
         match arg.as_str() {
+            "--from" => from = Some(value()?.into()),
             "--firecracker" => config.firecracker = value()?.into(),
             "--kernel" => config.kernel = value()?.into(),
             "--rootfs" => config.rootfs = value()?.into(),
             "--vcpus" => config.vcpus = value()?.parse().map_err(std::io::Error::other)?,
             "--memory" => config.memory_mib = value()?.parse().map_err(std::io::Error::other)?,
+            "--disk" => config.session_disk_mib = Some(value()?.parse().map_err(std::io::Error::other)?),
             "--" => {
                 command = args.by_ref().collect();
             }
@@ -90,10 +100,24 @@ fn run() -> std::io::Result<ExitCode> {
         }
     }
 
+    let start = || -> std::io::Result<MicroVm> {
+        let vm = match &from {
+            Some(directory) => MicroVm::restore(&Snapshot::open(directory, &config)?, &config)?,
+            None => MicroVm::start(&config)?,
+        };
+        let how = if from.is_some() { "restored from a snapshot" } else { "cold boot" };
+        eprintln!("mentor-host: guest agent ready in {:.1} ms ({how})\r", vm.boot_time.as_secs_f64() * 1000.0);
+        Ok(vm)
+    };
     match mode.as_str() {
+        "snapshot" => {
+            let Some(directory) = snapshot_dir else { return Ok(usage()) };
+            let snapshot = start()?.snapshot(&directory)?;
+            eprintln!("mentor-host: snapshot written to {}", snapshot.directory.display());
+            Ok(ExitCode::SUCCESS)
+        }
         "exec" if !command.is_empty() => {
-            let vm = MicroVm::start(&config)?;
-            eprintln!("mentor-host: guest agent ready in {} ms", vm.boot_time.as_millis());
+            let vm = start()?;
             let result = vm.exec(&command, None)?;
             print!("{}", result.stdout);
             eprint!("{}", result.stderr);
@@ -104,8 +128,7 @@ fn run() -> std::io::Result<ExitCode> {
             Ok(ExitCode::from(result.exit_code.map_or(1, |code| code as u8)))
         }
         "shell" => {
-            let vm = MicroVm::start(&config)?;
-            eprintln!("mentor-host: guest agent ready in {} ms\r", vm.boot_time.as_millis());
+            let vm = start()?;
             let (cols, rows) = terminal_size();
             let mut output = vm.terminal(cols, rows)?;
             let mut input = output.try_clone()?;

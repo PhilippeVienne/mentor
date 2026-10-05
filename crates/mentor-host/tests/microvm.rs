@@ -9,6 +9,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use mentor_host::microvm::{Config, MicroVm};
+use std::time::Instant;
 
 fn config() -> Option<Config> {
     let dev = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.dev");
@@ -18,6 +19,7 @@ fn config() -> Option<Config> {
         rootfs: dev.join("rootfs.ext4"),
         vcpus: 1,
         memory_mib: 128,
+        session_disk_mib: Some(32),
     };
     let ready = Path::new("/dev/kvm").exists() && [&config.firecracker, &config.kernel, &config.rootfs].iter().all(|path| path.exists());
     if !ready {
@@ -83,4 +85,49 @@ fn terminal_is_a_real_pty() {
     assert!(output.contains("/dev/pts/0"), "{output}");
     assert!(output.contains("30 100"), "{output}");
     assert!(output.contains("done-42"), "{output}");
+}
+
+#[test]
+fn session_disk_is_a_hard_quota() {
+    let Some(config) = config() else { return };
+    let vm = MicroVm::start(&config).expect("boot");
+    assert_eq!(sh(&vm, "awk '$2 == \"/workspace\" { print $1, $3 }' /proc/mounts").stdout, "/dev/vdb ext4\n");
+    // 32 MiB of disk: writing 64 MiB must fail, and what was written stays within the quota.
+    let overflow = sh(&vm, "dd if=/dev/zero of=/workspace/big bs=1M count=64 2>&1; du -m /workspace/big | cut -f1");
+    assert!(overflow.stdout.contains("No space left on device"), "{}", overflow.stdout);
+    let written: u32 = overflow.stdout.lines().last().unwrap().trim().parse().unwrap();
+    assert!(written <= 32, "{written} MiB written on a 32 MiB disk");
+    // The VM keeps working once the disk is full.
+    assert_eq!(sh(&vm, "rm /workspace/big && echo ok > /workspace/f && cat /workspace/f").stdout, "ok\n");
+}
+
+#[test]
+fn snapshot_restores_fast_and_each_copy_is_independent() {
+    let Some(config) = config() else { return };
+    let directory = std::env::temp_dir().join(format!("mentor-snapshot-test-{}", std::process::id()));
+    let cold = MicroVm::start(&config).expect("boot");
+    let cold_boot = cold.boot_time;
+    sh(&cold, "echo prepared > /workspace/template; echo in-memory > /tmp/marker");
+    let snapshot = cold.snapshot(&directory).expect("snapshot");
+
+    let started = Instant::now();
+    let (first, second) = (MicroVm::restore(&snapshot, &config).expect("restore"), MicroVm::restore(&snapshot, &config).expect("restore"));
+    eprintln!("cold boot {cold_boot:?}, restore {:?} and {:?} (both in {:?})", first.boot_time, second.boot_time, started.elapsed());
+    assert!(first.boot_time < cold_boot, "restore ({:?}) should beat a cold boot ({cold_boot:?})", first.boot_time);
+
+    // Disk and memory state both come back.
+    assert_eq!(sh(&first, "cat /workspace/template /tmp/marker").stdout, "prepared\nin-memory\n");
+    // Each restored VM has its own disk.
+    sh(&first, "echo mine > /workspace/private");
+    assert_ne!(sh(&second, "cat /workspace/private").exit_code, Some(0));
+    // The clock was set on resume: within a minute of the host's.
+    let guest_time: i64 = sh(&second, "date +%s").stdout.trim().parse().unwrap();
+    let host_time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+    assert!((guest_time - host_time).abs() < 60, "guest clock {guest_time} vs host {host_time}");
+    // The two copies do not share their random generator state.
+    let random = |vm: &MicroVm| sh(vm, "head -c 16 /dev/urandom | od -An -tx1").stdout;
+    assert_ne!(random(&first), random(&second));
+
+    drop((first, second));
+    let _ = std::fs::remove_dir_all(&directory);
 }

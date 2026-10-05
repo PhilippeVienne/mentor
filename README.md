@@ -20,8 +20,8 @@ Phase 0 (foundations) is in progress. What exists today:
 | [`mentor-host`](crates/mentor-host) | **Prototype.** Starts Firecracker microVMs and talks to their guest agent |
 
 Not built yet: the web server, the database layer, the scheduler, the catalogue linter. The execution plane is
-a prototype: it proves the chain kernel → read-only rootfs → guest agent → vsock, without the jailer, per-session
-disks, snapshots or networking yet.
+a prototype: kernel → read-only rootfs → guest agent → vsock, with per-session disks and snapshots, but without
+the jailer or networking yet.
 The details of what is and is not ported are in [doc/architecture.md §6.1](doc/architecture.md#61-phase-0-conformance-what-matches-v1-means).
 
 ## Layout
@@ -55,11 +55,14 @@ tools/setup-dev.sh        # downloads Firecracker (checksum verified) and a gues
 tools/build-rootfs.sh     # builds .dev/rootfs.ext4 from alpine, with mentor-guest as init
 cargo run -p mentor-host -- exec -- sh -c 'uname -a; id'
 cargo run -p mentor-host -- shell
+cargo run -p mentor-host -- snapshot .dev/snapshot                    # save a booted microVM
+cargo run -p mentor-host -- exec --from .dev/snapshot -- date         # start from the snapshot
 cargo test -p mentor-host # end-to-end tests; skipped when KVM or .dev/ is missing
 ```
 
-On the development machine the guest agent answers about 550 ms after Firecracker starts (cold boot, no
-snapshot), and a full `exec` round trip, boot and shutdown included, takes about 0.6 s.
+On the development machine the guest agent answers about 550 ms after a cold boot and about 6 ms after a
+restore from a snapshot. The workspace is a per-session disk (`--disk <MiB>`, 256 by default) whose size is a hard
+quota.
 
 ## Language and catalogue format
 

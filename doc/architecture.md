@@ -100,20 +100,35 @@ Chosen stack (§10): `axum` + `tokio` for the web tier, `sqlx` for PostgreSQL (q
 #### Prototype status (October 2026)
 
 `mentor-host` and `mentor-guest` prove the core of this table on one machine: a microVM boots from a read-only
-ext4 rootfs exported from a container image, with `mentor-guest` as its init process, and the host runs commands
-and interactive pseudo-terminals in it over vsock. Measured on the development machine: the guest agent answers
-about 550 ms after Firecracker starts (cold boot); five end-to-end tests booting six microVMs run in 1.2 s.
+ext4 rootfs exported from a container image, with `mentor-guest` as its init process; the host runs commands and
+interactive pseudo-terminals in it over vsock; the workspace is a per-session disk; a VM can be saved as a
+snapshot and restored any number of times.
+
+Measured on the development machine (1 vCPU, 256 MiB):
+
+| Start | Guest agent answers after | Full `exec` round trip, start and stop included |
+| --- | --- | --- |
+| Cold boot | about 550 ms | about 0.6 s |
+| Restore from a snapshot | about 6 ms | about 0.05 s |
+
+Seven end-to-end tests, booting or restoring ten microVMs, run in 1.2 s.
 
 | In the prototype | Not yet |
 | --- | --- |
 | Read-only rootfs built from a container image, without root privilege | Build inside a microVM; images addressed by digest |
-| vsock control channel: exec, terminal (real PTY), shutdown | Files, checks, VS Code relay; output size limits; a non-root user in the guest |
+| vsock control channel: exec, terminal (real PTY), resume, shutdown | Files, checks, VS Code relay; output size limits; a non-root user in the guest |
 | No network interface at all in the guest | Per-tenant network namespace and controlled egress |
-| Writable `/workspace`, `/tmp`, `/run` as tmpfs | Per-session disk with a hard quota |
-| VM killed with its host process, run directory removed | The `jailer`, cgroups, seccomp profile review, snapshots |
+| Per-session ext4 disk on `/workspace`: its size is a hard quota (formatting 256 MiB takes about 13 ms) | Quota on `/tmp` and `/run` beyond their tmpfs size; disk kept across reconnections |
+| Snapshots: full VM state plus the session disk; each restored VM gets its own disk copy | Snapshots keyed by image digest and built automatically; differential snapshots |
+| After a restore: clock set by the host, random generator reseeded by the kernel (VMGenID) | Review of everything else that must be unique per VM (machine id, host keys when SSH comes) |
+| VM killed with its host process, run directory removed | The `jailer`, cgroups, seccomp profile review |
 
-The prototype therefore **must not run untrusted workloads yet**: without the jailer, a Firecracker escape would
-land in the developer's own account.
+Two costs to keep in mind for sizing: a snapshot stores the **whole guest memory** (256 MiB of RAM gives a
+256 MiB file per image), and restored VMs map that file privately, so memory is only really consumed as each VM
+touches its pages.
+
+The prototype **must not run untrusted workloads yet**: without the jailer, a Firecracker escape would land in
+the developer's own account.
 
 The interface between `mentor-web` and the execution plane keeps the **allow-list** of the v1 broker
 (`broker/base.py`: create, remove, status, exec, terminal, SSH, build, inventory). No raw Firecracker parameter
