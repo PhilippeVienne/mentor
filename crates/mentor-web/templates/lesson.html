@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
+{% block description %}{{ lesson.summary }}{% endblock %}
+{% block body_class %}page-lesson{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/lab.css">{% endblock %}
+
+{% block content %}
+<div class="container lesson-layout lesson-layout--plein">
+    <div class="lesson-main">
+        <nav aria-label="Fil d'Ariane" class="breadcrumb">
+            <a href="/catalogue/">Catalogue</a> <span aria-hidden="true">/</span>
+            <a href="/courses/{{ course.slug }}/">{{ course.title }}</a> <span aria-hidden="true">/</span>
+            <span>Leçon {{ index }}</span>
+        </nav>
+
+        <ol class="stepper" aria-label="Leçons du parcours">
+            {% for step in course.lessons %}
+            <li class="stepper__item{% if loop.index == index %} is-current{% endif %}">
+                <a href="/courses/{{ course.slug }}/{{ step.slug }}/" title="{{ step.title }}"{% if loop.index == index %} aria-current="step"{% endif %}><span class="sr-only">Leçon </span>{{ loop.index }}</a>
+            </li>
+            {% endfor %}
+        </ol>
+
+        <header class="lesson-head">
+            <p class="eyebrow">{{ course.icon }} {{ course.title }} · Leçon {{ index }} / {{ course.lessons.len() }}</p>
+            <h1>{{ lesson.title }}</h1>
+            <p class="lead">{{ lesson.summary }}</p>
+            <ul class="meta"><li>≈ {{ lesson.minutes }} min</li></ul>
+            {% if !lesson.objectives.is_empty() %}
+            <aside class="objectives-box" aria-labelledby="obj-title">
+                <h2 id="obj-title">À la fin de cette leçon, tu sauras</h2>
+                <ul>{% for objective in lesson.objectives %}<li>{{ objective|safe }}</li>{% endfor %}</ul>
+            </aside>
+            {% endif %}
+        </header>
+
+        {% if interactive_pending %}
+        <aside class="callout callout--info" role="note">
+            <p class="callout__title">Labo et quiz à venir</p>
+            <p>Cette version du portail affiche la leçon. Le labo et le quiz ne sont pas encore disponibles.</p>
+        </aside>
+        {% endif %}
+
+        <article class="prose" id="lesson-body">{{ lesson.body_html|safe }}</article>
+
+        <nav class="lesson-nav" aria-label="Navigation entre leçons">
+            {% if let Some(previous) = previous %}<a class="btn btn--ghost" href="/courses/{{ course.slug }}/{{ previous }}/">← Leçon précédente</a>{% else %}<span></span>{% endif %}
+            {% if let Some(next) = next %}<a class="btn btn--primary" href="/courses/{{ course.slug }}/{{ next }}/">Leçon suivante →</a>{% else %}<a class="btn btn--primary" href="/courses/{{ course.slug }}/">Retour au parcours</a>{% endif %}
+        </nav>
+    </div>
+</div>
+{% endblock %}

@@ -23,3 +23,9 @@ pub async fn create_tenant(owner: &PgPool, slug: &str, name: &str, hostnames: &[
 pub async fn tenant_by_slug(owner: &PgPool, slug: &str) -> Result<Option<Uuid>> {
     Ok(sqlx::query_scalar("SELECT id FROM tenant WHERE slug = $1").bind(slug).fetch_optional(owner).await?)
 }
+
+/// Replaces the brand settings of a tenant.
+pub async fn set_branding(owner: &PgPool, tenant: Uuid, branding: &serde_json::Value) -> Result<()> {
+    sqlx::query("UPDATE tenant SET branding = $2 WHERE id = $1").bind(tenant).bind(sqlx::types::Json(branding)).execute(owner).await?;
+    Ok(())
+}

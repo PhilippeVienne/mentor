@@ -47,6 +47,12 @@ impl TenantTx {
         Ok(sqlx::query_scalar("SELECT name FROM tenant").fetch_optional(&mut *self.tx).await?)
     }
 
+    /// Display name and brand settings of the tenant.
+    pub async fn tenant_profile(&mut self) -> Result<Option<(String, serde_json::Value)>> {
+        let row = sqlx::query("SELECT name, branding FROM tenant").fetch_optional(&mut *self.tx).await?;
+        Ok(row.map(|row| (row.get("name"), row.get::<sqlx::types::Json<serde_json::Value>, _>("branding").0)))
+    }
+
     /// Creates the learner on first login, or refreshes the profile sent by the identity provider.
     pub async fn upsert_learner(&mut self, subject: &str, username: &str, is_admin: bool) -> Result<Learner> {
         let row = sqlx::query(

@@ -1,0 +1,23 @@
+[package]
+name = "mentor-web"
+description = "Web server of Mentor: tenant resolution, catalogue and lesson pages."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+askama = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true }
+mentor-content = { path = "../mentor-content" }
+mentor-core = { path = "../mentor-core" }
+mentor-db = { path = "../mentor-db" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+
+[dev-dependencies]
+tower = { workspace = true }
+uuid = { workspace = true }

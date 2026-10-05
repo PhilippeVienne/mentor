@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block description %}{{ course.summary }}{% endblock %}
+
+{% block content %}
+<section class="course-head"{% if !course.accent.is_empty() %} style="--accent: {{ course.accent }}"{% endif %}>
+    <div class="container course-head__inner">
+        <div class="course-head__text">
+            <nav aria-label="Fil d'Ariane" class="breadcrumb"><a href="/catalogue/">Catalogue</a> <span aria-hidden="true">/</span> <span>{{ course.title }}</span></nav>
+            <p class="course-head__icon" aria-hidden="true">{{ course.icon }}</p>
+            <h1>{{ course.title }}</h1>
+            <p class="lead">{{ course.summary }}</p>
+            <ul class="meta meta--lg">
+                <li>{{ lessons_label }}</li>
+                <li>≈ {{ minutes }} min</li>
+            </ul>
+        </div>
+        {% if let Some(banner) = banner %}<img class="course-head__art" src="{{ banner }}" alt="" loading="lazy">{% endif %}
+    </div>
+</section>
+
+<div class="container course-layout">
+    <div class="course-main">
+        {% if !course.description_html.is_empty() %}
+        <div class="prose course-intro">{{ course.description_html|safe }}</div>
+        {% endif %}
+
+        <h2 class="section-title">Au programme</h2>
+        <ol class="timeline">
+            {% for lesson in course.lessons %}
+            <li class="timeline__item">
+                <span class="timeline__dot" aria-hidden="true">{{ loop.index }}</span>
+                <div class="timeline__card">
+                    <h3><a class="stretched" href="/courses/{{ course.slug }}/{{ lesson.slug }}/">{{ lesson.title }}</a></h3>
+                    <p>{{ lesson.summary }}</p>
+                    <ul class="meta"><li>≈ {{ lesson.minutes }} min</li></ul>
+                    {% if !lesson.objectives.is_empty() %}
+                    <ul class="objectives">{% for objective in lesson.objectives %}<li>{{ objective|safe }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+
+    {% if !course.cheatsheet_html.is_empty() %}
+    <aside class="course-side">
+        <details class="cheatsheet">
+            <summary>Antisèche</summary>
+            <div class="prose">{{ course.cheatsheet_html|safe }}</div>
+        </details>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}

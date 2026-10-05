@@ -18,8 +18,9 @@ Phase 0 (foundations) is in progress. What exists today:
 
 | [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
 | [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export |
+| [`mentor-web`](crates/mentor-web) | The web server, read-only for now: resolves the tenant from the host name and serves home, catalogue, course and lesson pages with that tenant's brand |
 
-Not built yet: the web server, the catalogue linter, lab orchestration.
+Not built yet: sign-in, progress and interactive labs and quizzes in the web server; the catalogue linter; lab orchestration.
 
 Real labs run in Firecracker microVMs, but Mentor does not implement that isolation: it will come from a base
 shared with the [Atelier](https://github.com/PhilippeVienne/atelier) project, on Kubernetes. The integration
@@ -29,6 +30,7 @@ study is in [doc/execution-plane.md](doc/execution-plane.md).
 
 ```text
 crates/          Rust workspace
+static/          style sheets, scripts and default brand images served by mentor-web (copied from v1)
 catalogue/       the 19 courses, converted from v1 (French content, English format)
 tools/           one-off tools (v1 catalogue migration)
 conformance/     reference output exported from v1, and the v1 commit it comes from
@@ -57,6 +59,24 @@ PostgreSQL 16 or later is required.
 
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
+
+## Running the web server
+
+```shell
+export MENTOR_DATABASE_URL=postgres://owner:…@host/mentor          # the owning role
+mentor migrate
+mentor tenant-create demo "Mentor" --host localhost --host 127.0.0.1
+MENTOR_APP_DATABASE_URL=postgres://app:…@host/mentor cargo run -p mentor-web   # a member of mentor_app
+```
+
+Then open <http://localhost:8300>. A request whose host name belongs to no tenant gets a bare 404. A second
+tenant on `acme.localhost` shows the same catalogue under its own name and colours: brand settings are a JSON
+object in `tenant.branding` (see `crates/mentor-web/src/brand.rs` for the keys); there is no command to edit it
+yet.
+
+Limits of this first version: one catalogue shared by every tenant; lesson HTML is inserted as compiled, without
+sanitising, which is only acceptable while the operator writes the catalogue; fonts are the system's; the
+interface texts are French, like the catalogue.
 
 ## Moving a v1 portal into a tenant
 

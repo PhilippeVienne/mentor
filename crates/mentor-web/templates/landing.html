@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ brand.tagline }}{% endblock %}
+{% block body_class %}page-landing{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container hero__inner">
+        <div class="hero__text">
+            <p class="eyebrow">{{ brand.name }}</p>
+            <h1>{{ brand.hero_title }} <span class="accent">{{ brand.hero_accent }}</span>.</h1>
+            <p class="lead">{{ brand.hero_text }}</p>
+            <div class="hero__cta">
+                <a class="btn btn--primary btn--lg" href="/catalogue/">Voir le catalogue</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <dl class="hero-stats" aria-label="Le portail en chiffres">
+            <div><dt>Parcours</dt><dd>{{ stats.courses }}</dd></div>
+            <div><dt>Leçons</dt><dd>{{ stats.lessons }}</dd></div>
+            <div><dt>Heures de pratique</dt><dd>≈ {{ stats.hours }}</dd></div>
+            <div><dt>Examens de validation</dt><dd>{{ stats.exams }}</dd></div>
+        </dl>
+    </div>
+</section>
+
+<section class="section" id="catalogue" aria-labelledby="catalogue-title">
+    <div class="container">
+        <div class="section__head">
+            <h2 id="catalogue-title">Le catalogue</h2>
+        </div>
+        <div class="grid grid--courses">
+            {% for card in cards %}{% include "_course_card.html" %}{% endfor %}
+        </div>
+        <p class="section__more"><a class="btn btn--ghost" href="/catalogue/">Voir les {{ stats.courses }} parcours →</a></p>
+    </div>
+</section>
+{% endblock %}

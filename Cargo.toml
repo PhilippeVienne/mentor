@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/mentor-core", "crates/mentor-content", "crates/mentor-db", "crates/mentor-cli"]
+members = ["crates/mentor-core", "crates/mentor-content", "crates/mentor-db", "crates/mentor-cli", "crates/mentor-web"]
 
 [workspace.package]
 version = "0.1.0"
@@ -9,7 +9,11 @@ license = "AGPL-3.0-or-later"
 repository = "https://github.com/PhilippeVienne/mentor"
 
 [workspace.dependencies]
+askama = "0.14"
+axum = "0.8"
 clap = { version = "4", features = ["derive", "env"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["fs"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Catalogue des formations{% endblock %}
+
+{% block content %}
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Catalogue</p>
+        <h1>Toutes les formations</h1>
+        <p class="lead">Des parcours courts et progressifs, à suivre à ton rythme.</p>
+    </div>
+</section>
+
+<div class="container catalogue" id="catalogue-root">
+    <div class="cat-tools" hidden>
+        <label class="cat-search">
+            <span class="sr-only">Rechercher un parcours</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="search" id="cat-search" placeholder="Rechercher un parcours…" autocomplete="off">
+        </label>
+        <fieldset class="cat-filters">
+            <legend>Filtrer les parcours</legend>
+            <button type="button" class="cat-filter" data-filter="tous" aria-pressed="true">Tous</button>
+            <button type="button" class="cat-filter" data-filter="sans-prerequis" aria-pressed="false">Sans prérequis</button>
+        </fieldset>
+    </div>
+    <p class="cat-count" id="cat-count" role="status" aria-live="polite"></p>
+
+    <section id="disponibles" aria-labelledby="dispo-title" data-cat-section>
+        <h2 id="dispo-title" class="section-title">Disponibles</h2>
+        <div class="grid grid--courses">
+            {% for card in cards %}{% if card.published %}{% include "_course_card.html" %}{% endif %}{% endfor %}
+        </div>
+    </section>
+
+    {% if has_upcoming %}
+    <section id="bientot" aria-labelledby="soon-title" data-cat-section>
+        <h2 id="soon-title" class="section-title">À venir</h2>
+        <div class="grid grid--courses">
+            {% for card in cards %}{% if !card.published %}{% include "_course_card.html" %}{% endif %}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <div class="cat-empty" id="cat-empty" hidden>
+        <strong>Aucun parcours ne correspond.</strong>
+        Essaie un autre mot-clé ou <button type="button" class="link-btn" id="cat-reset">réinitialise les filtres</button>.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/catalogue-ui.js"></script>{% endblock %}

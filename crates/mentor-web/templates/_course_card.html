@@ -1,0 +1,20 @@
+<article data-course="{{ card.slug }}" data-search="{{ card.title }} {{ card.summary }} {{ card.slug }}" data-state="{% if card.published %}a-commencer{% else %}bientot{% endif %}" data-prereq="{% if card.requires.is_empty() %}0{% else %}1{% endif %}" class="course-card{% if !card.published %} is-soon{% endif %}"{% if !card.accent.is_empty() %} style="--accent: {{ card.accent }}"{% endif %}>
+    <div class="course-card__banner">
+        {% if let Some(banner) = card.banner %}<img src="{{ banner }}" alt="" loading="lazy">{% endif %}
+        <span class="course-card__icon" aria-hidden="true">{{ card.icon }}</span>
+        {% if !card.published %}<span class="pill pill--soon">Bientôt</span>{% endif %}
+    </div>
+    <div class="course-card__body">
+        <h3 class="course-card__title">
+            {% if card.published %}<a class="stretched" href="/courses/{{ card.slug }}/">{{ card.title }}</a>{% else %}{{ card.title }}{% endif %}
+        </h3>
+        <p class="course-card__summary">{{ card.summary }}</p>
+        <ul class="meta">
+            {% if card.published %}
+            <li>{{ card.lessons_label }}</li>
+            <li>≈ {{ card.minutes }} min</li>
+            {% endif %}
+            {% if !card.requires.is_empty() %}<li>Prérequis : {% for required in card.requires %}<code>{{ required }}</code>{% if !loop.last %}, {% endif %}{% endfor %}</li>{% endif %}
+        </ul>
+    </div>
+</article>
