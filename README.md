@@ -18,7 +18,7 @@ Phase 0 (foundations) is in progress. What exists today:
 
 | [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
 | [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export |
-| [`mentor-web`](crates/mentor-web) | The web server, read-only for now: resolves the tenant from the host name and serves home, catalogue, course and lesson pages with that tenant's brand |
+| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, and records quiz scores and lesson progress for a signed-in learner (development sign-in only, OIDC is not there yet) |
 
 Not built yet: sign-in, progress and interactive labs and quizzes in the web server; the catalogue linter; lab orchestration.
 
@@ -73,6 +73,12 @@ Then open <http://localhost:8300>. A request whose host name belongs to no tenan
 tenant on `acme.localhost` shows the same catalogue under its own name and colours: brand settings are a JSON
 object in `tenant.branding` (see `crates/mentor-web/src/brand.rs` for the keys); there is no command to edit it
 yet.
+
+Sessions are a cookie signed with `--session-secret` (`MENTOR_SESSION_SECRET`); without one a random secret is
+drawn at start-up, so sessions do not survive a restart. Until OIDC is implemented the only way to sign in is
+`--dev-login`, which mounts `/dev/login`: a user name, no password. **Never enable it on a reachable
+deployment**: anyone could sign in as anyone. Requests that change state are accepted only from the site's own
+origin.
 
 Limits of this first version: one catalogue shared by every tenant; lesson HTML is inserted as compiled, without
 sanitising, which is only acceptable while the operator writes the catalogue; fonts are the system's; the

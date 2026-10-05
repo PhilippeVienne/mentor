@@ -9,7 +9,7 @@ use mentor_db::{platform, resolve_tenant, Error, TenantTx};
 use sqlx::PgPool;
 
 fn lesson(tasks: u32, questions: u32) -> LessonRules {
-    LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, server_verified: false, real_labs_available: false }
+    LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, server_verified: false, lab_available: true }
 }
 
 #[tokio::test]

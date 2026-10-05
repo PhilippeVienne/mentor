@@ -27,7 +27,7 @@ const SETTINGS: ExamSettings = ExamSettings { draw: 2, shuffle: true, minutes: 2
 const NOW: i64 = 1_800_000_000;
 
 fn lesson(slug: &str, tasks: u32) -> LessonRules {
-    LessonRules { course: "git".into(), slug: slug.into(), tasks, questions: 0, server_verified: false, real_labs_available: false }
+    LessonRules { course: "git".into(), slug: slug.into(), tasks, questions: 0, server_verified: false, lab_available: true }
 }
 
 fn pool() -> Vec<PoolQuestion> {

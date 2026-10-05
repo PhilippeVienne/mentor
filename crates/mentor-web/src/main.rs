@@ -3,7 +3,6 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::sync::Arc;
 
 use clap::Parser;
 use mentor_web::{router, AppState};
@@ -23,13 +22,31 @@ struct Options {
     static_dir: PathBuf,
     #[arg(long, env = "MENTOR_LISTEN", default_value = "127.0.0.1:8300")]
     listen: SocketAddr,
+    /// Secret that signs session cookies. Without it a random one is used and sessions end when the server
+    /// stops.
+    #[arg(long, env = "MENTOR_SESSION_SECRET", hide_env_values = true)]
+    session_secret: Option<String>,
+    /// Offer a password-less sign-in page. For development only: anyone could sign in as anyone.
+    #[arg(long)]
+    dev_login: bool,
 }
 
 async fn run(options: Options) -> Result<(), Box<dyn std::error::Error>> {
     let catalogue = mentor_content::load_catalogue(&options.catalogue)?;
     eprintln!("mentor-web: {} courses compiled from {}", catalogue.courses.len(), options.catalogue.display());
     let db = PgPoolOptions::new().max_connections(10).connect(&options.database_url).await?;
-    let app = router(AppState { db, catalogue: Arc::new(catalogue) }, &options.static_dir, &options.catalogue);
+    let secret = match options.session_secret {
+        Some(secret) if secret.len() >= 32 => secret.into_bytes(),
+        Some(_) => return Err("the session secret must be at least 32 characters long".into()),
+        None => {
+            eprintln!("mentor-web: no session secret given: using a random one, sessions will not survive a restart");
+            [uuid::Uuid::new_v4().into_bytes(), uuid::Uuid::new_v4().into_bytes()].concat()
+        }
+    };
+    if options.dev_login {
+        eprintln!("mentor-web: WARNING: development sign-in is enabled, anyone can sign in as anyone");
+    }
+    let app = router(AppState::new(db, catalogue, secret, options.dev_login), &options.static_dir, &options.catalogue);
     let listener = tokio::net::TcpListener::bind(options.listen).await?;
     eprintln!("mentor-web: listening on http://{}", options.listen);
     axum::serve(listener, app).await?;

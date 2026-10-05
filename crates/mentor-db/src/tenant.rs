@@ -69,6 +69,18 @@ impl TenantTx {
         Ok(Learner { id: row.get("id"), subject: row.get("subject"), username: row.get("username"), is_admin: row.get("is_admin") })
     }
 
+    /// The learner with this identifier, if it belongs to this tenant.
+    pub async fn learner(&mut self, id: Uuid) -> Result<Option<Learner>> {
+        let row =
+            sqlx::query("SELECT id, subject, username, is_admin FROM learner WHERE id = $1").bind(id).fetch_optional(&mut *self.tx).await?;
+        Ok(row.map(|row| Learner {
+            id: row.get("id"),
+            subject: row.get("subject"),
+            username: row.get("username"),
+            is_admin: row.get("is_admin"),
+        }))
+    }
+
     /// Number of learners visible in this transaction, that is, of this tenant.
     pub async fn count_learners(&mut self) -> Result<i64> {
         Ok(sqlx::query_scalar("SELECT count(*) FROM learner").fetch_one(&mut *self.tx).await?)

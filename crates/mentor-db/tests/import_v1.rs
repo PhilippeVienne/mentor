@@ -62,7 +62,7 @@ async fn imports_once_keeps_dates_and_stays_inside_the_tenant() {
         tasks: 3,
         questions: 3,
         server_verified: false,
-        real_labs_available: false,
+        lab_available: false,
     };
     let progress = tx.lesson_progress(alice, &lesson).await.unwrap();
     assert!(progress.completed && progress.tasks_done.len() == 3 && progress.quiz_best == 3);

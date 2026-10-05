@@ -21,9 +21,10 @@ pub struct LessonRules {
     pub questions: u32,
     /// The lab runs in a real environment: its steps are validated by the server only.
     pub server_verified: bool,
-    /// Real environments are available on this platform. Without them a real lab cannot be done, so it does
-    /// not gate the quiz: the lesson ends with the reading and the quiz.
-    pub real_labs_available: bool,
+    /// The lab can actually be done on this platform. When it cannot (a real lab without real environments, a
+    /// simulated lab on a platform that does not run them yet), it does not gate the quiz: the lesson ends
+    /// with the reading and the quiz.
+    pub lab_available: bool,
 }
 
 impl LessonRules {
@@ -34,7 +35,7 @@ impl LessonRules {
 
     /// Whether the lab must be finished before the quiz.
     pub fn lab_required(&self) -> bool {
-        self.tasks > 0 && (!self.server_verified || self.real_labs_available)
+        self.tasks > 0 && self.lab_available
     }
 }
 
@@ -232,7 +233,7 @@ mod tests {
     use super::*;
 
     fn lesson(tasks: u32, questions: u32) -> LessonRules {
-        LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, server_verified: false, real_labs_available: false }
+        LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, server_verified: false, lab_available: true }
     }
 
     fn xp(recorded: &Recorded) -> u32 {
@@ -290,7 +291,7 @@ mod tests {
 
     #[test]
     fn real_lab_steps_come_from_the_server_only() {
-        let real = LessonRules { server_verified: true, real_labs_available: true, ..lesson(1, 0) };
+        let real = LessonRules { server_verified: true, lab_available: true, ..lesson(1, 0) };
         let mut progress = LessonProgress::default();
         assert_eq!(record(&real, &mut progress, Event::Task(0), Source::Browser), Err(RecordError::ServerVerifiedLab));
         assert!(record(&real, &mut progress, Event::Task(0), Source::Server).unwrap().lesson_completed);
@@ -298,10 +299,10 @@ mod tests {
 
     #[test]
     fn a_real_lab_does_not_gate_the_quiz_without_real_environments() {
-        let real = LessonRules { server_verified: true, real_labs_available: false, ..lesson(3, 3) };
+        let real = LessonRules { server_verified: true, lab_available: false, ..lesson(3, 3) };
         assert!(!real.lab_required());
         assert!(record(&real, &mut LessonProgress::default(), Event::Quiz(2), Source::Browser).unwrap().lesson_completed);
-        let available = LessonRules { real_labs_available: true, ..real };
+        let available = LessonRules { lab_available: true, ..real };
         assert_eq!(record(&available, &mut LessonProgress::default(), Event::Quiz(2), Source::Browser), Err(RecordError::LabNotDone));
     }
 

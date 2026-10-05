@@ -5,9 +5,13 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use mentor_content::{Course, Lesson};
+use mentor_core::gamification::{XP_LESSON, XP_QUIZ, XP_TASK};
+use mentor_core::progress::LessonProgress;
+use mentor_db::TenantTx;
 
 use crate::brand::Brand;
-use crate::site::Site;
+use crate::learning::rules;
+use crate::site::{Site, Viewer};
 use crate::AppState;
 
 /// Number of courses shown on the home page.
@@ -69,6 +73,8 @@ struct Stats {
 struct LandingPage<'a> {
     brand: &'a Brand,
     section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
     stats: Stats,
     cards: Vec<Card<'a>>,
 }
@@ -78,6 +84,8 @@ struct LandingPage<'a> {
 struct CataloguePage<'a> {
     brand: &'a Brand,
     section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
     cards: Vec<Card<'a>>,
     has_upcoming: bool,
 }
@@ -87,6 +95,8 @@ struct CataloguePage<'a> {
 struct CoursePage<'a> {
     brand: &'a Brand,
     section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
     course: &'a Course,
     banner: Option<String>,
     lessons_label: String,
@@ -98,14 +108,49 @@ struct CoursePage<'a> {
 struct LessonPage<'a> {
     brand: &'a Brand,
     section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
     course: &'a Course,
     lesson: &'a Lesson,
     /// Position of the lesson in its course, starting at 1.
     index: usize,
     previous: Option<&'a str>,
     next: Option<&'a str>,
-    /// The lesson has a lab or a quiz, which this version does not run yet.
-    interactive_pending: bool,
+    /// The lesson has a lab, which this version does not run yet.
+    lab_pending: bool,
+    has_quiz: bool,
+    /// What the lesson script needs, as JSON safe to embed in a `<script>` element; `None` for a visitor.
+    lesson_data: Option<String>,
+}
+
+/// JSON that can be written inside a `<script>` element: the characters that could end the element or start
+/// markup are written as escapes.
+fn script_json(value: &serde_json::Value) -> String {
+    value.to_string().replace('<', "\\u003c").replace('>', "\\u003e").replace('&', "\\u0026")
+}
+
+/// What the lesson script needs to run the quiz and report progress.
+fn lesson_data(course: &Course, lesson: &Lesson, progress: &LessonProgress, next_url: &str) -> serde_json::Value {
+    let rules = rules(course, lesson);
+    serde_json::json!({
+        "course": { "slug": course.slug, "title": course.title, "engine": course.engine, "accent": course.accent },
+        "lesson": {
+            "slug": lesson.slug,
+            "title": lesson.title,
+            "tasks": rules.tasks,
+            "labRequired": rules.lab_required(),
+            "tasksDone": progress.tasks_done,
+            "quizBest": progress.quiz_best,
+            "completed": progress.completed,
+            "nextUrl": next_url,
+            "xp": { "task": XP_TASK, "quiz": XP_QUIZ, "lesson": XP_LESSON },
+        },
+        // Labs are not run by this server yet.
+        "lab": null,
+        // Lesson quizzes are self-assessment: answers are checked in the browser, as in v1. Exams are not.
+        "quiz": lesson.quiz,
+        "apiUrl": "/api/progress",
+    })
 }
 
 #[derive(Template)]
@@ -113,6 +158,8 @@ struct LessonPage<'a> {
 struct NotFoundPage<'a> {
     brand: &'a Brand,
     section: &'a str,
+    viewer: Option<&'a Viewer>,
+    dev_login: bool,
 }
 
 fn render(status: StatusCode, page: impl Template) -> Response {
@@ -126,7 +173,7 @@ fn render(status: StatusCode, page: impl Template) -> Response {
 }
 
 fn missing(site: &Site) -> Response {
-    render(StatusCode::NOT_FOUND, NotFoundPage { brand: &site.brand, section: "" })
+    render(StatusCode::NOT_FOUND, NotFoundPage { brand: &site.brand, section: "", viewer: site.viewer.as_ref(), dev_login: site.dev_login })
 }
 
 /// Published courses come first: the home page only shows the first few.
@@ -145,13 +192,26 @@ pub async fn landing(site: Site, State(state): State<AppState>) -> Response {
     };
     let mut cards = cards(&state);
     cards.truncate(HOME_COURSES);
-    render(StatusCode::OK, LandingPage { brand: &site.brand, section: "home", stats, cards })
+    render(
+        StatusCode::OK,
+        LandingPage { brand: &site.brand, section: "home", viewer: site.viewer.as_ref(), dev_login: site.dev_login, stats, cards },
+    )
 }
 
 pub async fn catalogue(site: Site, State(state): State<AppState>) -> Response {
     let cards = cards(&state);
     let has_upcoming = cards.iter().any(|card| !card.published);
-    render(StatusCode::OK, CataloguePage { brand: &site.brand, section: "catalogue", cards, has_upcoming })
+    render(
+        StatusCode::OK,
+        CataloguePage {
+            brand: &site.brand,
+            section: "catalogue",
+            viewer: site.viewer.as_ref(),
+            dev_login: site.dev_login,
+            cards,
+            has_upcoming,
+        },
+    )
 }
 
 /// A course that can be read: unpublished ones do not exist as far as visitors are concerned.
@@ -164,6 +224,8 @@ pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<
     let page = CoursePage {
         brand: &site.brand,
         section: "catalogue",
+        viewer: site.viewer.as_ref(),
+        dev_login: site.dev_login,
         course,
         banner: banner_url(course),
         lessons_label: lessons_label(course.lessons.len()),
@@ -176,15 +238,39 @@ pub async fn lesson(site: Site, State(state): State<AppState>, Path((course_slug
     let Some(course) = published_course(&state, &course_slug) else { return missing(&site) };
     let Some(position) = course.lessons.iter().position(|lesson| lesson.slug == lesson_slug) else { return missing(&site) };
     let lesson = &course.lessons[position];
+    let next = course.lessons.get(position + 1).map(|next| next.slug.as_str());
+    let next_url = next.map_or(format!("/courses/{}/", course.slug), |slug| format!("/courses/{}/{slug}/", course.slug));
+    let lesson_data = match &site.viewer {
+        Some(viewer) => {
+            let progress = async {
+                let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
+                let progress = tx.lesson_progress(viewer.learner.id, &rules(course, lesson)).await?;
+                tx.commit().await?;
+                Ok::<_, mentor_db::Error>(progress)
+            };
+            match progress.await {
+                Ok(progress) => Some(script_json(&lesson_data(course, lesson, &progress, &next_url))),
+                Err(err) => {
+                    eprintln!("mentor-web: progress not loaded: {err}");
+                    return StatusCode::SERVICE_UNAVAILABLE.into_response();
+                }
+            }
+        }
+        None => None,
+    };
     let page = LessonPage {
         brand: &site.brand,
         section: "catalogue",
+        viewer: site.viewer.as_ref(),
+        dev_login: site.dev_login,
         course,
         lesson,
         index: position + 1,
         previous: position.checked_sub(1).map(|i| course.lessons[i].slug.as_str()),
-        next: course.lessons.get(position + 1).map(|next| next.slug.as_str()),
-        interactive_pending: lesson.lab.is_some() || !lesson.quiz.is_empty(),
+        next,
+        lab_pending: lesson.lab.is_some(),
+        has_quiz: !lesson.quiz.is_empty(),
+        lesson_data,
     };
     render(StatusCode::OK, page)
 }

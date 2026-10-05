@@ -9,15 +9,17 @@ license.workspace = true
 askama = { workspace = true }
 axum = { workspace = true }
 clap = { workspace = true }
+hmac = { workspace = true }
 mentor-content = { path = "../mentor-content" }
 mentor-core = { path = "../mentor-core" }
 mentor-db = { path = "../mentor-db" }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 sqlx = { workspace = true }
 tokio = { workspace = true }
 tower-http = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 tower = { workspace = true }
-uuid = { workspace = true }

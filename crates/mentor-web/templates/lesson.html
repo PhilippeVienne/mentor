@@ -34,14 +34,27 @@
             {% endif %}
         </header>
 
-        {% if interactive_pending %}
+        {% if lab_pending %}
         <aside class="callout callout--info" role="note">
-            <p class="callout__title">Labo et quiz à venir</p>
-            <p>Cette version du portail affiche la leçon. Le labo et le quiz ne sont pas encore disponibles.</p>
+            <p class="callout__title">Labo à venir</p>
+            <p>Le labo de cette leçon n'est pas encore disponible dans cette version du portail. Tu peux lire la leçon{% if has_quiz %} et répondre au quiz{% endif %}.</p>
         </aside>
         {% endif %}
 
         <article class="prose" id="lesson-body">{{ lesson.body_html|safe }}</article>
+
+        {% if has_quiz %}
+        <section class="quiz-section" aria-labelledby="quiz-heading">
+            {% if lesson_data.is_some() %}
+            <div id="quiz-root" data-heading="quiz-heading"></div>
+            {% else %}
+            <aside class="callout callout--info" role="note">
+                <p class="callout__title" id="quiz-heading">Quiz de la leçon</p>
+                <p>Connecte-toi pour répondre au quiz et gagner de l'XP.{% if dev_login %} <a href="/dev/login">Se connecter</a>{% endif %}</p>
+            </aside>
+            {% endif %}
+        </section>
+        {% endif %}
 
         <nav class="lesson-nav" aria-label="Navigation entre leçons">
             {% if let Some(previous) = previous %}<a class="btn btn--ghost" href="/courses/{{ course.slug }}/{{ previous }}/">← Leçon précédente</a>{% else %}<span></span>{% endif %}
@@ -49,4 +62,12 @@
         </nav>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if let Some(data) = lesson_data %}
+<script type="application/json" id="lesson-data">{{ data|safe }}</script>
+<script src="/static/js/quiz-logic.js"></script>
+<script src="/static/js/lesson-ui.js"></script>
+{% endif %}
 {% endblock %}

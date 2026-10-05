@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Connexion de développement{% endblock %}
+
+{% block content %}
+<div class="container auth">
+    <div class="auth__card">
+        <aside class="auth__brand" aria-hidden="true">
+            <img class="auth__logo" src="/static/brand/logo.svg" alt="" width="56" height="64">
+            <p class="auth__name">{{ brand.name }}</p>
+            <p class="auth__tagline">{{ brand.tagline }}</p>
+        </aside>
+        <section class="auth__form" aria-labelledby="login-title">
+            <h1 id="login-title">Connexion de développement</h1>
+            <p class="callout callout--warning">Sans mot de passe : réservée au développement. Elle n'existe que si le serveur est lancé avec <code>--dev-login</code>.</p>
+            {% if !error.is_empty() %}<p class="callout callout--danger" role="alert">{{ error }}</p>{% endif %}
+            <form method="post" action="/dev/login" class="form">
+                <label for="username">Identifiant</label>
+                <input type="text" name="username" id="username" autocomplete="username" autofocus required maxlength="40">
+                <button type="submit" class="btn btn--primary btn--lg btn--block">Se connecter</button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

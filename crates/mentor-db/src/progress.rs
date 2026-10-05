@@ -98,6 +98,16 @@ impl TenantTx {
         Ok(Recorded { xp_gained, lesson_completed: outcome.lesson_completed, progress })
     }
 
+    /// `course/lesson` references of the lessons a learner has completed.
+    pub async fn completed_lessons(&mut self, learner: Uuid) -> Result<BTreeSet<String>> {
+        let references: Vec<String> =
+            sqlx::query_scalar("SELECT course || '/' || lesson FROM lesson_progress WHERE learner_id = $1 AND completed_at IS NOT NULL")
+                .bind(learner)
+                .fetch_all(&mut *self.tx)
+                .await?;
+        Ok(references.into_iter().collect())
+    }
+
     /// Total XP of a learner.
     pub async fn total_xp(&mut self, learner: Uuid) -> Result<u32> {
         let total: i64 = sqlx::query_scalar("SELECT coalesce(sum(xp), 0)::bigint FROM award WHERE learner_id = $1")
