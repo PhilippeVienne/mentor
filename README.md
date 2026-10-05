@@ -13,7 +13,7 @@ Phase 0 (foundations) is in progress. What exists today:
 
 | Crate | What it does |
 | --- | --- |
-| [`mentor-core`](crates/mentor-core) | XP constants and level computation, free of I/O |
+| [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
 | [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams |
 
 Not built yet: the web server, the database layer, the execution plane (Firecracker), the catalogue linter.
