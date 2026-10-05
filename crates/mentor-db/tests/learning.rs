@@ -108,6 +108,10 @@ async fn badges_are_granted_once_from_stored_progress() {
     assert_eq!(tx.award_badges(alice, &badges, &catalogue, 120).await.unwrap(), ["premier-pas", "parcours-git"]);
     assert!(tx.award_badges(alice, &badges, &catalogue, 120).await.unwrap().is_empty());
     assert_eq!(tx.badges_of(alice).await.unwrap().len(), 2);
+    let dates = tx.badge_dates(alice).await.unwrap();
+    assert!(dates.len() == 2 && dates["premier-pas"] > 1_700_000_000);
+    let states = tx.lesson_states(alice).await.unwrap();
+    assert!(states["git/intro"].completed && states["git/intro"].started() && states["git/intro"].tasks_done == 1);
 }
 
 #[tokio::test]

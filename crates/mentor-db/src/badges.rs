@@ -69,6 +69,15 @@ impl TenantTx {
         Ok(slugs.into_iter().collect())
     }
 
+    /// When the learner was awarded each badge they own, in seconds since the Unix epoch.
+    pub async fn badge_dates(&mut self, learner: Uuid) -> Result<BTreeMap<String, i64>> {
+        let rows = sqlx::query("SELECT badge, extract(epoch FROM awarded_at)::bigint AS awarded FROM learner_badge WHERE learner_id = $1")
+            .bind(learner)
+            .fetch_all(&mut *self.tx)
+            .await?;
+        Ok(rows.into_iter().map(|row| (row.get("badge"), row.get("awarded"))).collect())
+    }
+
     /// Grants every badge the learner has earned and does not own yet; returns the new ones, in order.
     pub async fn award_badges(
         &mut self,

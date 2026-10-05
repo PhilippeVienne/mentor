@@ -20,6 +20,11 @@
         <fieldset class="cat-filters">
             <legend>Filtrer les parcours</legend>
             <button type="button" class="cat-filter" data-filter="tous" aria-pressed="true">Tous</button>
+            {% if viewer.is_some() %}
+            <button type="button" class="cat-filter" data-filter="en-cours" aria-pressed="false">En cours</button>
+            <button type="button" class="cat-filter" data-filter="a-commencer" aria-pressed="false">À commencer</button>
+            <button type="button" class="cat-filter" data-filter="termines" aria-pressed="false">Terminés</button>
+            {% endif %}
             <button type="button" class="cat-filter" data-filter="sans-prerequis" aria-pressed="false">Sans prérequis</button>
         </fieldset>
     </div>

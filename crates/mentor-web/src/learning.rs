@@ -9,6 +9,9 @@ use mentor_db::badges::CatalogueView;
 /// Engine name of labs that run in a real environment.
 const REAL_ENGINE: &str = "real";
 
+/// Time zone that cuts activity into days and dates badges, until tenants have their own setting.
+pub const UTC_OFFSET_MINUTES: i32 = 60;
+
 /// This server does not run labs yet, simulated or real. A lab that cannot be done does not gate its quiz.
 const LABS_AVAILABLE: bool = false;
 

@@ -1,6 +1,6 @@
 //! Lesson progress and XP: applies the rules of `mentor-core` and persists their outcome.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use mentor_core::progress::{record, Award, AwardKind, Event, LessonProgress, LessonRules, Source};
 use sqlx::Row;
@@ -27,7 +27,46 @@ pub struct Recorded {
     pub progress: LessonProgress,
 }
 
+/// Where a learner stands on a lesson, as lists and dashboards show it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct LessonState {
+    pub tasks_done: u32,
+    pub quiz_best: u32,
+    pub completed: bool,
+    pub validated_by_exam: bool,
+}
+
+impl LessonState {
+    /// Something was done on the lesson. Merely opening it does not count.
+    pub fn started(&self) -> bool {
+        self.tasks_done > 0 || self.quiz_best > 0
+    }
+}
+
 impl TenantTx {
+    /// A learner's state on every lesson they touched, by `course/lesson` reference.
+    pub async fn lesson_states(&mut self, learner: Uuid) -> Result<BTreeMap<String, LessonState>> {
+        let rows = sqlx::query(
+            "SELECT course, lesson, cardinality(tasks_done) AS tasks, quiz_best, completed_at IS NOT NULL AS completed, validated_by_exam \
+             FROM lesson_progress WHERE learner_id = $1",
+        )
+        .bind(learner)
+        .fetch_all(&mut *self.tx)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                let state = LessonState {
+                    tasks_done: row.get::<i32, _>("tasks") as u32,
+                    quiz_best: row.get::<i32, _>("quiz_best") as u32,
+                    completed: row.get("completed"),
+                    validated_by_exam: row.get("validated_by_exam"),
+                };
+                (format!("{}/{}", row.get::<String, _>("course"), row.get::<String, _>("lesson")), state)
+            })
+            .collect())
+    }
+
     /// A learner's state on a lesson; the default (nothing done) when they never opened it.
     ///
     /// The row is locked until the end of the transaction, so two requests of the same learner on the same

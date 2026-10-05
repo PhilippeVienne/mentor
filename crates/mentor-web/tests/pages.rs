@@ -332,3 +332,68 @@ async fn signing_out_closes_the_session() {
     assert_eq!(out.status, StatusCode::SEE_OTHER);
     assert_eq!(out.session.as_deref(), Some(""));
 }
+
+async fn page(app: &Router, cookie: &str, path: &str) -> String {
+    let answer = call(app, Call { host: "acme.test", path, cookie: Some(cookie), body: None, origin: None }).await;
+    assert_eq!(answer.status, StatusCode::OK, "{path}");
+    answer.body
+}
+
+#[tokio::test]
+async fn the_dashboard_follows_what_the_learner_did() {
+    let Some(app) = app().await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+
+    let dashboard = page(&app, &cookie, "/dashboard/").await;
+    assert!(dashboard.contains("Salut alice") && dashboard.contains("Encore 100 XP pour devenir <strong>Apprenti·e</strong>"));
+    // Nothing done yet: the first lesson of the first course is proposed, not "resumed".
+    assert!(dashboard.contains("Prochaine leçon") && dashboard.contains(r#"href="/courses/git-basics/introduction/">Commencer"#));
+    assert!(dashboard.contains("0 / 7 leçons · 0 %"));
+    // A course whose prerequisite is not completed is shown locked, with what it takes to open it.
+    assert!(dashboard.contains("🔒 Verrouillé") && dashboard.contains("À débloquer en terminant : <strong>Docker"));
+    assert!(dashboard.contains(r#"href="/dashboard/" aria-current="page""#));
+
+    assert_eq!(progress(&app, "acme.test", Some(&cookie), QUIZ).await.0, StatusCode::OK);
+
+    let dashboard = page(&app, &cookie, "/dashboard/").await;
+    assert!(dashboard.contains("1 / 7 leçons · 14 %") && dashboard.contains("Encore 26 XP"));
+    assert!(dashboard.contains(r#"<span class="muted">1 / "#));
+    // The next lesson of the same course, which was not touched.
+    assert!(dashboard.contains("Prochaine leçon") && !dashboard.contains(r#"href="/courses/git-basics/introduction/">"#));
+
+    let badges = page(&app, &cookie, "/badges/").await;
+    assert!(badges.contains("1 badge sur ") && badges.contains("Obtenu le ") && badges.contains("🔒 À débloquer"));
+    assert!(badges.contains(r#"class="levels__item is-current""#) && badges.contains("Légende de la maison"));
+
+    let course = page(&app, &cookie, "/courses/git-basics/").await;
+    assert!(course.contains("timeline__item--done") && course.contains("Quiz 3 / 3") && course.contains("Terminée"));
+    assert!(course.contains("timeline__item--new") && course.contains("À faire"));
+    let lesson = page(&app, &cookie, "/courses/git-basics/introduction/").await;
+    assert!(lesson.contains("stepper__item--done is-current") && lesson.contains("stepper__item--new"));
+    let catalogue = page(&app, &cookie, "/catalogue/").await;
+    assert!(catalogue.contains(r#"data-course="git-basics""#) && catalogue.contains(r#"data-state="en-cours""#));
+    assert!(catalogue.contains(r#"data-filter="termines""#));
+}
+
+#[tokio::test]
+async fn learner_pages_need_a_session_and_show_only_that_tenants_progress() {
+    let Some(app) = app().await else { return };
+    for path in ["/dashboard/", "/badges/"] {
+        let answer = call(&app, Call { host: "acme.test", path, cookie: None, body: None, origin: None }).await;
+        assert_eq!(answer.status, StatusCode::SEE_OTHER, "{path}");
+    }
+    // A visitor sees no progress, no state and no learner navigation.
+    let course = get(&app, "acme.test", "/courses/git-basics/").await.1;
+    assert!(!course.contains("timeline__item--") && !course.contains("À faire") && !course.contains("/dashboard/"));
+    assert!(!get(&app, "acme.test", "/catalogue/").await.1.contains(r#"data-filter="termines""#));
+
+    // The same user name on two tenants is two learners.
+    let acme = sign_in(&app, "acme.test", "alice").await;
+    let plain = sign_in(&app, "plain.test", "alice").await;
+    assert_eq!(progress(&app, "acme.test", Some(&acme), QUIZ).await.0, StatusCode::OK);
+    let elsewhere = call(&app, Call { host: "plain.test", path: "/dashboard/", cookie: Some(&plain), body: None, origin: None }).await;
+    assert!(elsewhere.body.contains("0 / 7 leçons · 0 %") && elsewhere.body.contains("Niv. 1 · 0 XP"));
+    // And a session of one tenant opens nothing on the other.
+    let crossed = call(&app, Call { host: "plain.test", path: "/dashboard/", cookie: Some(&acme), body: None, origin: None }).await;
+    assert_eq!(crossed.status, StatusCode::SEE_OTHER);
+}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Badges et niveaux{% endblock %}
+
+{% block content %}
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Badges et niveaux</p>
+        <h1>{{ owned }} badge{% if owned > 1 %}s{% endif %} sur {{ items.len() }}</h1>
+        <p class="lead">Tu es <strong>{{ me.level.title }}</strong> avec {{ me.level.xp }} XP. Chaque étape de labo, chaque bonne réponse et chaque leçon terminée te rapproche du niveau suivant.</p>
+    </div>
+</section>
+
+<div class="container">
+    <section aria-labelledby="levels-title">
+        <h2 id="levels-title" class="section-title">Les niveaux</h2>
+        <ol class="levels">
+            {% for row in levels %}
+            <li class="levels__item{% if row.level < me.level.level as usize %} is-passed{% else if row.level == me.level.level as usize %} is-current{% endif %}">
+                <span class="levels__n">{{ row.level }}</span>
+                <span class="levels__title">{{ row.title }}</span>
+                <span class="levels__xp">{{ row.xp }} XP</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <section aria-labelledby="badges-title">
+        <h2 id="badges-title" class="section-title">Les badges</h2>
+        <ul class="badge-grid">
+            {% for item in items %}
+            <li class="badge badge--card badge--{{ item.tier }}{% if item.awarded.is_none() %} is-locked{% endif %}">
+                <span class="badge__hex" aria-hidden="true">{{ item.emoji }}</span>
+                <span class="badge__name">{{ item.name }}</span>
+                <span class="badge__desc">{{ item.description }}</span>
+                <span class="badge__state">{% if let Some(day) = item.awarded %}Obtenu le {{ day }}{% else %}🔒 À débloquer{% endif %}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+{% endblock %}

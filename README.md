@@ -18,7 +18,7 @@ Phase 0 (foundations) is in progress. What exists today:
 
 | [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
 | [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export |
-| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, and records quiz scores and lesson progress for a signed-in learner (development sign-in only, OIDC is not there yet) |
+| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, records quiz scores and lesson progress for a signed-in learner, and shows them their dashboard and badges (development sign-in only, OIDC is not there yet) |
 
 Not built yet: sign-in, progress and interactive labs and quizzes in the web server; the catalogue linter; lab orchestration.
 

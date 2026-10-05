@@ -14,8 +14,8 @@
         </nav>
 
         <ol class="stepper" aria-label="Leçons du parcours">
-            {% for step in course.lessons %}
-            <li class="stepper__item{% if loop.index == index %} is-current{% endif %}">
+            {% for step in steps %}
+            <li class="stepper__item{% if !step.state.is_empty() %} stepper__item--{{ step.state }}{% endif %}{% if step.state == "exam" %} stepper__item--done{% endif %}{% if loop.index == index %} is-current{% endif %}">
                 <a href="/courses/{{ course.slug }}/{{ step.slug }}/" title="{{ step.title }}"{% if loop.index == index %} aria-current="step"{% endif %}><span class="sr-only">Leçon </span>{{ loop.index }}</a>
             </li>
             {% endfor %}

@@ -14,6 +14,16 @@
                 <li>{{ lessons_label }}</li>
                 <li>≈ {{ minutes }} min</li>
             </ul>
+            {% if let Some(progress) = progress %}
+            {% if progress.unlocked %}
+            <div class="progress progress--lg" role="progressbar" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le parcours">
+                <span style="width: {{ progress.percent }}%"></span>
+            </div>
+            <p class="progress__label">{{ progress.done }} / {{ lessons_label }} · {{ progress.percent }} %{% if progress.completed %} · ✓ Parcours terminé{% endif %}</p>
+            {% else %}
+            <p class="course-card__lock">🔒 À débloquer en terminant : <strong>{{ progress.missing|join(", ") }}</strong></p>
+            {% endif %}
+            {% endif %}
         </div>
         {% if let Some(banner) = banner %}<img class="course-head__art" src="{{ banner }}" alt="" loading="lazy">{% endif %}
     </div>
@@ -27,13 +37,21 @@
 
         <h2 class="section-title">Au programme</h2>
         <ol class="timeline">
-            {% for lesson in course.lessons %}
-            <li class="timeline__item">
-                <span class="timeline__dot" aria-hidden="true">{{ loop.index }}</span>
+            {% for row in lessons %}
+            {% let lesson = row.lesson %}
+            <li class="timeline__item{% if !row.state.is_empty() %} timeline__item--{{ row.state }}{% endif %}{% if row.state == "exam" %} timeline__item--done{% endif %}">
+                <span class="timeline__dot" aria-hidden="true">{% if row.progress.completed %}✓{% else %}{{ loop.index }}{% endif %}</span>
                 <div class="timeline__card">
                     <h3><a class="stretched" href="/courses/{{ course.slug }}/{{ lesson.slug }}/">{{ lesson.title }}</a></h3>
                     <p>{{ lesson.summary }}</p>
-                    <ul class="meta"><li>≈ {{ lesson.minutes }} min</li></ul>
+                    <ul class="meta">
+                        <li>≈ {{ lesson.minutes }} min</li>
+                        {% if !row.state.is_empty() %}
+                        {% if row.tasks > 0 %}<li>{{ row.progress.tasks_done }} / {{ row.tasks }} étapes de labo</li>{% endif %}
+                        {% if row.questions > 0 %}<li>Quiz {{ row.progress.quiz_best }} / {{ row.questions }}</li>{% endif %}
+                        <li class="state state--{{ row.state }}{% if row.state == "exam" %} state--done{% endif %}">{% if row.state == "done" %}Terminée{% else if row.state == "exam" %}Validée par examen{% else if row.state == "started" %}En cours{% else %}À faire{% endif %}</li>
+                        {% endif %}
+                    </ul>
                     {% if !lesson.objectives.is_empty() %}
                     <ul class="objectives">{% for objective in lesson.objectives %}<li>{{ objective|safe }}</li>{% endfor %}</ul>
                     {% endif %}

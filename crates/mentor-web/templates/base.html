@@ -40,6 +40,10 @@
         <nav class="navbar__menu" id="nav-menu" aria-label="Navigation principale">
             <ul class="nav">
                 <li><a href="/catalogue/"{% if section == "catalogue" %} aria-current="page"{% endif %}>Catalogue</a></li>
+                {% if viewer.is_some() %}
+                <li><a href="/dashboard/"{% if section == "dashboard" %} aria-current="page"{% endif %}>Mes parcours</a></li>
+                <li><a href="/badges/"{% if section == "badges" %} aria-current="page"{% endif %}>Badges</a></li>
+                {% endif %}
             </ul>
             <div class="navbar__end">
                 {% if let Some(viewer) = viewer %}
@@ -76,6 +80,10 @@
             <h2 class="footer__title">Formation</h2>
             <ul>
                 <li><a href="/catalogue/">Catalogue</a></li>
+                {% if viewer.is_some() %}
+                <li><a href="/dashboard/">Mes parcours</a></li>
+                <li><a href="/badges/">Badges et niveaux</a></li>
+                {% endif %}
             </ul>
         </div>
         {% if !brand.contact_email.is_empty() %}

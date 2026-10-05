@@ -70,7 +70,7 @@ pub async fn sign_in(site: Site, State(state): State<AppState>, parts: Parts, Fo
     }
     .await;
     match learner {
-        Ok(learner) => redirect("/", session::set_cookie(&session::issue(&state.secret, site.tenant, learner.id, now()), false)),
+        Ok(learner) => redirect("/dashboard/", session::set_cookie(&session::issue(&state.secret, site.tenant, learner.id, now()), false)),
         Err(err) => {
             eprintln!("mentor-web: sign-in failed: {err}");
             page(&site, StatusCode::SERVICE_UNAVAILABLE, "Connexion impossible pour l'instant.")

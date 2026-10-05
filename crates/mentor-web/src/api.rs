@@ -12,12 +12,9 @@ use mentor_db::{Error, TenantTx};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::learning::rules;
+use crate::learning::{rules, UTC_OFFSET_MINUTES};
 use crate::site::{same_origin, Site};
 use crate::AppState;
-
-/// Time zone used to cut activity into days for streaks, until tenants have their own setting.
-const UTC_OFFSET_MINUTES: i32 = 60;
 
 #[derive(Deserialize)]
 pub struct ProgressRequest {

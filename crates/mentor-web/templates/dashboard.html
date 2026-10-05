@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Mes parcours{% endblock %}
+
+{% block content %}
+<section class="page-head">
+    <div class="container dash-head">
+        <div>
+            <p class="eyebrow">Mes parcours</p>
+            <h1>Salut {{ me.learner.username }} 👋</h1>
+            <p class="lead">Tu es <strong>{{ me.level.title }}</strong> (niveau {{ me.level.level }}). {% if let Some(to_next) = to_next %}Encore {{ to_next }} XP pour devenir <strong>{% if let Some(title) = me.level.next_title %}{{ title }}{% endif %}</strong>.{% else %}Tu as atteint le niveau maximum : bravo !{% endif %}</p>
+        </div>
+        <div class="level-card" aria-label="Niveau et expérience">
+            <div class="level-card__badge" aria-hidden="true">{{ me.level.level }}</div>
+            <div class="level-card__body">
+                <p class="level-card__title">{{ me.level.title }}</p>
+                <div class="progress progress--lg" role="progressbar" aria-valuenow="{{ me.level.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression vers le niveau suivant">
+                    <span style="width: {{ me.level.percent }}%"></span>
+                </div>
+                <p class="progress__label">{{ me.level.xp }} XP{% if let Some(next) = me.level.next %} · prochain niveau à {{ next }} XP{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container dashboard">
+    {% if let Some(resume) = resume %}
+    <section class="resume-card" aria-labelledby="resume-title">
+        <div>
+            <p class="eyebrow" id="resume-title">{% if resume.started %}Reprendre là où tu t'étais arrêté·e{% else %}Prochaine leçon{% endif %}</p>
+            <h2>{{ resume.lesson.title }}</h2>
+            <p class="muted">{{ resume.course.icon }} {{ resume.course.title }} · ≈ {{ resume.lesson.minutes }} min</p>
+        </div>
+        <a class="btn btn--primary btn--lg" href="/courses/{{ resume.course.slug }}/{{ resume.lesson.slug }}/">{% if resume.started %}Reprendre{% else %}Commencer{% endif %} →</a>
+    </section>
+    {% endif %}
+
+    <section aria-labelledby="parcours-title">
+        <div class="section__head section__head--row">
+            <h2 id="parcours-title" class="section-title">Parcours</h2>
+            <a href="/catalogue/">Voir le catalogue →</a>
+        </div>
+        <div class="grid grid--courses">
+            {% for card in cards %}{% include "_course_card.html" %}{% endfor %}
+        </div>
+    </section>
+
+    <section aria-labelledby="badges-title">
+        <div class="section__head section__head--row">
+            <h2 id="badges-title" class="section-title">Badges <span class="muted">{{ badges_owned }} / {{ badges_total }}</span></h2>
+            <a href="/badges/">Tous les badges →</a>
+        </div>
+        <ul class="badge-strip">
+            {% for item in badges %}
+            <li class="badge{% if item.awarded.is_none() %} is-locked{% endif %} badge--{{ item.tier }}" title="{{ item.description }}">
+                <span class="badge__hex" aria-hidden="true">{{ item.emoji }}</span>
+                <span class="badge__name">{{ item.name }}</span>
+                <span class="sr-only">{% if item.awarded.is_some() %}Obtenu{% else %}À débloquer{% endif %}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+{% endblock %}

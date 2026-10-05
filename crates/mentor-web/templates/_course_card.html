@@ -1,8 +1,12 @@
-<article data-course="{{ card.slug }}" data-search="{{ card.title }} {{ card.summary }} {{ card.slug }}" data-state="{% if card.published %}a-commencer{% else %}bientot{% endif %}" data-prereq="{% if card.requires.is_empty() %}0{% else %}1{% endif %}" class="course-card{% if !card.published %} is-soon{% endif %}"{% if !card.accent.is_empty() %} style="--accent: {{ card.accent }}"{% endif %}>
+<article data-course="{{ card.slug }}" data-search="{{ card.title }} {{ card.summary }} {{ card.slug }}" data-state="{{ card.state }}" data-prereq="{% if card.requires.is_empty() %}0{% else %}1{% endif %}" class="course-card{% if !card.published %} is-soon{% else if let Some(progress) = card.progress %}{% if !progress.unlocked %} is-locked{% endif %}{% if progress.completed %} is-done{% endif %}{% endif %}"{% if !card.accent.is_empty() %} style="--accent: {{ card.accent }}"{% endif %}>
     <div class="course-card__banner">
         {% if let Some(banner) = card.banner %}<img src="{{ banner }}" alt="" loading="lazy">{% endif %}
         <span class="course-card__icon" aria-hidden="true">{{ card.icon }}</span>
-        {% if !card.published %}<span class="pill pill--soon">Bientôt</span>{% endif %}
+        {% if !card.published %}<span class="pill pill--soon">Bientôt</span>
+        {% else if let Some(progress) = card.progress %}
+        {% if progress.completed %}<span class="pill pill--done">✓ Terminé</span>
+        {% else if !progress.unlocked %}<span class="pill pill--lock">🔒 Verrouillé</span>{% endif %}
+        {% endif %}
     </div>
     <div class="course-card__body">
         <h3 class="course-card__title">
@@ -16,5 +20,15 @@
             {% endif %}
             {% if !card.requires.is_empty() %}<li>Prérequis : {% for required in card.requires %}<code>{{ required }}</code>{% if !loop.last %}, {% endif %}{% endfor %}</li>{% endif %}
         </ul>
+        {% if card.published %}{% if let Some(progress) = card.progress %}
+        {% if progress.unlocked %}
+        <div class="progress" role="progressbar" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans {{ card.title }}">
+            <span style="width: {{ progress.percent }}%"></span>
+        </div>
+        <p class="progress__label">{{ progress.done }} / {{ card.lessons_label }} · {{ progress.percent }} %</p>
+        {% else %}
+        <p class="course-card__lock">À débloquer en terminant : <strong>{{ progress.missing|join(", ") }}</strong></p>
+        {% endif %}
+        {% endif %}{% endif %}
     </div>
 </article>
