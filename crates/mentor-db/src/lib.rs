@@ -8,6 +8,9 @@
 //!   to one tenant. It must be used with a connection whose role is a member of `mentor_app`; a superuser or
 //!   the owning role would bypass the policies.
 
+pub mod badges;
+pub mod cohorts;
+pub mod exam;
 pub mod platform;
 pub mod progress;
 mod tenant;

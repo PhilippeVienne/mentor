@@ -6,7 +6,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Network tolerance when an attempt is submitted after its deadline.
 pub const GRACE_SECONDS: i64 = 30;
@@ -29,7 +29,7 @@ pub trait Randomness {
 }
 
 /// One question of an attempt, with the order in which its options are shown.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DrawnQuestion {
     pub id: String,
     /// `option_order[shown position] = index of the option as written by the author`.

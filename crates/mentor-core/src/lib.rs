@@ -3,9 +3,11 @@
 //! - [`gamification`]: XP amounts and levels;
 //! - [`progress`]: what a learner event (a validated lab step, a quiz score) changes and awards;
 //! - [`badges`]: badge rules and the statistics they read;
+//! - [`cohorts`]: cohort identifiers derived from identity-provider groups;
 //! - [`exam`]: drawing, timing and grading of a course's validation exam.
 
 pub mod badges;
+pub mod cohorts;
 pub mod exam;
 pub mod gamification;
 pub mod progress;
