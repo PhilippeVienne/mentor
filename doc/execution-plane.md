@@ -182,8 +182,8 @@ can reach), disk quota, behaviour under many concurrent sandboxes.
 
 ## 8. Next steps
 
-1. **Image reuse across sandboxes** is the first thing to raise with Atelier: find out whether rebuilding per
-   sandbox is intended, and what keying the build by source (repository, revision, path) would take.
+1. **Image reuse across sandboxes** is the first thing to raise with Atelier. Why the image is rebuilt, and a
+   proposal to key builds by source, are in [atelier-image-reuse.md](atelier-image-reuse.md).
 2. **Agree on the cut** of §2 with Atelier's roadmap in hand: name of the base, repository, which concerns
    become extension points (secret store, LLM proxy, MCP), and a plain API to run a command.
 3. **Second trial with a catalogue environment** (`catalogue/python/environnement`), with no egress at run
