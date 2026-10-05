@@ -1,4 +1,4 @@
-// Environnement réel du parcours modèle (voir catalogue/README.md §15 et doc/environnements.md §6).
+// Environnement du parcours modèle (voir catalogue/README.md, « Environments »).
 // Format : spécification Dev Containers (JSON avec commentaires) ; seul un sous-ensemble sûr est accepté.
 {
     "name": "Debian avec Git",
@@ -18,7 +18,7 @@
     "portsAttributes": {
         "8000": { "label": "Serveur de développement" }
     },
-    // Lancé dans le conteneur, en non-root, au démarrage de chaque environnement.
+    // Lancé dans l'environnement, en non-root, au démarrage de chaque environnement.
     "postCreateCommand": "git config --global user.name 'Apprenant·e Mentor' && git config --global user.email apprenant@mentor && git config --global init.defaultBranch main",
     "hostRequirements": {
         "cpus": 1,

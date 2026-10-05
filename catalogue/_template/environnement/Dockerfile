@@ -1,5 +1,6 @@
-# Environnement réel du parcours modèle : Debian, Git, Python et un serveur SSH pour VS Code (Remote-SSH).
-# Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
+# Environnement du parcours modèle : Debian, Git, Python et un serveur SSH pour VS Code (Remote-SSH).
+# Le réseau n'existe QU'AU BUILD : tout ce dont les leçons ont besoin est installé ici.
+# Règles (voir catalogue/README.md, « Environments ») :
 #   - image de base de la liste blanche, avec un tag explicite ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;
 #   - la DERNIÈRE instruction USER est un utilisateur non-root d'uid 1000 ;

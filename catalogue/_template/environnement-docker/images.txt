@@ -1,0 +1,5 @@
+# Images servies par le miroir local : `source  nom-servi`, une par ligne.
+# La source est épinglée ; le nom servi est celui que tapent les apprenant·e·s dans les leçons.
+# N'y mets que les images dont tes leçons ont besoin : chacune alourdit l'image de l'environnement.
+hello-world:linux      hello-world:latest
+alpine:3.22            alpine:latest

@@ -8,7 +8,7 @@ shuffle: true      # facultatif (true par défaut) : mélange les questions ET l
 ---
 
 <!-- Introduction : les règles et le public visé. Markdown + directives comme dans une leçon.
-     Pas de bloc :::labo dans un examen. -->
+     Pas de bloc :::lab dans un examen. -->
 
 Cet examen s'adresse aux personnes qui connaissent déjà le sujet. Il valide **tout le parcours** sans passer par les labos.
 

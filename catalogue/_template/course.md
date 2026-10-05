@@ -1,17 +1,17 @@
 ---
-# ── Front matter d'un parcours ───────────────────────────────────────────────
-# Les valeurs texte sont TOUJOURS entre guillemets (un « : » dans le texte casse le YAML sinon).
-title: "Parcours modèle"                     # obligatoire : nom affiché
-icon: "🧪"                                   # obligatoire : un emoji (badge de fin de parcours)
-summary: "Une phrase qui donne envie : ce que l'on apprend, en une ligne."  # obligatoire
-engine: git                                  # git | docker | (absent = pas de terminal, parcours sans labo)
-requires: []                                 # slugs (noms de dossier) des parcours à terminer avant
-published: true                              # false = affiché « bientôt disponible », sans leçon
-color: "#6366F1"                             # accent du parcours (facultatif)
-banner: images/banniere.svg                  # bannière 1200×400 (facultatif)
+# ── Front matter of a course ─────────────────────────────────────────────────
+# ALWAYS quote text values (a ": " inside unquoted text breaks the YAML).
+title: "Parcours modèle"                     # required: displayed name
+icon: "🧪"                                   # required: an emoji (also the end-of-course badge)
+summary: "Une phrase qui donne envie : ce que l'on apprend, en une ligne."  # required
+environment: environnement                   # folder of the course holding the devcontainer.json the labs run in
+requires: []                                 # slugs (folder names) of the courses to complete first
+published: true                              # false = shown as "coming soon"
+color: "#6366F1"                             # accent colour of the course (optional)
+banner: images/banniere.svg                  # 1200×400 banner (optional)
 ---
 
-<!-- Le corps de parcours.md est la présentation du parcours (page du parcours). Markdown + directives. -->
+<!-- The body of course.md is the presentation shown on the course page. Markdown and directives. -->
 
 Présente ici le **public visé**, les **objectifs** et la **durée estimée**. Reste bref : l'apprenant·e veut commencer.
 

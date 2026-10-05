@@ -1,28 +1,29 @@
 ---
-# ── Leçon avec un environnement RÉEL (un vrai conteneur Linux par apprenant·e) ───────────────────────────────
-# `environnement` : nom d'un dossier du parcours qui contient un devcontainer.json (ici `environnement/`).
-# On peut aussi le déclarer dans parcours.md (pour toutes les leçons) ou dans le bloc :::labo.
-# Le portail doit avoir ENVIRONMENTS_ENABLED=True ; sinon la leçon s'affiche avec un avertissement à la place du labo.
+# ── A lesson that names its environment itself ───────────────────────────────────────────────────────────────
+# `environment`: name of a folder of the course that holds a devcontainer.json (here `environnement/`).
+# It can be declared in course.md (for every lesson), in a lesson (as here: it replaces the course's) or in
+# the :::lab block. Each learner gets their own environment, a small virtual machine built from that folder.
 id: environnement-reel
-title: "Leçon modèle : un vrai terminal"
-summary: "Le même Git, mais dans un vrai conteneur Linux, avec ton propre VS Code si tu veux."
+title: "Leçon modèle : ton environnement"
+summary: "Un vrai Linux rien que pour toi, avec Git, où le portail vérifie ce que tu as fait."
 minutes: 15
 environment: environnement
 objectives:
-  - Démarrer et arrêter ton environnement réel
+  - Démarrer et arrêter ton environnement
   - Faire valider une étape par le serveur
 ---
 
-<!-- Une leçon avec environnement réel suit le même fil qu'une autre leçon. Seul le labo change : `moteur: reel`. -->
+<!-- This lesson explains to learners how an environment works: adapt it or drop it in your own course. -->
 
-Jusqu'ici, tu as utilisé un terminal **simulé**. Pour certaines leçons, le portail te prête un **vrai** conteneur
-Linux : les commandes sont exécutées pour de vrai, et tu peux même t'y connecter avec ton propre VS Code.
+Pour pratiquer, le portail te prête un **vrai** Linux rien que pour toi : une petite machine virtuelle, déjà équipée
+des outils de la leçon. Les commandes y sont exécutées pour de vrai, et rien de ce que tu y fais ne peut abîmer ton
+ordinateur ni gêner les autres.
 
 ## Comment ça marche
 
-1. Clique sur **Démarrer l'environnement** : le serveur lance un conteneur rien que pour toi.
+1. Clique sur **Démarrer l'environnement** : le serveur lance une machine virtuelle rien que pour toi.
 2. Tape tes commandes dans le terminal, ou utilise les boutons **▶ Lancer** du cours.
-3. Clique sur **Vérifier** à chaque étape : c'est le serveur qui regarde dans ton conteneur si c'est fait.
+3. Clique sur **Vérifier** à chaque étape : c'est le serveur qui regarde dans ton environnement si c'est fait.
 4. Clique sur **Arrêter** quand tu as fini (sinon, l'arrêt est automatique après un moment d'inactivité).
 
 ```shell run
@@ -31,18 +32,22 @@ ls -a projet
 ```
 
 :::warning
-Tes fichiers sont **effacés** quand l'environnement s'arrête. Pour garder ton travail, pousse-le sur GitLab.
+Tes fichiers sont **effacés** quand l'environnement s'arrête : n'y garde rien d'important.
+:::
+
+:::info Pas d'accès à Internet
+Ton environnement n'a pas de réseau : tout ce dont la leçon a besoin y est déjà installé.
 :::
 
 ## Entraîne-toi
 
 :::lab
-# `moteur: reel` : étapes vérifiées par le SERVEUR dans le conteneur (vérifications « moteurs: [reel] » de
-# _verifications.yml). Les commandes des vérifications viennent du catalogue, jamais de l'apprenant·e.
+# Steps are verified by the SERVER inside the learner's environment, with the checks of catalogue/_checks.yml.
+# The commands of the checks come from the catalogue, never from the learner.
 engine: real
 intro: |
   Ton environnement contient Git, configuré à ton nom. Crée un dépôt et fais un premier commit, pour de vrai.
-# Fichiers créés dans le dossier de travail (/workspace) au démarrage de l'environnement.
+# Files written in the working folder (/workspace) when the lab starts.
 files:
   notes.txt: |
     Mes notes de la leçon.
@@ -74,31 +79,31 @@ steps:
 ## Vérifie tes acquis
 
 :::quiz
-Qui décide qu'une étape d'un labo réel est validée ?
+Qui décide qu'une étape du labo est validée ?
 
 - [ ] Ton navigateur, dès que tu tapes la commande
-- [x] Le serveur, en regardant l'état de ton conteneur
+- [x] Le serveur, en regardant l'état de ton environnement
 - [ ] Personne : il suffit de cliquer sur « Vérifier »
 
-> Le serveur exécute des vérifications dans ton conteneur ; ton navigateur ne peut pas déclarer une étape réussie.
+> Le serveur exécute des vérifications dans ton environnement ; ton navigateur ne peut pas déclarer une étape réussie.
 :::
 
 :::quiz
 Que deviennent tes fichiers quand l'environnement s'arrête ?
 
 - [ ] Ils sont gardés une semaine
-- [ ] Ils sont envoyés sur GitLab
+- [ ] Ils sont copiés sur ton ordinateur
 - [x] Ils sont effacés
 
-> L'environnement est jetable : pousse ton travail sur GitLab si tu veux le garder.
+> L'environnement est jetable : à chaque démarrage, tu repars d'un état neuf.
 :::
 
 :::quiz
-Avec quel utilisateur tournent tes commandes dans l'environnement ?
+Qu'est-ce que ton environnement ?
 
-- [x] Un utilisateur ordinaire (non-root), sans `sudo`
-- [ ] root, pour pouvoir tout installer
-- [ ] L'administrateur du serveur
+- [ ] Un terminal qui imite les commandes dans ton navigateur
+- [x] Une petite machine virtuelle rien que pour toi, avec un vrai Linux
+- [ ] Le serveur du portail, partagé avec les autres apprenant·e·s
 
-> Pour la sécurité de tout le monde, aucun environnement ne tourne en root et `sudo` n'existe pas.
+> Chaque personne a sa propre machine virtuelle : les commandes y sont réellement exécutées, à l'écart des autres.
 :::

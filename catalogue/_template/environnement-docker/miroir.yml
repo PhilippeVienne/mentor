@@ -1,0 +1,12 @@
+# Registry local qui sert les images des leçons : un miroir de Docker Hub, en lecture seule.
+version: 0.1
+log:
+  level: warn
+storage:
+  filesystem:
+    rootdirectory: /opt/mentor/miroir
+  maintenance:
+    readonly:
+      enabled: true
+http:
+  addr: 127.0.0.1:5001

@@ -1,15 +1,15 @@
 ---
-# ── Front matter d'une leçon ─────────────────────────────────────────────────
-id: exemple                     # obligatoire. Identifiant STABLE (ne le change jamais : progression et badges s'y réfèrent)
-title: "Leçon exemple"           # obligatoire. Entre guillemets.
-summary: "Ce que l'on apprend, en une phrase."  # obligatoire. Entre guillemets (surtout s'il contient un « : »).
-minutes: 10                     # obligatoire : minutes, labo et quiz compris
-objectives:                     # facultatif : « À la fin de cette leçon, tu sauras… » (Markdown en ligne accepté)
+# ── Front matter of a lesson ─────────────────────────────────────────────────
+id: exemple                     # required. STABLE identifier (never change it: progress and badges refer to it)
+title: "Leçon exemple"           # required. Quoted.
+summary: "Ce que l'on apprend, en une phrase."  # required. Quoted (above all when it contains a ": ").
+minutes: 10                     # required: whole minutes, lab and quiz included
+objectives:                     # optional: "by the end of this lesson, you will be able to…" (inline Markdown accepted)
   - Expliquer ce qu'est un `commit`
   - Lancer ta première commande dans le terminal du labo
 ---
 
-<!-- Un nom de fichier = NN-nom.md : NN fixe l'ordre des leçons dans le parcours. -->
+<!-- A lesson file is named NN-name.md: NN sets the order of the lessons in the course. -->
 
 Commence par une **accroche** : un problème concret que l'apprenant·e a déjà rencontré (« Tu as déjà nommé un fichier `rapport_final_v2_VRAI_final.docx` ? »).
 
@@ -28,7 +28,7 @@ Du Markdown standard : **gras**, *italique*, `code en ligne`, [liens](https://gi
 
 ### Figure
 
-<!-- Le texte alternatif (entre crochets) sert de légende ET d'alternative textuelle. Chemin relatif au dossier du parcours. -->
+<!-- The text between brackets is both the caption AND the alternative text. The path is relative to the course folder. -->
 
 ![Les trois zones de Git : dossier de travail, index et dépôt](images/exemple.svg)
 
@@ -99,82 +99,59 @@ Trois cartes maximum, pour comparer des notions côte à côte.
 
 ## Entraîne-toi
 
-<!-- Un seul bloc :::labo par leçon. Son contenu est du YAML. Les commentaires `#` sont permis. -->
+<!-- One :::lab block per lesson at most. Its content is YAML; `#` comments are allowed.
+     It runs in the environment declared by `environment:` (here in course.md). -->
 
 :::lab
-# Texte d'introduction (Markdown). Raconte la situation de départ.
+engine: real
+# Introduction (Markdown): the starting situation.
 intro: |
-  Le dossier contient un `README.md`. Initialise un dépôt et fais ton premier commit.
+  Ton dossier de travail contient un `README.md`, dans un dépôt Git tout neuf. Fais ton premier commit.
 
-# État initial : fichiers du dossier de travail (nom: contenu)…
+# Initial state: files written in the working folder (name: content)…
 files:
   README.md: |
     # Mon projet
 
-# …puis commandes jouées en silence au démarrage (dans l'ordre).
+# …then commands run silently when the lab starts, in order.
 commands:
-  - git init
-
-# (git) Dépôts distants simulés, avec leurs commits. Facultatif.
-server:
-  - url: git@gitlab.example.org:equipe/exemple.git
-    commits:
-      - branch: main
-        message: Initialise l'exemple
-        files:
-          LISEZMOI.md: |
-            Bienvenue !
-        author: Camille
+  - git init -q
 
 steps:
-  # Chaque étape : texte (obligatoire), indice, verif (obligatoire), solution (obligatoire), apres, effet
+  # A step: text (required), hint, checks (required), solution (required), after.
   - text: Ajoute `README.md` à l'index avec `git add`
     hint: git add README.md
-    checks:                     # toutes les vérifications doivent être vraies
-      - staged: README.md
-    solution:                   # rejouée par la CI et affichable par « Voir la solution »
+    checks:                     # every check must hold; the server runs them in the learner's environment
+      - command-succeeds: 'git ls-files --error-unmatch README.md'   # still true once the file is committed
+    solution:                   # shown by "Voir la solution"; it must be enough to pass the checks
       - git add README.md
 
   - text: Crée ton premier commit avec `git commit -m "…"`
     hint: 'git commit -m "Ajoute le README"'
-    after: [1]                  # numéros (à partir de 1) d'étapes à valider avant celle-ci
+    after: [1]                  # numbers (from 1) of the steps to validate before this one
     checks:
-      - commits-at-least: 1
-      - file-in-head: README.md
+      - command-succeeds: 'git cat-file -e HEAD:README.md'
     solution:
       - 'git commit -m "Ajoute le README"'
 
-  - text: Modifie `README.md` (clique sur le fichier), puis lance `git diff`
+  # A step that only OBSERVES leaves no trace a check could see: ask the learner to save the output to a file.
+  - text: 'Ajoute une ligne à `README.md`, regarde la différence avec `git diff`, puis garde-la : `git diff > changements.txt`'
+    hint: "Ouvre `README.md` avec `nano`, ajoute une ligne et enregistre. `git diff` montre alors ce qui a changé."
+    after: [2]
     checks:
-      - command: '^git diff'    # expression régulière : met-la entre guillemets simples
-      - file-modified: README.md
+      - env-file-contains: [changements.txt, '(?m)^\+[^+]']   # a regular expression: write it between single quotes
     solution:
-      - write:                  # action « écrire un fichier » (simule l'éditeur)
+      - write:                  # the "write a file" action (what the learner does in the editor)
           README.md: |
             # Mon projet
             Une ligne de plus.
       - git diff
-
-  - text: Camille a poussé un commit, récupère-le avec `git fetch`
-    after: [2]
-    checks:
-      - command: '^git fetch'
-    solution:
-      - git remote add origin git@gitlab.example.org:equipe/exemple.git
-      - git fetch
-    effect:                     # déclenché quand l'étape est validée
-      server-commit:
-        branch: main
-        message: Ajoute une page
-        files:
-          page.html: |
-            <h1>Page</h1>
-        author: Camille
+      - git diff > changements.txt
 :::
 
 ## Vérifie tes acquis
 
-<!-- Un bloc :::quiz par question : exactement une réponse cochée [x], une explication en citation (>). 3 à 4 questions. -->
+<!-- One :::quiz block per question: exactly one answer ticked [x], an explanation as a quote (>). 3 to 4 questions. -->
 
 :::quiz
 À quoi sert `git add` ?

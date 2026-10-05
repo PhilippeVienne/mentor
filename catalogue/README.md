@@ -1,128 +1,129 @@
-> **This guide still describes the v1 format, with French names.** The catalogue in this repository uses the
-> English v2 names (`course.md`, `title`, `:::lab`, `steps`, `checks`, `command-succeeds`…). Until the guide is
-> rewritten, the correspondence is in [`../conformance/v1-names.json`](../conformance/v1-names.json).
+# Course catalogue: authoring guide
 
-# Catalogue des formations : guide de l'auteur
+This folder holds **every course of the portal**, written in Markdown. Adding or fixing a lesson needs no code: a `.md` file, sometimes an image. The compiler (`crates/mentor-content`) reads this folder, validates every file and stops at the first error, naming the file and the line or step.
 
-Ce dossier contient **toutes les formations du portail**, écrites en Markdown. Il n'y a pas de code à écrire pour ajouter ou corriger une leçon : un fichier `.md`, éventuellement une image, et c'est tout. Au déploiement (et avec `pipenv run sync-catalog`), le portail compile ce dossier, valide chaque fichier et met la base de données à jour.
+> **In short**: a course is a folder. A lesson is an `NN-name.md` file with a YAML front matter, some text, one **lab** (steps the server verifies in the learner's own environment) and a **quiz**.
 
-> **En bref** : une formation = un dossier. Une leçon = un fichier `NN-nom.md` avec un en-tête YAML, du texte, un **labo** (étapes vérifiées automatiquement dans un terminal simulé) et un **quiz**.
+The **format** is in English (file names, keys, directive and check names). The **content** is in the authors' language: French for the courses shipped here, which is why the examples below are in French.
 
-Sommaire : [arborescence](#1-arborescence) · [front matter](#2-front-matter) · [structure d'une leçon](#3-structure-pédagogique-dune-leçon) · [barème](#4-barème-durée-étapes-xp) · [syntaxe](#5-syntaxe) · [quiz](#6-le-quiz) · [labo](#7-le-labo) · [vérifications](#8-catalogue-des-vérifications-et-effets) · [rédaction](#9-règles-de-rédaction) · [relecture](#10-checklist-de-relecture) · [tester](#11-tester-ses-modifications) · [étendre](#12-ajouter-un-parcours-ou-un-moteur) · [limites](#13-limites-connues) · [parcours existants](#14-parcours-existants) · [environnements réels](#15-environnements-réels-dev-containers)
+A complete, commented course to copy is in [`_template/`](_template/). It is not listed in `catalogue.yml`, so the build does not compile it: check what you copy from it.
 
-Un parcours complet à copier-coller se trouve dans [`_modele/`](_modele/) : il est entièrement commenté et il compile.
+Contents: [layout](#1-layout) · [front matter](#2-front-matter) · [lesson structure](#3-structure-of-a-lesson) · [XP scale](#4-time-steps-and-xp) · [syntax](#5-syntax) · [quiz](#6-quizzes) · [labs](#7-labs) · [environments](#8-environments) · [exam](#9-validation-exam-exammd) · [writing rules](#10-writing-rules) · [review](#11-review-checklist) · [testing](#12-testing-your-changes) · [new course](#13-adding-a-course) · [limits](#14-known-limits) · [existing courses](#15-existing-courses)
 
-## 1. Arborescence
+## 1. Layout
 
 ```text
 catalogue/
-├── README.md                 ← ce guide
-├── catalogue.yml             ← index ordonné des parcours
-├── _verifications.yml        ← vérifications et effets disponibles pour les labos
-├── _modele/                  ← parcours modèle commenté (non publié, à copier)
-└── git-basics/               ← un dossier par parcours : son nom est l'identifiant (slug) du parcours
-    ├── parcours.md           ← présentation + front matter du parcours
-    ├── 01-introduction.md    ← leçons : NN-nom.md, NN fixe l'ordre
+├── README.md                 ← this guide
+├── catalogue.yml             ← ordered index of the courses
+├── _checks.yml               ← checks available to lab steps
+├── _template/                ← commented model course (not compiled, to copy)
+└── git-basics/               ← one folder per course: its name is the course identifier (slug)
+    ├── course.md             ← front matter and presentation of the course
+    ├── 01-introduction.md    ← lessons: NN-name.md, NN sets the order
     ├── 02-premier-commit.md
-    ├── antiseche.md          ← (facultatif) tableau de référence des commandes
-    ├── bac-a-sable.yml       ← (facultatif) scénarios de départ du bac à sable
-    ├── examen.md             ← (facultatif mais recommandé) examen de validation : pool de questions (§16)
-    ├── environnement/        ← (facultatif) environnement réel : devcontainer.json + Dockerfile (§15)
-    └── images/               ← schémas et illustrations (SVG de préférence)
+    ├── cheatsheet.md         ← (optional) reference tables of commands
+    ├── exam.md               ← (optional, recommended) validation exam: a pool of questions (§9)
+    ├── environnement/        ← environment the labs run in: devcontainer.json + Dockerfile (§8)
+    └── images/               ← diagrams and illustrations (SVG preferably)
 ```
 
-- **`catalogue.yml`** liste les parcours dans l'ordre d'affichage. Un dossier qui n'y figure pas n'est pas compilé.
+- **`catalogue.yml`** lists the courses in display order, under the key `courses`. A folder that is not listed is not compiled.
 
   ```yaml
-  parcours:
+  courses:
     - git-basics
     - docker-hello
   ```
 
-- Les noms de dossiers et de fichiers sont en minuscules, sans accents ni espaces (`05-conflits.md`).
-- Les fichiers dont le nom commence par `_` ne sont jamais des leçons.
-- Les images du dossier `images/` sont servies sous `/static/catalogue/<parcours>/images/…`.
+- Folder and file names are lower case, without accents or spaces (`05-conflits.md`).
+- Only files named `NN-name.md` (digits, a hyphen, a name) are lessons.
+- Images are served under `/static/catalogue/<course>/images/…`.
 
 ## 2. Front matter
 
-Chaque fichier `parcours.md` et chaque leçon commence par un en-tête YAML entre deux lignes `---`.
+`course.md`, every lesson and `exam.md` start with a YAML block between two `---` lines; the opening `---` must be the very first line of the file.
 
-> **Règle d'or : mets `titre` et `resume` entre guillemets.** En YAML, un texte contenant « : » (deux-points suivi d'un espace) ou commençant par `'`, `[`, `{`, `*`… est une erreur de syntaxe. Les guillemets doubles évitent ces pièges. Si le texte contient lui-même des guillemets doubles, échappe-les avec `\"`.
+> **Quote `title` and `summary`.** In YAML, text containing `: ` (colon, space) or starting with `'`, `[`, `{`, `*`… is a syntax error. Double quotes avoid these traps; escape a double quote inside them with `\"`.
 
-### Parcours (`parcours.md`)
+Keys the compiler does not know are ignored without a message: check your spelling.
 
-| Champ | Obligatoire | Rôle |
+### Course (`course.md`)
+
+| Key | Required | Role |
 | --- | :---: | --- |
-| `titre` | oui | Nom du parcours. |
-| `icone` | oui | Un emoji ; sert aussi de badge de fin de parcours. |
-| `resume` | oui | Une phrase d'accroche. |
-| `moteur` | non | `git` ou `docker` : moteur du terminal simulé. Absent = pas de labo. |
-| `prerequis` | non | Liste de slugs de parcours à terminer avant (`[docker-hello]`). Tous doivent exister dans `catalogue.yml`. |
-| `publie` | non | `true` par défaut. `false` = « bientôt disponible », **sans leçon**. Un parcours publié doit avoir au moins une leçon. |
-| `couleur` | non | Couleur d'accent hexadécimale (`"#2496ED"`). |
-| `banniere` | non | Chemin relatif d'une image 1200×400 (`images/banniere.svg`). |
-| `environnement` | non | Dossier d'un [environnement réel](#15-environnements-réels-dev-containers) proposé dans toutes les leçons du parcours. |
+| `title` | yes | Name of the course. |
+| `icon` | yes | An emoji; also the end-of-course badge. |
+| `summary` | yes | One catchy sentence. |
+| `environment` | no | Folder of the [environment](#8-environments) used by the labs of every lesson. |
+| `requires` | no | List of course slugs to complete first (`[docker-hello]`). Each must be listed in `catalogue.yml`. |
+| `published` | no | `true` by default. `false` announces a course as "coming soon". A published course needs at least one lesson. |
+| `color` | no | Hexadecimal accent colour (`"#2496ED"`). |
+| `banner` | no | Relative path of a 1200×400 image (`images/banniere.svg`). |
 
-Le corps du fichier est la **présentation du parcours** : public visé, objectifs, durée.
+The body of the file is the **presentation of the course**: audience, objectives, duration.
 
-### Leçon (`NN-nom.md`)
+### Lesson (`NN-name.md`)
 
-| Champ | Obligatoire | Rôle |
+| Key | Required | Role |
 | --- | :---: | --- |
-| `id` | oui | Identifiant **stable** de la leçon (slug, unique dans le parcours). Il apparaît dans l'URL et sert à la **progression** et aux **badges** : ne le modifie jamais après publication. |
-| `titre` | oui | Titre affiché. |
-| `resume` | oui | Une phrase qui dit ce que l'on apprend. |
-| `duree` | oui | Durée estimée en minutes, labo et quiz compris. |
-| `objectifs` | non | Liste « À la fin, tu sauras… » (Markdown en ligne accepté). |
-| `environnement` | non | Dossier d'un [environnement réel](#15-environnements-réels-dev-containers) pour cette leçon (remplace celui du parcours). |
+| `id` | yes | **Stable** identifier of the lesson, unique in the course. It appears in the URL and keys **progress**: never change it once published. `exam` is reserved. |
+| `title` | yes | Displayed title. |
+| `summary` | yes | One sentence saying what is learnt. |
+| `minutes` | yes | Estimated duration, a whole number of minutes, lab and quiz included. |
+| `objectives` | no | List of "by the end, you will be able to…" (inline Markdown accepted). |
+| `environment` | no | Environment folder for this lesson; it replaces the course's (`false` removes it). |
 
 ```yaml
 ---
 id: conflits
-titre: "Résoudre un conflit"
-resume: "Pas de panique : un conflit est juste Git qui te demande de trancher."
-duree: 15
-objectifs:
+title: "Résoudre un conflit"
+summary: "Pas de panique : un conflit est juste Git qui te demande de trancher."
+minutes: 15
+objectives:
   - Reconnaître les marqueurs d'un conflit
   - Terminer une fusion avec `git add` et `git commit`
 ---
 ```
 
-> **Renommer ou réordonner** : change le préfixe `NN-` du fichier, pas l'`id`. Les badges actuels s'appuient sur les identifiants `git-basics/premier-commit`, `git-basics/branches`, `git-basics/conflits`, `docker-hello/premier-conteneur`, `docker-advanced/dockerfile`, `docker-advanced/compose`, `python/fonctions-modules` et `python/mini-projet` (voir `formation/training/gamification.py`).
+> **To rename or reorder a lesson**, change the `NN-` prefix of the file, never the `id`.
 
-## 3. Structure pédagogique d'une leçon
+## 3. Structure of a lesson
 
-Toutes les leçons suivent le même fil, pour que les apprenant·e·s s'y retrouvent :
+Every lesson follows the same thread, so learners find their way:
 
-1. **Accroche** (2-3 phrases) : un problème concret que la personne a déjà rencontré. Pas de titre.
-2. **Concepts** (`## …`) : une seule idée par leçon, avec un schéma (figure ou Mermaid) dès qu'il y a de la structure à voir.
-3. **Démonstration** : les commandes à essayer, dans des blocs ` ```shell run `, expliquées une par une.
-4. **Piège ou bonne pratique** : un encart `:::warning` ou `:::tip` (un ou deux par leçon, pas plus).
-5. **`## Entraîne-toi`** : le bloc `:::labo`, avec 3 à 6 étapes progressives.
-6. **`## Vérifie tes acquis`** : 3 à 4 blocs `:::quiz`.
+1. **Hook** (2-3 sentences): a concrete problem the person has already met. No heading.
+2. **Concepts** (`## …`): one idea per lesson, with a diagram (figure or Mermaid) as soon as there is structure to see.
+3. **Demonstration**: the commands to try, in ` ```shell run ` blocks, explained one by one.
+4. **Pitfall or good practice**: a `:::warning` or `:::tip` callout (one or two per lesson, no more).
+5. **`## Entraîne-toi`**: the `:::lab` block, with 3 to 6 progressive steps.
+6. **`## Vérifie tes acquis`**: 3 to 4 `:::quiz` blocks.
 
-Les titres `## Entraîne-toi` et `## Vérifie tes acquis` sont une convention : garde-les à l'identique.
+The headings `## Entraîne-toi` and `## Vérifie tes acquis` are a convention of the French courses: keep them identical.
 
-## 4. Barème : durée, étapes, XP
+## 4. Time, steps and XP
 
-Les points sont calculés automatiquement (`formation/training/gamification.py`) à partir de ce que tu écris :
+Points are computed from what you write (`crates/mentor-core/src/gamification.rs`):
 
-| Élément | XP |
+| Item | XP |
 | --- | ---: |
-| Chaque étape de labo validée | 10 |
-| Chaque bonne réponse de quiz (meilleur score) | 8 |
-| Leçon terminée (labo complet **et** au moins 2/3 de bonnes réponses) | 50 |
-| Parcours terminé (toutes les leçons) | 150 |
+| Each validated lab step | 10 |
+| Each correct quiz answer (best score) | 8 |
+| Lesson completed (lab done **and** at least 2/3 of correct answers) | 50 |
+| Course completed (every lesson) | 150 |
+| Course validated through its exam | 100 |
 
-Repères pour une leçon de 15 minutes : **3 à 6 étapes** de labo, **3 à 4 questions**, soit environ 100 à 150 XP. Une leçon sans bloc `:::labo` est possible (leçon théorique) ; elle est alors terminée dès que le quiz est réussi.
+For a 15-minute lesson: **3 to 6 lab steps** and **3 to 4 questions**, about 100 to 150 XP. A lesson without a `:::lab` block is allowed (theory lesson); it is completed as soon as its quiz is passed.
 
-## 5. Syntaxe
+## 5. Syntax
 
-### Markdown standard
+### Standard Markdown
 
-Titres `##` et `###` (le `#` est réservé au titre de la leçon, généré automatiquement), **gras**, *italique*, `code`, liens, listes à puces et numérotées, tableaux, citations. Une liste numérotée sert aux **étapes d'une procédure**.
+Headings `##` and `###` (`#` is the lesson title, generated), **bold**, *italics*, `code`, links, bullet and numbered lists, tables, quotes. A numbered list is for the **steps of a procedure**.
 
-### Encarts
+**Author HTML is filtered.** Text formatting, links, images and tables survive (`<kbd>`, `<details>`…); scripts, event handlers, forms, frames, `style` and `class` are removed, and links keep only `http`, `https`, `mailto` and relative addresses. A removed tag vanishes and its text stays, so **text meant as code must be written as code**: write `` `docker logs <nom>` ``, not docker logs &lt;nom&gt; in plain text, or `<nom>` disappears. This applies everywhere, including quiz answers and lab hints.
+
+### Callouts
 
 ```markdown
 :::info
@@ -134,21 +135,21 @@ Une astuce. Le contenu est du Markdown.
 :::
 ```
 
-| Type | Titre par défaut | Quand l'utiliser |
+| Type | Default title | When to use it |
 | --- | --- | --- |
-| `:::info` | À savoir | Un complément, un lien avec un autre outil de l'équipe. |
-| `:::tip` | Astuce | Un raccourci, un réflexe de pro. |
-| `:::warning` | Attention | Un piège fréquent, une confusion classique. |
-| `:::danger` | Danger | Une action destructrice ou irréversible. |
+| `:::info` | À savoir | A complement, a link with another tool of the team. |
+| `:::tip` | Astuce | A shortcut, a professional reflex. |
+| `:::warning` | Attention | A frequent pitfall, a classic confusion. |
+| `:::danger` | Danger | A destructive or irreversible action. |
 
-Les directives ne s'imbriquent pas : pas de `:::info` dans un `:::tip`. En revanche, un bloc de code dans un encart est possible.
+Directives do not nest (no `:::info` inside a `:::tip`), but a code block inside a callout is fine. A directive is closed by a line holding only `:::`.
 
-### Cartes
+### Cards
 
-Des cartes pour comparer deux ou trois notions côte à côte. Chaque carte commence par un sous-titre `###`.
+Cards compare two or three notions side by side. Each card starts with a `###` sub-heading (at least one is required).
 
 ```markdown
-:::cartes
+:::cards
 ### Image
 
 Un modèle en lecture seule.
@@ -159,43 +160,41 @@ Une instance en cours d'exécution.
 :::
 ```
 
-### Blocs de code
+### Code blocks
 
-| Écriture | Résultat |
+| Written | Result |
 | --- | --- |
-| ` ```shell run ` | Chaque ligne a un bouton **▶ Lancer** qui l'envoie au terminal du labo. Les lignes commençant par `#` sont des commentaires. |
-| ` ```dockerfile file=Dockerfile ` | Affiche le fichier avec coloration et un bouton **Créer ce fichier dans le labo**. Le nom après `file=` est celui du fichier créé. |
-| ` ```mermaid ` | Un schéma (voir ci-dessous). |
-| ` ```console ` | Une sortie de commande, non exécutable. |
-| ` ```python `, ` ```yaml `, ` ```text `… | Du code coloré, non exécutable. N'importe quel langage [Pygments](https://pygments.org/languages/) convient. |
+| ` ```shell run ` | Each line gets a **▶ Lancer** button that sends it to the lab terminal. Lines starting with `#` are comments; empty lines are dropped. |
+| ` ```dockerfile file=Dockerfile ` | Shows the file with a **Créer ce fichier dans le labo** button. The name after `file=` is the file created; it is required. |
+| ` ```mermaid ` | A diagram (see below). |
+| ` ```console `, ` ```python `, ` ```yaml `, ` ```text `… | Code shown as is, not runnable. The language is kept as an attribute; there is no server-side highlighting. |
 
-Un bloc `shell run` ne doit contenir **que des commandes valides pour le moteur du parcours** (`git …` pour Git ; `docker …`, `curl …` pour Docker) et les petites commandes shell du simulateur (`echo`, `cat`, `ls`, `rm`, `touch`, `nano`).
+A `shell run` block must contain only commands that work **in the lesson's environment**, with the tools its image installs and without network (§8).
 
-### Images et figures
+### Images and figures
 
 ```markdown
 ![Les trois zones de Git : dossier de travail, index et dépôt](images/trois-zones.svg)
 ```
 
-- Le texte entre crochets est à la fois la **légende** et le **texte alternatif** : décris ce que montre le schéma (accessibilité).
-- Le chemin est relatif au dossier du parcours.
-- Nommage : `images/<sujet-en-minuscules>.svg`, une image par idée (`trois-zones.svg`, `image-conteneur.svg`). La bannière du parcours s'appelle `banniere.svg`.
+- An image alone on its line becomes a figure. The text between brackets is both the **caption** and the **alternative text**: describe what the diagram shows. Markdown is not interpreted in a caption.
+- The path is relative to the course folder.
+- Naming: `images/<subject-in-lower-case>.svg`, one image per idea. The course banner is `banniere.svg`.
 
-**Style des schémas SVG** (pour une identité commune, claire en thème sombre comme en thème clair) :
+**Style of SVG diagrams** (a common identity, readable on dark and light themes):
 
-- Panneau de fond sombre `#0b1220` avec bordure `#1e293b` et coins arrondis : le schéma est lisible quel que soit le thème de la page.
-- Texte `#e2e8f0` (secondaire `#94a3b8`), police `Inter, system-ui, sans-serif`, taille ≥ 14 px à l'échelle d'affichage.
-- Accent `#6366F1` pour ce qu'il faut regarder en premier (flèches, élément central) ; autres couleurs : `#1e293b` / `#334155` pour les cases, une couleur d'accent du parcours au plus.
-- Pas de texte écrit dans une image bitmap : tout texte doit être du texte SVG.
-- Accessibilité : `role="img"`, `<title>` et `<desc>` (une phrase qui décrit le schéma), `aria-labelledby`.
-- Prévoir un `viewBox` (pas de largeur fixe) pour que l'image s'adapte à l'écran. Largeur de référence : 640 à 760.
-- Pas de dégradés complexes ni de filtres : il doit rester lisible une fois réduit sur mobile.
+- Dark background panel `#0b1220`, border `#1e293b`, rounded corners.
+- Text `#e2e8f0` (secondary `#94a3b8`), font `Inter, system-ui, sans-serif`, at least 14 px at display size.
+- Accent `#6366F1` for what to look at first; boxes in `#1e293b` / `#334155`; one course accent colour at most.
+- All text is SVG text, never a bitmap. No complex gradients or filters: it must stay readable on a phone.
+- Accessibility: `role="img"`, `<title>` and `<desc>`, `aria-labelledby`.
+- A `viewBox` and no fixed width. Reference width: 640 to 760.
 
-Voir [`_modele/images/exemple.svg`](_modele/images/exemple.svg).
+See [`_template/images/exemple.svg`](_template/images/exemple.svg).
 
-### Schémas Mermaid
+### Mermaid diagrams
 
-Pour un schéma qui évolue souvent ou qui se décrit bien en texte (historique Git, diagramme de séquence, états d'un conteneur) :
+For a diagram that changes often or reads well as text (Git history, sequence, states):
 
 ````markdown
 ```mermaid
@@ -208,11 +207,11 @@ gitGraph
 ```
 ````
 
-Mermaid propose `gitGraph`, `flowchart`, `sequenceDiagram`, `stateDiagram-v2`… ([documentation](https://mermaid.js.org/)). Un schéma Mermaid ne doit pas dépasser une dizaine de nœuds. Pour tout le reste (illustration, comparaison, architecture soignée), préfère un SVG.
+Keep a Mermaid diagram under about ten nodes. For anything else (illustration, comparison, polished architecture), prefer an SVG.
 
-## 6. Le quiz
+## 6. Quizzes
 
-Un bloc `:::quiz` = **une question**. Écris-en 3 ou 4 par leçon.
+One `:::quiz` block is **one question**. Write 3 or 4 per lesson.
 
 ```markdown
 :::quiz
@@ -226,455 +225,206 @@ Quand y a-t-il un conflit ?
 :::
 ```
 
-Format exact :
+1. The **question** first (inline Markdown).
+2. At least **2 answers** as a `- [ ]` / `- [x]` list. **Exactly one** is ticked.
+3. The **explanation** as a quote (`>`), shown after answering: it says why, even when the answer was right.
 
-1. La **question** d'abord (Markdown en ligne : `code`, **gras** autorisés).
-2. Au moins **2 réponses** en liste `- [ ]` / `- [x]`. **Exactement une** est cochée `[x]`.
-3. L'**explication** en citation (`>`), affichée après la réponse : elle explique pourquoi, même quand la personne a juste.
-4. Place la bonne réponse à des positions variées d'une question à l'autre.
+Wrong answers must be **plausible** (real confusions), never absurd. Vary the position of the right answer from one question to the next.
 
-Les fausses réponses doivent être **plausibles** (confusions réelles), jamais absurdes.
+## 7. Labs
 
-## 7. Le labo
+A `:::lab` block describes the practical exercise of a lesson: the starting state, the steps to carry out and how the server verifies them. Labs run **in the course's real environment** (§8): each learner gets their own, types real commands, and the server checks the result there. There are no simulated terminals. **One lab per lesson at most.** Its content is **YAML** (`#` comments allowed).
 
-Le bloc `:::labo` décrit le terminal simulé de la leçon : l'état de départ, les étapes à réaliser et comment les vérifier automatiquement. **Un seul par leçon.** Son contenu est du **YAML** (les commentaires `#` sont permis).
+### Keys
 
-### Champs
-
-| Champ | Obligatoire | Rôle |
+| Key | Required | Role |
 | --- | :---: | --- |
-| `intro` | non | Texte d'introduction (Markdown) : la situation de départ. |
-| `moteur` | non | `git` ou `docker` ; par défaut celui du parcours. `reel` : étapes vérifiées par le serveur dans un [environnement réel](#15-environnements-réels-dev-containers). |
-| `environnement` | non | Dossier de l'environnement réel du labo (sinon celui de la leçon ou du parcours). |
-| `fichiers` | non | État initial : `nom: contenu` (écris le contenu avec `\|`). |
-| `commandes` | non | Commandes jouées en silence au démarrage, dans l'ordre (après les `fichiers`). |
-| `serveur` | non | (git) Dépôts distants simulés : liste de `{url, commits: [{branche, message, fichiers, auteur}]}`. |
-| `etapes` | oui | Liste d'étapes (voir ci-dessous), au moins une. |
+| `engine` | no | Only `real` is accepted, and it says nothing any more: every lab is real. Existing labs carry the line; it can stay. |
+| `intro` | no | Introduction (Markdown): the starting situation. |
+| `environment` | no | Environment folder of this lab (otherwise the lesson's, then the course's). A lab without any environment is an error. |
+| `files` | no | Files written in the working folder at start: `name: content` (write the content with `\|`). Names are plain relative paths (letters, digits, `.`, `_`, `-`, `/`; no `..`); contents are text. |
+| `commands` | no | Commands run silently at start, in order, after `files`. A list of texts. |
+| `steps` | yes | List of steps, at least one. |
 
-### Une étape
+### A step
 
-| Champ | Obligatoire | Rôle |
+| Key | Required | Role |
 | --- | :---: | --- |
-| `texte` | oui | La consigne (Markdown en ligne). Cite les noms exacts utilisés dans le labo. |
-| `indice` | non | Un coup de pouce, affiché à la demande. Souvent la commande attendue. |
-| `verif` | oui | Une liste de [vérifications](#8-catalogue-des-vérifications-et-effets) : l'étape est validée quand **toutes** sont vraies. |
-| `solution` | oui | Liste d'actions qui réalisent l'étape : une commande (texte) ou `{ecrire: {fichier: contenu}}`. Elle est **rejouée par la CI** pour prouver que le labo se termine, et affichée par « Voir la solution ». |
-| `apres` | non | Numéros (à partir de 1) d'**étapes précédentes** à valider avant celle-ci. |
-| `effet` | non | Un [effet](#effets) déclenché quand l'étape est validée. |
+| `text` | yes | The instruction (inline Markdown). Quote the exact names used in the lab. |
+| `hint` | no | A nudge shown on demand. Prefer a clue to the answer itself. |
+| `checks` | yes | A list of [checks](#checks): the step is validated when **all** of them hold. |
+| `solution` | yes | Actions that carry out the step: a command (text) or `{write: {file: content}}`. Shown by "Voir la solution". |
+| `after` | no | Numbers (from 1) of **earlier** steps to validate before this one. |
 
-Principes :
+### Checks
 
-- Une étape validée **le reste** : si l'apprenant·e annule ensuite son action (`git restore`, `docker rm`…), l'étape n'est pas dévalidée.
-- Les vérifications sont évaluées après **chaque commande** et chaque enregistrement de fichier ; l'ordre de réalisation est libre, sauf si tu utilises `apres`.
-- Utilise `apres` quand une vérification ne prend son sens qu'après une étape précédente (par exemple « lire les logs de `db` » après « démarrer `db` »).
-- Écris les **expressions régulières** (`commande: '^git diff'`) entre guillemets simples ; elles suivent la syntaxe JavaScript. Échappe le point : `hello\.txt`.
-- La `solution` doit couvrir **toute** l'étape, y compris les commandes intermédiaires.
+Declared in [`_checks.yml`](_checks.yml). The server runs them inside the learner's environment, as the learner's non-root user, in the working folder. An unknown check or a wrong number of arguments fails the compilation, naming the file and the step.
 
-### Exemple Git complet
+| Name | Arguments | Holds when |
+| --- | --- | --- |
+| `command-succeeds` | command | The command (run by `sh -c`) exits with code 0. |
+| `command-fails` | command | The command exits with a non-zero code. |
+| `output-contains` | command, regex | The standard output of the command (64 KiB at most) matches the regular expression. |
+| `env-file-exists` | path | The file or folder exists (path relative to the working folder). |
+| `env-file-absent` | path | The file or folder does not exist (any more). |
+| `env-file-contains` | path, regex | The content of the file (first 64 KiB) matches the regular expression. |
+
+```yaml
+checks:
+  - env-file-exists: projet/.git                              # one argument
+  - env-file-contains: [projet/README.md, '^# Projet']        # several arguments: a list
+  - command-succeeds: 'git -C projet rev-parse HEAD'          # quote commands and regular expressions
+```
+
+Arguments are text (or numbers). Write regular expressions between **single quotes** and escape the dot (`hello\.txt`). Stay within the syntax common to all engines (`^`, `$`, `\b`, classes, `(?m)` for multi-line): no look-around, no back-references.
+
+### Writing checks that mean something
+
+- **A check observes; it never changes anything.** It may run many times, at any moment: no file written, no container started, no commit. Redirect noise to `/dev/null` rather than to a file.
+- **A check must not hold before the learner has acted.** Negative checks are the trap: "the container `vieux` is gone" is also true when Docker is not answering. Prove the tool works first:
+
+  ```yaml
+  - command-succeeds: 'docker info > /dev/null && ! docker container inspect vieux > /dev/null 2>&1'
+  ```
+
+  Likewise `env-file-absent` and `command-fails` alone hold on an empty working folder: pair them with a positive check or with `after`.
+- **A check must still hold once the learner has moved on.** Learners often do two steps before asking for a verification. "`README.md` is staged" becomes false after the commit; "`README.md` is tracked" (`git ls-files --error-unmatch README.md`) stays true.
+- **Observation steps leave no trace**: `docker ps`, `git log` or `curl` change nothing a check could see, and the server does not read what was typed. Ask the learner to **save the output to a file**, and check the file:
+
+  ```yaml
+  - text: "Vérifie qu'il tourne avec `docker ps`, puis garde la liste : `docker ps > conteneurs.txt`"
+    after: [2]
+    checks:
+      - env-file-contains: [conteneurs.txt, '\bweb$']
+    solution:
+      - docker ps
+      - docker ps > conteneurs.txt
+  ```
+
+- Checks of a step are combined with **AND**; there is no OR. Split into two steps or rephrase.
+- Use `after` when a check only makes sense once an earlier step is done ("read the logs of `db`" after "start `db`").
+- The `solution` must cover the **whole** step, intermediate commands included, and be enough to pass its checks.
+
+### Complete example
 
 ```markdown
-:::labo
+:::lab
+engine: real
 intro: |
-  Deux personnes ont modifié le titre de `index.html` : l'une dans `main`, l'autre dans `titre-demo`. Fusionne et tranche !
-commandes:
-  - git init
+  Le dépôt est initialisé et contient un fichier non suivi. Fais-en un historique !
+files:
+  notes.txt: |
+    Mes notes.
+commands:
+  - git init -q
   - 'echo "<h1>Bienvenue</h1>" > index.html'
-  - 'git add . && git commit -m "Initialise la page"'
-  - git switch -c titre-demo
-  - 'echo "<h1>Bienvenue chez Mentor</h1>" > index.html'
-  - 'git commit -am "Titre version Mentor"'
-  - git switch main
-  - 'echo "<h1>Bienvenue sur le campus</h1>" > index.html'
-  - 'git commit -am "Titre version Campus"'
-etapes:
-  - texte: 'Lance `git merge titre-demo` et constate le conflit'
-    indice: git merge titre-demo
-    verif:
-      - conflit-en-cours: true
-    solution:
-      - git merge titre-demo
-  - texte: 'Édite `index.html` : garde un seul titre, supprime tous les marqueurs'
-    apres: [1]
-    verif:
-      - fichier-sans-marqueurs: index.html
-    solution:
-      - ecrire:
-          index.html: |
-            <h1>Bienvenue chez Mentor sur le campus</h1>
-  - texte: 'Marque le conflit comme résolu avec `git add index.html`'
-    apres: [2]
-    verif:
-      - aucun-conflit: true
-      - fusion-en-cours: true
+steps:
+  - text: "Ajoute `index.html` à l'index avec `git add`"
+    hint: "La commande prend le nom du fichier."
+    checks:
+      - command-succeeds: 'git ls-files --error-unmatch index.html'
     solution:
       - git add index.html
-  - texte: 'Termine la fusion avec `git commit -m "…"`'
-    verif:
-      - commit-de-fusion: true
+  - text: 'Crée ton premier commit avec `git commit -m "…"`'
+    after: [1]
+    checks:
+      - command-succeeds: 'git cat-file -e HEAD:index.html'
     solution:
-      - 'git commit -m "Fusionne titre-demo"'
+      - "git commit -m \"Ajoute la page d'accueil\""
+  - text: "Enregistre l'historique : `git log --oneline > historique.txt`"
+    after: [2]
+    checks:
+      - env-file-contains: [historique.txt, 'Ajoute']
+    solution:
+      - git log --oneline > historique.txt
 :::
 ```
 
-### Exemple Docker complet
+More examples: [`_template/01-exemple.md`](_template/01-exemple.md), [`git-basics/`](git-basics/), [`docker-hello/`](docker-hello/), [`python/`](python/).
 
-```markdown
-:::labo
-intro: |
-  Démarre nginx en arrière-plan, puis visite-le.
-etapes:
-  - texte: 'Démarre nginx détaché, nommé `web`, port `8080` → `80`'
-    indice: docker run -d --name web -p 8080:80 nginx
-    verif:
-      - conteneur-actif: web
-      - conteneur-port: [web, '8080:80']
-    solution:
-      - docker run -d --name web -p 8080:80 nginx
-  - texte: 'Visite-le avec `curl localhost:8080`'
-    apres: [1]
-    verif:
-      - commande: '^curl .*8080'
-    solution:
-      - curl localhost:8080
-:::
-```
+## 8. Environments
 
-### Écrire les arguments d'une vérification
-
-```yaml
-verif:
-  - indexe: README.md                       # un argument
-  - fusionne: [feature-contact, main]       # plusieurs arguments : une liste
-  - fichier-dans-branche: [fix-typo, README.md, 'Bienvenue']   # le dernier argument est facultatif
-  - depot-initialise: true                  # aucun argument : « true »
-  - commande: '^git status'                 # regex entre guillemets simples
-```
-
-### Le terminal simulé
-
-Le terminal reproduit les commandes les plus courantes de Git et Docker avec des sorties en français ou proches de la réalité, mais ce **n'est pas** Git ni Docker. Avant d'imposer une commande dans une consigne, vérifie qu'elle fonctionne dans le bac à sable du portail.
-
-Un mini-shell est disponible : `ls`, `cat`, `echo "texte" > fichier` (`>>` pour ajouter), `touch`, `rm`, `mv`, `pwd`, `nano fichier` (ouvre l'éditeur intégré), `curl localhost:PORT` (Docker). Les fichiers sont à plat (pas d'arborescence de dossiers). `&&` enchaîne les commandes.
-
-### Bac à sable (`bac-a-sable.yml`)
-
-Scénarios de départ proposés dans le bac à sable du moteur du parcours :
-
-```yaml
-scenarios:
-  projet:
-    titre: Projet avec quelques commits   # nom affiché
-    fichiers:                             # comme dans un labo
-      README.md: |
-        # Mon projet
-    commandes:
-      - git init
-      - git add . && git commit -m "Initialise le projet"
-    serveur: []                           # facultatif (git)
-    indice: "Essaie : git log --oneline"  # facultatif
-```
-
-## 8. Catalogue des vérifications et effets
-
-Source de vérité : [`_verifications.yml`](_verifications.yml) (le validateur Python et le moteur JavaScript s'y réfèrent). Une vérification inconnue ou mal paramétrée fait échouer la compilation avec un message qui indique le fichier et l'étape.
-
-### Communes aux deux moteurs
-
-| Nom | Arguments | Moteur | Rôle |
-| --- | --- | --- | --- |
-| `commande` | regex | tous | Une commande tapée correspond à l'expression régulière (testée sur chaque commande, début de ligne = `^`). |
-| `commande-compte` | regex, minimum | tous | Au moins `minimum` commandes tapées correspondent à l'expression régulière. |
-| `fichier-existe` | fichier | tous | Le fichier existe dans le dossier de travail. |
-| `fichier-absent` | fichier | tous | Le fichier n'existe pas dans le dossier de travail. |
-| `fichier-contient` | fichier, regex | tous | Le contenu du fichier correspond à l'expression régulière (mode multiligne). |
-| `fichier-ne-contient-pas` | fichier, regex | tous | Le contenu du fichier ne correspond pas à l'expression régulière. |
-| `fichier-modifie` | fichier | tous | Le contenu du fichier diffère de celui du début du labo. |
-
-### Git
-
-| Nom | Arguments | Moteur | Rôle |
-| --- | --- | --- | --- |
-| `depot-initialise` | — | git | `git init` a été exécuté. |
-| `indexe` | fichier | git | Le fichier est dans l'index (staging). |
-| `commits-au-moins` | nombre | git | L'historique de la branche courante contient au moins ce nombre de commits. |
-| `commits-exactement` | nombre | git | L'historique de la branche courante contient exactement ce nombre de commits. |
-| `fichier-dans-head` | fichier | git | Le fichier est dans le dernier commit. |
-| `fichier-propre` | fichier | git | Le fichier du dossier de travail est identique à celui du dernier commit. |
-| `sur-branche` | branche | git | La branche courante est celle-ci. |
-| `branche-existe` | branche | git | La branche existe. |
-| `branche-absente` | branche | git | La branche n'existe pas (ou plus). |
-| `branche-en-avance` | branche, base | git | La branche a des commits que la base n'a pas. |
-| `branche-egale` | branche, autre | git | Les deux branches pointent sur le même commit. |
-| `fichier-dans-branche` | branche, fichier, [regex] | git | Le dernier commit de la branche contient le fichier (dont le contenu correspond à `regex` si précisé). |
-| `fusionne` | source, cible | git | Tous les commits de `source` sont dans `cible`. |
-| `conflit-en-cours` | — | git | Une fusion est en conflit (fichiers non fusionnés). |
-| `aucun-conflit` | — | git | Plus aucun fichier en conflit. |
-| `fusion-en-cours` | — | git | Une fusion est commencée mais pas encore validée. |
-| `fichier-sans-marqueurs` | fichier | git | Le fichier ne contient plus de marqueurs de conflit (`<<<<<<<`, `=======`, `>>>>>>>`). |
-| `commit-de-fusion` | — | git | Le dernier commit est un commit de fusion terminé (deux parents). |
-| `remote-defini` | nom | git | Le dépôt distant est déclaré (`git remote add`). |
-| `amont-defini` | branche, amont | git | La branche suit cette branche distante (ex. `origin/main`). |
-| `serveur-a-la-pointe` | branche | git | La branche du serveur distant est au même commit que la branche locale. |
-| `en-retard-sur-origin` | branche | git | Le serveur est connu (fetch) et a des commits que la branche locale n'a pas. |
-| `dernier-auteur` | branche, auteur | git | Le dernier commit de la branche a été écrit par cette personne. |
-
-### Docker
-
-| Nom | Arguments | Moteur | Rôle |
-| --- | --- | --- | --- |
-| `session-fermee` | — | docker | L'apprenant n'est plus dans une session interactive de conteneur (il a tapé `exit`). |
-| `image-presente` | image | docker | L'image (`nom` ou `nom:tag`) existe en local. |
-| `conteneur-existe` | nom | docker | Le conteneur existe (quel que soit son état). |
-| `conteneur-actif` | nom | docker | Le conteneur est en cours d'exécution. |
-| `conteneur-arrete` | nom | docker | Le conteneur est arrêté. |
-| `conteneur-absent` | nom | docker | Le conteneur n'existe pas (ou plus). |
-| `conteneur-image` | image | docker | Au moins un conteneur a été créé à partir de cette image. |
-| `aucun-conteneur-image` | image | docker | Aucun conteneur ne vient de cette image. |
-| `conteneur-sorti-code` | nom, code | docker | Le conteneur s'est arrêté avec ce code de sortie. |
-| `conteneur-port` | nom, ports | docker | Le conteneur publie ces ports (`hote:conteneur`, ex. `8080:80`). |
-| `conteneur-reseau` | nom, reseau | docker | Le conteneur est rattaché à ce réseau. |
-| `conteneur-bind` | nom | docker | Le conteneur monte un dossier de ta machine (bind mount). |
-| `volume-existe` | nom | docker | Le volume existe. |
-| `volume-absent` | nom | docker | Le volume n'existe pas (ou plus). |
-| `volume-contient` | volume, fichier | docker | Le volume contient ce fichier. |
-| `reseau-existe` | nom | docker | Le réseau existe. |
-| `compose-conteneurs` | nombre | docker | Au moins ce nombre de conteneurs Compose existent (quel que soit leur état). |
-| `compose-actifs` | nombre | docker | Au moins ce nombre de conteneurs Compose sont en cours d'exécution. |
-| `compose-vide` | — | docker | Plus aucun conteneur Compose n'existe. |
-| `compose-variable` | service, variable | docker | Le service du `compose.yml` définit cette variable d'environnement. |
-| `registry-connecte` | registry | docker | Un `docker login` a été fait vers ce registry. |
-| `image-poussee` | image | docker | L'image a été publiée avec `docker push`. |
-
-### Environnement réel (moteur `reel`)
-
-Évaluées **par le serveur**, dans le conteneur de l'apprenant·e (jamais par le navigateur). Les commandes sont lancées en non-root, avec un délai maximal, dans le dossier de travail ; les expressions régulières suivent la syntaxe **Python**.
-
-| Nom | Arguments | Moteur | Rôle |
-| --- | --- | --- | --- |
-| `commande-reussit` | commande | reel | La commande (lancée par `sh -c` dans l'environnement) se termine avec le code 0. |
-| `commande-echoue` | commande | reel | La commande se termine avec un code différent de 0. |
-| `sortie-contient` | commande, regex | reel | La sortie standard de la commande (64 Kio au plus) correspond à l'expression régulière. |
-| `fichier-existe-dans-env` | chemin | reel | Le fichier ou dossier existe (chemin relatif au dossier de travail). |
-| `fichier-absent-dans-env` | chemin | reel | Le fichier ou dossier n'existe pas (ou plus). |
-| `fichier-contient-dans-env` | chemin, regex | reel | Le contenu du fichier (64 premiers Kio) correspond à l'expression régulière. |
-
-### Effets
-
-Un **effet** (`effet:` sur une étape) modifie le monde simulé quand l'étape est validée. Il sert à mettre en scène un évènement extérieur (une coéquipière pousse du code).
-
-| Nom | Arguments | Moteur | Rôle |
-| --- | --- | --- | --- |
-| `serveur-commit` | — | git | Un·e coéquipier·ère pousse un commit sur le serveur distant simulé. Arguments (dictionnaire) : `branche`, `message`, `fichiers` (dictionnaire fichier → contenu), `auteur` (facultatif). |
-| `serveur-avance` | — | git | Simule l'acceptation d'une merge request : la branche `branche` du serveur avance (fast-forward) jusqu'au commit de la branche `vers`. |
-
-Exemple :
-
-```yaml
-effet:
-  serveur-commit:
-    branche: main
-    message: Ajoute la page de contact
-    fichiers:
-      contact.html: |
-        <h1>Contact</h1>
-    auteur: Camille
-```
-
-## 9. Règles de rédaction
-
-- **Tutoiement** et ton accueillant, comme sur le site de l'équipe : « n'hésite pas », « tu es le·la bienvenu·e ». Pas de jargon sans définition.
-- **Écriture inclusive** par le point médian quand c'est nécessaire (« développeur·se·s », « apprenant·e »), sans en abuser ; privilégie les tournures neutres (« la personne », « celles et ceux »).
-- **Accents et typographie française obligatoires** : « À », « é », « ç », espaces avant `:`, `;`, `?`, `!`, guillemets « ». Jamais d'ASCII à la place (« ou » ≠ « où »).
-- **Une idée par leçon.** Si tu as besoin de « et aussi », c'est une autre leçon.
-- **Du concret de l'équipe** : prends tes exemples dans les projets réels (Vitrine, Adhésion, registry GitLab, Keycloak) plutôt que « foo/bar ».
-- **Cohérence texte ↔ labo** : les noms de branches, conteneurs, fichiers et ports cités dans le cours sont **exactement** ceux du labo et des vérifications (`feature-contact`, `web`, `8080:80`). Un nom qui change d'une section à l'autre perd les débutant·e·s.
-- **Une commande = une explication.** Ne montre pas une commande sans dire ce qu'elle fait ni ce qu'on doit observer.
-- **Avertis avant de détruire** (`:::warning` / `:::danger`) quand une commande est irréversible.
-- **Pas de sécurité dégradée en exemple** : jamais de vrais mots de passe, jamais de `--force` présenté comme normal.
-- **Phrases courtes**, paragraphes de 4 lignes maximum, listes plutôt que pavés.
-- **Pas de HTML brut** sauf nécessité ; il est repris tel quel (les contenus sont de confiance, relus en merge request).
-
-## 10. Checklist de relecture
-
-À cocher avant d'ouvrir une merge request (elle complète la *definition of done* du [guide de contribution](../CONTRIBUTING.md)) :
-
-- [ ] Le front matter est complet, `titre` et `resume` sont entre guillemets, l'`id` est unique et stable.
-- [ ] La leçon suit le fil : accroche → concepts → démonstration → piège → `## Entraîne-toi` → `## Vérifie tes acquis`.
-- [ ] Une seule idée, durée réaliste (`duree`), 3 à 6 étapes de labo, 3 à 4 questions.
-- [ ] Chaque schéma a un texte alternatif utile et respecte le style SVG (ou est un Mermaid de moins de 10 nœuds).
-- [ ] Toutes les commandes des blocs `shell run` fonctionnent dans le bac à sable.
-- [ ] Chaque étape a une `verif` et une `solution` ; les étapes dépendantes utilisent `apres`.
-- [ ] Les noms du cours (branches, conteneurs, fichiers, ports) correspondent à ceux du labo.
-- [ ] Chaque quiz a une seule bonne réponse, des distracteurs plausibles et une explication.
-- [ ] Orthographe, accents, typographie, tutoiement et inclusivité relus.
-- [ ] `pipenv run sync-catalog` passe sans erreur et `pipenv run build-catalogue && npm test` rejoue toutes les solutions.
-- [ ] `pipenv run lint-catalogue` ne signale ni erreur ni avertissement (la CI le lance : [Le lint des formations](../doc/createurs/relecture-et-merge-request.md#le-lint-des-formations-ci) ; exceptions justifiées dans `catalogue/.lint.yml`).
-- [ ] La leçon a été parcourue de bout en bout dans le portail (lecture, labo avec « Voir la solution », quiz).
-- [ ] Environnement réel (s'il y en a un) : `devcontainer.json` accepté, `USER` final non-root, pas de `sudo`, étapes `moteur: reel` validées en rejouant leurs solutions dans l'environnement (§15).
-- [ ] [`CHANGELOG.md`](../CHANGELOG.md) mis à jour (rubrique *Added* ou *Changed*).
-
-## 11. Tester ses modifications
-
-```shell
-# Compile le catalogue, le valide et met la base à jour (message d'erreur localisé : fichier + ligne/étape)
-pipenv run sync-catalog
-
-# Compile le catalogue en JSON, puis rejoue la `solution` de CHAQUE étape de CHAQUE labo
-pipenv run build-catalogue && npm test
-
-# Voir le résultat dans le portail
-docker compose up --build        # ou : python3 manage.py runserver
-```
-
-Erreurs fréquentes :
-
-| Message | Cause |
-| --- | --- |
-| `front matter YAML invalide : mapping values are not allowed here` | Un `:` dans un `titre`/`resume` non entouré de guillemets. |
-| `vérification inconnue` | Faute de frappe dans le nom ; la liste des noms valides est donnée dans le message. |
-| `exactement une réponse doit être cochée` | Aucune ou plusieurs `[x]` dans un `:::quiz`. |
-| `le bloc :::labo n'est jamais refermé` | Il manque le `:::` de fermeture. |
-| `directive :::xxx inconnue` | Faute dans le nom d'une directive (`info`, `tip`, `warning`, `danger`, `cartes`, `labo`, `quiz`). |
-| Échec du test Jest sur une leçon (étape non validée par sa solution) | La `solution` ne suffit pas à satisfaire la `verif` : complète-la ou corrige la `verif`. |
-
-## 12. Ajouter un parcours ou un moteur
-
-### Un parcours
-
-1. Copie `_modele/` vers `catalogue/<slug>/` (le slug = nom du dossier : minuscules et tirets).
-2. Renseigne `parcours.md` (moteur, prérequis, couleur, bannière), ajoute `images/banniere.svg`.
-3. Écris les leçons `01-…`, `02-…`, l'`antiseche.md` et, si utile, le `bac-a-sable.yml`.
-4. Ajoute le slug dans [`catalogue.yml`](catalogue.yml), à la position voulue.
-5. Si le parcours doit offrir un badge de leçon particulier, ajoute-le dans `formation/training/gamification.py` (les badges « parcours terminé » sont automatiques).
-6. Teste (section précédente), mets à jour le `CHANGELOG.md` et le tableau ci-dessous, ouvre la merge request.
-
-Pour **annoncer** un parcours sans le publier : `publie: false` et aucune leçon ; il s'affiche « bientôt » dans le catalogue.
-
-### Un moteur (autre outil à simuler)
-
-Un moteur est un terminal simulé. Pour en ajouter un (par exemple Python ou `psql`) :
-
-1. Écris la classe du moteur dans `static/js/` (elle étend `Sandbox` de `engine.js` : `main(cmd, args)`, `prompt()`, état exposé pour les vérifications), comme `docker-engine.js`.
-2. Déclare ses vérifications et effets dans [`_verifications.yml`](_verifications.yml) avec `moteurs: [<moteur>]`, puis implémente-les dans `static/js/checks.js`.
-3. Enregistre le moteur dans `ENGINES` (`formation/training/content.py`) et dans le chargeur de `lab-core.js`, puis ajoute son panneau d'état à l'interface du labo.
-4. Écris des tests Jest du moteur et utilise `moteur: <nom>` dans un `parcours.md`.
-
-## 13. Limites connues
-
-- **Pas d'imbrication de directives** (`:::` dans `:::`) et **un seul `:::labo`** par leçon.
-- Les `verif` d'une étape sont toutes combinées par un **ET** : il n'y a pas de OU. Découpe en deux étapes ou reformule la consigne.
-- Une expression régulière est évaluée par JavaScript, pas par Python : n'utilise pas de syntaxe propre à Python (`(?P<nom>…)`).
-- Les moteurs ne couvrent qu'un **sous-ensemble** de Git et de Docker (voir `git help` / `docker help` dans le terminal). Pas de dossiers, de `git rebase`, de `docker swarm`…
-- Les schémas Mermaid sont chargés depuis un CDN : sans accès Internet, le code source du schéma est affiché à la place.
-- Les images distantes (`https://…`) sont acceptées mais déconseillées : préfère des fichiers du dépôt.
-- Les identifiants de leçon figurent dans `gamification.py` (badges) : un renommage demande d'y répercuter le changement et fait perdre la progression des personnes déjà inscrites.
-- Le HTML brut est conservé tel quel : n'inclus jamais de contenu qui n'a pas été relu.
-
-## 14. Parcours existants
-
-| Parcours | Dossier | Moteur | Leçons | Prérequis | État |
-| --- | --- | --- | :---: | --- | --- |
-| Git basics | [`git-basics/`](git-basics/) | reel | 7 | — | Disponible, environnement réel (le bac à sable Git reste simulé) |
-| Docker hello world | [`docker-hello/`](docker-hello/) | docker | 4 | — | Disponible |
-| Docker advanced | [`docker-advanced/`](docker-advanced/) | docker | 5 | Docker hello world | Disponible |
-| Python | [`python/`](python/) | reel | 6 | — | Disponible, environnement réel |
-| Django | [`django/`](django/) | — | 0 | Python | Bientôt (plan prévisionnel) |
-| OIDC avec Keycloak | [`oidc-keycloak/`](oidc-keycloak/) | — | 0 | Django | Bientôt (plan prévisionnel) |
-
-## 15. Environnements réels (dev containers)
-
-Pour certaines leçons, un terminal simulé ne suffit pas : on veut un **vrai** Linux, de vrais outils, son propre VS Code. Le portail sait prêter à chaque apprenant·e un **conteneur jetable**, défini par un *dev container* versionné dans le parcours. Conception, sécurité et exploitation : [doc/environnements.md](../doc/environnements.md).
-
-> La fonctionnalité est **désactivée par défaut** (`ENVIRONMENTS_ENABLED=False`). Désactivée, une leçon qui propose un environnement « en plus » s'affiche comme avant ; une leçon dont le labo est `moteur: reel` affiche un avertissement à la place du labo.
-
-### Deux usages
-
-- **En plus du simulé** : la leçon garde son `:::labo` simulé et déclare `environnement:` dans son front matter (ou celui du parcours). Un onglet « Environnement réel » apparaît à côté du labo simulé.
-- **À la place du simulé** : le `:::labo` déclare `moteur: reel`. Ses étapes sont vérifiées **par le serveur** dans le conteneur, avec les vérifications du tableau « Environnement réel » (§8). Le navigateur ne peut pas valider ces étapes lui-même.
-
-### Le dossier de l'environnement
+An environment is a folder of the course holding a `devcontainer.json` and its `Dockerfile`. The platform builds an image from it and gives **each learner their own Firecracker microVM** started from that image: a real Linux, real tools, thrown away at the end of the session.
 
 ```text
-catalogue/mon-parcours/
-└── environnement/           ← le nom du dossier est la valeur de `environnement:` (minuscules, chiffres, tirets)
-    ├── devcontainer.json    ← spécification Dev Containers (JSON avec commentaires), sous-ensemble sûr
+catalogue/my-course/
+└── environnement/           ← the folder name is the value of `environment:`
+    ├── devcontainer.json    ← Dev Containers specification (JSON with comments)
     ├── Dockerfile
-    └── …                    ← fichiers copiés par le Dockerfile (pas de lien symbolique, 5 Mio au plus)
+    └── …                    ← files copied by the Dockerfile
 ```
 
-Exemples complets et commentés : [`_modele/environnement/`](_modele/environnement/) (Debian + Git + SSH pour VS Code) et [`_modele/environnement-docker/`](_modele/environnement-docker/) (Docker dans Docker, qui exige le runtime Sysbox sur le serveur). Leçon d'exemple : [`_modele/02-environnement-reel.md`](_modele/02-environnement-reel.md).
+Declare it once in `course.md` (`environment: environnement`); a lesson or a lab can name another folder. Commented models: [`_template/environnement/`](_template/environnement/) (Debian and Git) and [`_template/environnement-docker/`](_template/environnement-docker/) (Docker).
+
+> **What v2 checks today**: only that the folder named by `environment` contains a `devcontainer.json`. The specification and the `Dockerfile` are **not validated yet**, and building or running an environment is not wired in v2 (§12). The rules below are those every existing environment follows; keep to them so yours works when the execution plane arrives.
+
+### No network at run time
+
+**The network exists only while the image is built.** In a running environment there is no Internet and no package registry: `apt install`, `pip install`, `npm install`, `git clone https://…` and `docker pull` from Docker Hub all fail. Therefore:
+
+- install every tool and dependency in the `Dockerfile`, with pinned versions;
+- copy exercise files into the image (`COPY exercices /opt/exercices`) and let each lab copy what it needs into the working folder with `commands`;
+- replace remote services with local stand-ins prepared at build time (`git-basics` redirects its GitLab URL to a local bare repository; `terraform` and `web-javascript` ship local package mirrors).
+
+### `devcontainer.json`
 
 ```jsonc
 {
     "name": "Debian avec Git",
-    "build": { "dockerfile": "Dockerfile" },
-    "containerUser": "apprenant",            // obligatoire, jamais root
+    "build": { "dockerfile": "Dockerfile", "context": "." },
+    "containerUser": "apprenant",            // never root
+    "remoteUser": "apprenant",
     "workspaceFolder": "/workspace",
     "containerEnv": { "EDITOR": "nano" },
-    "forwardPorts": [8000],                  // redirigés vers le poste via VS Code (1024 à 65535)
-    "postCreateCommand": "git config --global init.defaultBranch main",
-    "hostRequirements": { "cpus": 1, "memory": "512mb" },
-    "customizations": { "vscode": { "extensions": ["eamodio.gitlens"] } }
+    "hostRequirements": { "cpus": 1, "memory": "512mb", "storage": "256mb" }
 }
 ```
 
-Champs acceptés : `name`, `image` **ou** `build` (`dockerfile`, `context`, `args`, `target`), `containerUser`/`remoteUser`, `containerEnv`/`remoteEnv`, `forwardPorts`, `portsAttributes` (`label`), `postCreateCommand`, `postStartCommand`, `workspaceFolder`, `hostRequirements` (`cpus`, `memory`, `storage`, plafonnés par le serveur), `customizations.vscode` (`extensions`, `settings`), `customizations.mentor.dockerInDocker` et `customizations.mentor.vscodeWeb` (`false` pour ne pas proposer VS Code dans le navigateur). **Tout autre champ fait échouer la compilation**, avec le fichier et le champ dans le message ; les champs dangereux (`privileged`, `capAdd`, `securityOpt`, `mounts`, `runArgs`, `appPort`, `initializeCommand`, `features`…) sont refusés « pour des raisons de sécurité ».
+Existing environments use only these keys, and nothing else is known to be supported: `name`, `build` (`dockerfile`, `context`), `containerUser`, `remoteUser`, `workspaceFolder`, `containerEnv`, `forwardPorts`, `portsAttributes`, `postCreateCommand`, `postStartCommand`, `hostRequirements` (`cpus`, `memory`, `storage`), `customizations.vscode` (`extensions`, `settings`) and `customizations.mentor` (`dockerInDocker`, `vscodeWeb`).
 
-### Règles du Dockerfile
+### Dockerfile rules
 
-- Image de base de la **liste blanche** du serveur (Debian, Ubuntu, Python, Node, Alpine…), **avec un tag** (`debian:trixie-slim`).
-- La **dernière** instruction `USER` de l'étape finale est l'utilisateur non-root déclaré (uid **1000**). Jamais `USER root` en dernier.
-- Interdits : `sudo`, `doas`, `setcap`, `chmod u+s`/`4755`, `ADD https://…`, `VOLUME`, `ONBUILD`, `# syntax=`, `RUN --network=host`, `RUN --security=insecure`, les secrets de build.
-- Le dossier personnel et le dossier de travail sont **vides au démarrage** (mémoire, effacés à l'arrêt) : ce qui doit s'y trouver va dans `/etc/skel` ou est créé par `postCreateCommand`.
-- Pour VS Code, installe `openssh-server` (il est lancé à la demande, sans root ni port ouvert).
+- A base image **with a pinned tag** (`debian:trixie-slim`, `python:3.13.7-slim-bookworm`).
+- The **last** `USER` instruction is the declared non-root user, uid **1000**. Never end as root.
+- No `sudo`, no setuid binaries, no `VOLUME`.
+- The working folder (`/workspace`) starts **empty** and is erased when the environment stops: what a lab needs there comes from its `files` and `commands`.
+- An untrusted author's `Dockerfile` is built in a disposable build microVM: put no secret in it.
 
-Le serveur ajoute ensuite sa propre couche de durcissement (retrait de tous les bits setuid/setgid, suppression de `su`, échec si `sudo` est présent) et lance le conteneur sans privilège, sans capacité, sans réseau par défaut, avec un système de fichiers en lecture seule.
+### Docker courses
 
-**VS Code dans le navigateur** : si le portail l'active (`ENVIRONMENTS_VSCODE_WEB`), il ajoute aussi, avant le durcissement, une couche VS Code (code-server) et l'extension « Mentor », qui affiche la leçon et les étapes du labo dans VS Code. L'image doit contenir `python3` et reposer sur une distribution glibc (Debian, Ubuntu, `python:…-slim`) ; sinon, écris `"customizations": { "mentor": { "vscodeWeb": false } }`. Les étiquettes d'image `mentor.environment.*` et `app.mentor*` sont réservées au portail. Détails : [doc/environnements.md §12](../doc/environnements.md#12-vs-code-web).
+A course that teaches Docker needs a Docker daemon. Set `customizations.mentor.dockerInDocker: true` in `devcontainer.json`: the platform then runs an ordinary Docker daemon **inside the learner's microVM**. The image does not start it; the learner (uid 1000) reaches it through the `docker` group:
 
-### Un labo réel
-
-```markdown
-:::labo
-moteur: reel
-fichiers:                       # créés dans le dossier de travail au démarrage
-  notes.txt: |
-    Mes notes.
-commandes:                      # lancées au démarrage (non-root, dans le conteneur)
-  - git init depot
-etapes:
-  - texte: 'Crée `README.md` dans `depot`'
-    verif:
-      - fichier-contient-dans-env: [depot/README.md, '^# ']
-    solution:
-      - "echo '# Projet' > depot/README.md"
-:::
+```dockerfile
+RUN useradd --create-home --uid 1000 --user-group --groups docker --shell /bin/bash apprenant
 ```
 
-Différences avec un labo simulé : pas de `serveur` ni d'`effet` ; seules les vérifications « Environnement réel » sont permises ; la `solution` est affichée et peut être envoyée au terminal, mais elle n'est **pas** rejouée par Jest (le test d'intégration `ENVIRONMENTS_IT=1 pytest -m docker` rejoue celles du modèle dans un vrai conteneur).
+Since there is no network at run time, images come from a **local read-only registry mirror filled at build time**. The reference is [`docker-hello/environnement/`](docker-hello/environnement/):
 
-### Tester
+| File | Role |
+| --- | --- |
+| `images.txt` | The images to serve, one `source  served-name` pair per line (`nginx:1.29-alpine  nginx:latest`): the source is pinned, the served name is what learners type. |
+| `remplir-miroir.sh` | Run by the `Dockerfile` at build: copies those images from Docker Hub into the mirror's storage. |
+| `miroir.yml` | Configuration of the local registry, read-only, on `127.0.0.1:5001`. |
+| `daemon.json` | Tells the Docker daemon to look for Docker Hub images in the mirror first. |
+| `mentor-docker` | `postStartCommand`: starts the mirror and waits until Docker answers. |
 
-```shell
-pipenv run sync-catalog                  # valide aussi devcontainer.json et Dockerfile
-python3 manage.py build_environments     # construit et durcit les images (démon Docker dédié configuré)
-```
+`docker run nginx` and `docker pull alpine` then behave as usual. An image missing from `images.txt` cannot be pulled: list every image the lessons, the lab `commands` and the solutions use.
 
-## 16. Examen de validation (`examen.md`)
+## 9. Validation exam (`exam.md`)
 
-Chaque parcours publié peut proposer un **examen de validation** : un pool de questions dont le serveur en tire quelques-unes au hasard. Réussir l'examen **valide tout le parcours sans passer par les labos ni les quiz de leçon**. C'est un raccourci pour les personnes qui maîtrisent déjà le sujet ; les leçons restent la voie normale. Le fichier est facultatif, mais **tout parcours publié devrait en avoir un**.
+A course can offer a **validation exam**: a pool of questions from which the server draws a few at random. Passing it **validates the whole course without going through labs or lesson quizzes**. It is a shortcut for people who already master the subject; lessons remain the normal way. The file is optional, but **every published course should have one**.
 
 ### Format
 
-`catalogue/<parcours>/examen.md` : un front matter, une introduction (les règles) et le pool de questions, écrites avec **le même bloc `:::quiz`** que les leçons (§6).
+A front matter, an introduction (the rules) and the pool, written with **the same `:::quiz` block** as lessons (§6).
 
 ```markdown
 ---
-titre: "Examen de validation — Git basics"
-tirage: 12        # nombre de questions tirées au sort à chaque tentative
-seuil: 80         # pourcentage de bonnes réponses pour réussir (1 à 100)
-duree: 20         # durée en minutes (1 à 240), chronométrée par le serveur
-melange: true     # facultatif, true par défaut : mélange les questions ET les réponses
+title: "Examen de validation — Git basics"
+draw: 12          # questions drawn at each attempt (1 to 100)
+pass_mark: 80     # percentage of correct answers required (1 to 100)
+minutes: 20       # duration in minutes (1 to 240), timed by the server
+shuffle: true     # optional, true by default: shuffles questions and answers
 ---
 
 Règles de l'examen, en Markdown (public visé, ce qu'on attend de toi…).
@@ -688,57 +438,134 @@ Que fait `git restore --staged fichier` ?
 
 > `--staged` agit sur l'index, pas sur le dossier de travail.
 :::
-
-(… une dizaine, voire plusieurs dizaines d'autres blocs `:::quiz` …)
 ```
 
-Le compilateur vérifie : les 4 champs du front matter (entiers dans les bornes), un pool **au moins égal à `tirage`** (erreur sinon), des questions **toutes différentes**, une seule bonne réponse par question, **aucun `:::labo`**. Il émet un avertissement si le pool fait moins de **2 fois** `tirage` (idéal : **3 fois**). Les erreurs indiquent le fichier et la ligne.
+The compiler checks the four required keys (integers within bounds), a pool **at least as large as `draw`**, questions that are **all different**, one right answer per question, and **no `:::lab`**. It records a warning when the pool is smaller than **twice** `draw` (ideal: **three times**).
 
-Chaque question reçoit un **identifiant stable** (empreinte de son énoncé) : tu peux ajouter, retirer ou réordonner des questions sans casser les tentatives en cours. Modifier l'énoncé d'une question en crée une nouvelle. Un identifiant de leçon `examen` est **réservé** (URL `/parcours/<parcours>/examen/`).
+Each question gets a **stable identifier**, a digest of its wording: adding, removing or reordering questions is safe; rewording a question creates a new one.
 
-### Bien rédiger un pool
+### Writing a good pool
 
-- **Couvre toutes les leçons** du parcours, en proportion de leur importance : quelqu'un qui réussit doit réellement connaître le parcours.
-- **Mélange les difficultés** : questions de compréhension, de mise en situation (« tu vois ce message d'erreur, que fais-tu ? »), de lecture de sortie de commande.
-- **Ne recopie pas les quiz de leçon** : reformule ou prends d'autres angles, sinon on valide en mémorisant des réponses.
-- Des **distracteurs plausibles** (confusions réelles, erreurs fréquentes), jamais absurdes. Place la bonne réponse à des positions variées.
-- Une **explication précise** par question : elle est montrée dans la correction détaillée, que l'on ait juste ou non.
-- Vise **3 fois plus de questions que le tirage** : plus le pool est large, moins une tentative ressemble à la précédente.
-- Une question = une idée testée, **sans piège de formulation**.
+- **Cover every lesson**, in proportion to its importance: someone who passes must really know the course.
+- **Mix difficulties**: understanding, situations ("you see this error message, what do you do?"), reading command output.
+- **Do not copy lesson quizzes**: rephrase or take another angle, otherwise memorising answers is enough.
+- **Plausible distractors**, a **precise explanation** per question, right answers at varied positions.
+- One question tests one idea, **without trick wording**.
 
-### Barème et règles du jeu
+### Scale and rules
 
-- **Seuil** : 80 % est un bon point de départ (12 questions → 10 bonnes réponses). En dessous de 70 %, l'examen valide trop facilement ; au-dessus de 90 %, une seule faute d'inattention suffit à échouer.
-- **Durée** : compte environ **1 à 1,5 minute par question**.
-- Une **réponse absente** compte comme fausse. Tant qu'il n'a pas soumis, le candidat peut **revoir et modifier** ses réponses.
-- Après un **échec ou une expiration**, un délai de réessai s'applique (`EXAM_COOLDOWN_MINUTES`, 10 min par défaut) ; le pool est retiré au sort, les questions changent.
-- **Récompenses** : le parcours est validé (leçons terminées, déblocage des parcours qui en dépendent, badge de parcours), l'examen donne **`XP_EXAM`** (100 XP, une seule fois, et seulement si le parcours n'était pas déjà terminé normalement), les **badges de leçon** du parcours (Premier commit, Dockerfile master…) et le badge « Validé·e par examen ». Les badges de **pratique** (Premier pas, Sans faute, Régulier·e) ne sont pas donnés : ils récompensent un labo, un quiz parfait ou une série de jours réellement faits.
+- **Pass mark**: 80 % is a good start (12 questions → 10 correct). Under 70 % the exam validates too easily; above 90 % one slip is enough to fail.
+- **Duration**: about **1 to 1.5 minutes per question**.
+- The server draws, shuffles, times and grades. A submission more than 30 seconds after the deadline is refused; after a failure, a new attempt has to wait 10 minutes and draws again.
+- **Reward**: the lessons of the course are marked completed, and the exam gives 100 XP.
+- The questions are public in the catalogue repository: the exam verifies knowledge, it is not a proctored test.
 
-### Anti-triche
+## 10. Writing rules
 
-Le serveur tire et mélange questions et réponses, **ne renvoie jamais les bonnes réponses ni les explications avant la soumission** (le navigateur ne reçoit que des textes, jamais l'indication « correct »), tient le chronomètre, note, et limite les tentatives. Une soumission après l'échéance (30 s de tolérance réseau) est refusée : la tentative est close en échec et le délai de réessai s'applique. Le contenu des questions reste public dans le dépôt Git du catalogue : l'examen vérifie des connaissances, pas une surveillance.
+These apply to the French courses shipped here.
 
-### Tester
+- **Informal `tu`** and a welcoming tone: « n'hésite pas », « tu es le·la bienvenu·e ». No jargon without a definition.
+- **Inclusive forms** with the middle dot when needed (« apprenant·e », « développeur·se·s »), without excess; prefer neutral turns (« la personne », « celles et ceux »).
+- **Accents and French typography are mandatory**: « À », « é », « ç », a space before `:`, `;`, `?`, `!`, guillemets « ». Never ASCII instead (« ou » ≠ « où »).
+- **One idea per lesson.** If you need "and also", it is another lesson.
+- **Concrete examples from the team's projects** rather than "foo/bar".
+- **Text and lab agree**: branch, container, file and port names in the lesson are **exactly** those of the lab and its checks (`feature-contact`, `web`, `8080:80`).
+- **One command, one explanation**: say what it does and what to observe.
+- **Warn before destroying** (`:::warning` / `:::danger`) when a command is irreversible.
+- **No degraded security as an example**: never a real password, never `--force` presented as normal.
+- **Short sentences**, paragraphs of 4 lines at most, lists rather than walls of text.
+- **No raw HTML** unless needed; most of it is filtered anyway (§5).
+
+## 11. Review checklist
+
+- [ ] The front matter is complete, `title` and `summary` are quoted, the `id` is unique and stable.
+- [ ] The lesson follows the thread: hook → concepts → demonstration → pitfall → `## Entraîne-toi` → `## Vérifie tes acquis`.
+- [ ] One idea, a realistic `minutes`, 3 to 6 lab steps, 3 to 4 questions.
+- [ ] Each diagram has a useful alternative text and follows the SVG style (or is a Mermaid of under ten nodes).
+- [ ] Every command of the `shell run` blocks, lab `commands` and solutions works in the environment, **without network**.
+- [ ] Each step has `checks` and a `solution`; no check has a side effect, none holds before the learner acts, each still holds after the following steps; dependent steps use `after`.
+- [ ] Observation steps ask for the output to be saved to a file.
+- [ ] Names in the lesson (branches, containers, files, ports) match those of the lab.
+- [ ] Each quiz has one right answer, plausible distractors and an explanation.
+- [ ] Anything meant as code is written as code (no bare `<…>` in text).
+- [ ] Spelling, accents, typography, `tu` and inclusive forms proof-read.
+- [ ] Environment: non-root final `USER` with uid 1000, no `sudo`, pinned versions, everything installed at build; for Docker, every image used is in `images.txt`.
+- [ ] `cargo test -p mentor-content` compiles the catalogue without error, and the lesson was read from start to end in the portal.
+
+## 12. Testing your changes
 
 ```shell
-pipenv run sync-catalog        # compile et valide examen.md (avertissements : pool trop petit)
-pipenv run test                # tests du format, du tirage, de la notation, du verrouillage…
+# Compile the whole catalogue: an error names the file and the line or step
+cargo test -p mentor-content
+
+# Read the result in the portal (needs a PostgreSQL database and a tenant: see ../README.md)
+cargo run -p mentor-web -- --dev-login
 ```
 
-Un parcours modèle commenté se trouve dans `catalogue/_modele/examen.md`.
+`cargo test -p mentor-content` runs the conformance test, which compiles `catalogue/` and also compares it with a reference exported from v1 (`conformance/`); see `crates/mentor-content/tests/conformance.rs` for what that comparison covers. `mentor-web` compiles the catalogue when it starts and refuses to start on an error.
 
-## Pour aller plus loin
+**Not available in v2 yet**: building an environment image, starting an environment, running a lab and replaying its solutions. The lesson page shows the text and the quiz, and says that the lab is not available. Until the execution plane is wired, a lab can only be proof-read: nothing proves that a `solution` passes its `checks`. The catalogue linter of v1 is not ported either (`.lint.yml` is unused).
 
-Pages complémentaires, orientées tâches, dans [`doc/createurs/`](../doc/createurs/) (aussi lisibles dans le portail, rubrique Aide) :
+Common errors:
 
-| Page | Pour… |
+| Message | Cause |
 | --- | --- |
-| [Écris ta première leçon en 30 minutes](../doc/createurs/premiere-lecon.md) | un tutoriel pas à pas, de la copie du modèle au rendu |
-| [Aide-mémoire de la syntaxe](../doc/createurs/aide-memoire.md) | toute la syntaxe sur une page |
-| [Écrire un bon labo](../doc/createurs/ecrire-un-bon-labo.md) | la pédagogie des labos, avec trois exemples commentés |
-| [Quiz de leçon et examen de validation](../doc/createurs/quiz-et-examen.md) | de bonnes questions et un bon pool |
-| [Images et schémas](../doc/createurs/images-et-schemas.md) | SVG au style du portail, Mermaid, poids des fichiers |
-| [Erreurs de compilation](../doc/createurs/erreurs-de-compilation.md) | comprendre chaque message d'erreur |
-| [Relecture et merge request](../doc/createurs/relecture-et-merge-request.md) | checklists et conventions de commit |
-| [Ajouter un parcours ou un moteur](../doc/createurs/ajouter-un-parcours-ou-un-moteur.md) | de bout en bout, jusqu'à un nouveau simulateur |
-| [Environnements réels pour auteur·e·s](../doc/createurs/environnements-reels-pour-auteurs.md) | quand et comment utiliser un vrai conteneur |
+| `invalid YAML front matter: mapping values are not allowed…` | A `: ` in an unquoted `title` or `summary`. |
+| `required field(s) missing from the front matter: …` | A required key is absent or empty. |
+| `unknown check … Available: …` | A typo in a check name; the valid names are listed. |
+| `… expects N argument(s) …` | Wrong number of arguments for a check. |
+| `a lab requires an environment` | No `environment` in the lab, the lesson or `course.md`. |
+| `engine no longer exists`, `… belonged to simulated labs` | A v1 leftover: the course-level `engine`, a `sandbox.yml` file, `server` or `effect` in a lab. Remove it. |
+| `real environment not found: devcontainer.json is missing` | The folder named by `environment` does not exist or has no `devcontainer.json`. |
+| `exactly one answer must be ticked [x]` | None or several `[x]` in a `:::quiz`. |
+| `the :::lab block is never closed by :::` | The closing `:::` is missing. |
+| `unknown directive :::xxx` | A typo in a directive name (`info`, `tip`, `warning`, `danger`, `cards`, `lab`, `quiz`). |
+| `after must reference earlier step numbers` | `after` names the step itself, a later step or 0. |
+
+## 13. Adding a course
+
+1. Copy `_template/` to `catalogue/<slug>/` (the slug is the folder name: lower case and hyphens).
+2. Fill in `course.md` (prerequisites, colour, banner, environment) and add `images/banniere.svg`.
+3. Keep one environment folder, adapt its `Dockerfile` (delete `environnement-docker/` unless the course teaches Docker).
+4. Write the lessons `01-…`, `02-…`, the `cheatsheet.md` and the `exam.md`.
+5. Add the slug to [`catalogue.yml`](catalogue.yml), at the wanted position.
+6. Test (§12), update the table of §15, open the pull request.
+
+To **announce** a course without publishing it: `published: false` and no lesson.
+
+## 14. Known limits
+
+- **No nested directives** and **one `:::lab` per lesson**. A lab only belongs in a lesson: not in `course.md`, `cheatsheet.md` or `exam.md`.
+- Checks of a step are combined with **AND** only.
+- **No network at run time** in an environment (§8).
+- **Unknown front matter or lab keys are ignored silently**: a misspelt optional key has no effect and raises no error.
+- Mermaid is loaded from `static/vendor/mermaid/`, which the repository does not ship: without it, the source of the diagram is shown instead.
+- Code blocks are not highlighted on the server.
+- Remote images (`https://…`) are accepted but discouraged: prefer files of the repository.
+- Changing a lesson `id` loses the progress of the learners who had started it.
+
+## 15. Existing courses
+
+Every lab runs in the course's `environnement/` folder unless noted.
+
+| Course | Folder | Lessons | Requires | Status |
+| --- | --- | :---: | --- | --- |
+| Git basics | [`git-basics/`](git-basics/) | 7 | — | Published |
+| Docker hello world | [`docker-hello/`](docker-hello/) | 4 | — | Published; Docker environment with a local registry mirror |
+| Docker advanced | [`docker-advanced/`](docker-advanced/) | 5 | docker-hello | Published |
+| Python | [`python/`](python/) | 6 | — | Published |
+| Django | [`django/`](django/) | 0 | python | Coming soon (`published: false`) |
+| OIDC avec Keycloak | [`oidc-keycloak/`](oidc-keycloak/) | 0 | django | Coming soon (`published: false`) |
+| CI/CD avec GitLab | [`ci-gitlab/`](ci-gitlab/) | 7 | git-basics | Published |
+| Linux et shell | [`linux-shell/`](linux-shell/) | 6 | — | Published |
+| SQL et PostgreSQL | [`sql-postgresql/`](sql-postgresql/) | 6 | — | Published |
+| HTML, CSS et JavaScript | [`web-javascript/`](web-javascript/) | 6 | — | Published |
+| TypeScript | [`typescript/`](typescript/) | 6 | web-javascript | Published |
+| React et Next.js | [`react-nextjs/`](react-nextjs/) | 7 | typescript | Published |
+| Angular | [`angular/`](angular/) | 7 | typescript | Published |
+| API REST avec Django REST framework | [`django-rest/`](django-rest/) | 7 | django | Published |
+| Maintenir du code hérité | [`maintenance-legacy/`](maintenance-legacy/) | 6 | django | Published |
+| Kubernetes et Helm | [`kubernetes-helm/`](kubernetes-helm/) | 6 | docker-advanced | Published |
+| Terraform | [`terraform/`](terraform/) | 6 | kubernetes-helm | Published |
+| Sauvegardes et stockage objet | [`sauvegardes-s3/`](sauvegardes-s3/) | 6 | docker-advanced | Published |
+| Go | [`go/`](go/) | 7 | — | Published |
