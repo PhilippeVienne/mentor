@@ -1,13 +1,14 @@
 # Execution plane: sharing isolation with Atelier
 
-> **Status: integration study, 5 October 2026. Nothing is implemented, and nothing was changed in Atelier.**
+> **Status: integration study with a first real trial (§7), 5 October 2026. Nothing is implemented, and
+> Atelier's code was not changed.**
 > It follows two decisions taken that day: Mentor does **not** build its own isolation layer, it shares one with
 > the [Atelier](https://github.com/PhilippeVienne/atelier) project through a **common base extracted from
 > Atelier**; and that base **requires Kubernetes**.
 >
 > Facts about Atelier below come from reading its repository at commit `be66aa8` (its `docs/PROGRESS.md`,
-> `docs/ARCHITECTURE.md`, specs and source). Nothing in this document was verified by running Atelier: every
-> point marked *to verify* is an assumption.
+> `docs/ARCHITECTURE.md`, specs and source). Sections 1 to 6 were written before running it; §7 reports what
+> a trial on its local development cluster then measured, and corrects §4 where they differ.
 
 ## 1. Why share
 
@@ -135,11 +136,56 @@ Three ideas from it are worth proposing to the base:
 3. **What must differ after a restore.** The guest clock has to be set by the host; the kernel reseeds its
    random generator through VMGenID (checked: two restored copies returned different random bytes).
 
-## 7. Next steps
+## 7. First real trial
 
-1. **Try it for real.** Install Atelier locally (its `kind` setup), create a sandbox from one catalogue
-   environment (`catalogue/python/environnement`), and measure: time to a usable shell, exec round trip, pod
-   overhead. This settles most rows of §4.
+Run on 5 October 2026 on Atelier's local development stack (a single-node `kind` cluster on the development
+machine, controller and API server run from source at commit `be66aa8`), with the example repository its own
+documentation uses, `microsoft/vscode-remote-try-python`, 1 CPU and 768 MiB. One run of each measure: these are
+orders of magnitude, not benchmarks.
+
+| Measure | Result |
+| --- | --- |
+| First sandbox: image build in the build microVM, no cache | about 105 s |
+| First sandbox: pod created → microVM running, image ready | about 4.5 s (3.4 s of VM boot) |
+| **Second sandbox of the same environment**, creation → `Running` | **106 s: 90 s rebuilding the image, 16 s to `Running`** |
+| Command round trip through the API (start the exec, read its result) | 0.37 s, stable over four runs |
+| Suspend (request → `Suspended`) | about 40 s |
+| Resume (request → `Running`) | about 16 s; a file in `/tmp` and a background process were still there |
+| Memory of the three proxy containers of the parent pod | about 30 MB together |
+| Memory of the supervisor container, microVM included | about 290 MB |
+
+What it settles in §4:
+
+| Topic | Finding |
+| --- | --- |
+| Start-up time | **Confirmed as the main gap.** A session takes seconds once its image exists, and the image was rebuilt for a second sandbox of the same source. Mentor needs the image built once per environment and reused by every learner |
+| Cost per session | **Fine.** The pod around the VM costs about 30 MB |
+| Checks | **Works, with caveats.** Exit code and output come back in 0.37 s. Exec can only be started through the MCP tool `exec_in_workshop` (the REST API only replays the output stream); it took a shell command string and ran as the image's user |
+| Learner account | **Depends on the image.** Commands ran as uid 1000, but in this image that user has passwordless `sudo` and became root. Mentor's rule that an environment has no `sudo` remains necessary |
+| Disk | The root file system was writable and shared with the image content (2.5 GiB, 256 MiB free); no separate per-session disk was visible. Quota enforcement was not tested |
+| No network | **A build needs egress through the sandbox's own allow-list.** With an empty list the build microVM could not reach `github.com` and the build failed; the trial used `*`. A lab that must run without network still needs network to build, so build-time and run-time egress have to be separable. Whether Atelier can already do it was not checked |
+| Tenancy | **Group isolation works**: a sandbox owned by another group was invisible to the test user through the API |
+
+Three more couplings met on the way, to add to §2:
+
+1. The MCP tools refuse to run when the LLM proxy address is set but unreachable ("security dependencies
+   unreachable"). Exec worked once the variable was left unset. A lab platform has no LLM proxy at all.
+2. The API server's listening port (8080) is fixed in the code.
+3. With the controller outside the cluster (the development setup), a sandbox stays in `Provisioning` until the
+   host has a route to the pod network.
+
+One defect worth reporting to Atelier: **after a resume, the guest clock was about 45 s behind the host**, roughly
+the time spent suspended. The removed prototype set the clock on restore for this reason (§6).
+
+Not tested: terminal and VS Code tunnels, a Mentor catalogue environment (it needs a Git repository the build
+can reach), disk quota, behaviour under many concurrent sandboxes.
+
+## 8. Next steps
+
+1. **Image reuse across sandboxes** is the first thing to raise with Atelier: find out whether rebuilding per
+   sandbox is intended, and what keying the build by source (repository, revision, path) would take.
 2. **Agree on the cut** of §2 with Atelier's roadmap in hand: name of the base, repository, which concerns
-   become extension points, and what happens to exec without a secret store.
-3. **Then** rewrite phase 1 of Mentor's plan with dates and exit criteria.
+   become extension points (secret store, LLM proxy, MCP), and a plain API to run a command.
+3. **Second trial with a catalogue environment** (`catalogue/python/environnement`), with no egress at run
+   time, plus the terminal tunnel.
+4. **Then** rewrite phase 1 of Mentor's plan with dates and exit criteria.
