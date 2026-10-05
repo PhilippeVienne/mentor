@@ -95,7 +95,7 @@ steps:
     solution:
       - git merge titre-demo
   - text: 'Édite `index.html` (avec `nano index.html`) : garde un seul titre, supprime tous les marqueurs'
-    hint: "Avec nano index.html, ou : echo \"<h1>Bienvenue chez Mentor sur le campus</h1>\" > index.html puis echo \"<p>Formation Git</p>\" >> index.html"
+    hint: "Avec nano index.html, ou : `echo \"<h1>Bienvenue chez Mentor sur le campus</h1>\" > index.html` puis `echo \"<p>Formation Git</p>\" >> index.html`"
     after: [1]
     checks:
       - command-succeeds: 'test -f .git/MERGE_HEAD && ! grep -qE "^(<<<<<<<|=======|>>>>>>>)" index.html'

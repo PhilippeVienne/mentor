@@ -135,7 +135,7 @@ steps:
 Un conteneur postgres s'arrête aussitôt. Quel est le premier réflexe ?
 
 - [ ] Réinstaller Docker
-- [x] docker logs <nom> pour lire le message d'erreur
+- [x] `docker logs <nom>` pour lire le message d'erreur
 - [ ] Relancer en boucle jusqu'à ce que ça marche
 - [ ] Supprimer l'image
 

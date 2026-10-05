@@ -110,7 +110,7 @@ steps:
     solution:
       - git pull
   - text: 'Fais un nouveau commit puis `git push`'
-    hint: 'echo "<p>Salut</p>" >> index.html puis git commit -am "Dit salut" puis git push'
+    hint: '`echo "<p>Salut</p>" >> index.html` puis `git commit -am "Dit salut"` puis `git push`'
     after: [4]
     checks:
       - command-succeeds: 'test "$(git rev-list --count origin/main)" -ge 4 && test "$(git rev-parse main)" = "$(git rev-parse origin/main)" && test "$(git log -1 --format=%an main)" != Camille'

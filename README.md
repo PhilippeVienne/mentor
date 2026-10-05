@@ -80,9 +80,13 @@ drawn at start-up, so sessions do not survive a restart. Until OIDC is implement
 deployment**: anyone could sign in as anyone. Requests that change state are accepted only from the site's own
 origin.
 
-Limits of this first version: one catalogue shared by every tenant; lesson HTML is inserted as compiled, without
-sanitising, which is only acceptable while the operator writes the catalogue; fonts are the system's; the
-interface texts are French, like the catalogue.
+Limits of this first version: one catalogue shared by every tenant; fonts are the system's; the interface
+texts are French, like the catalogue.
+
+What authors write in the catalogue is not trusted: the HTML rendered from their Markdown is filtered when the
+catalogue is compiled (scripts, event handlers, forms, frames, styles and classes are removed; links keep only
+`http`, `https`, `mailto` and relative addresses). Text meant to be shown as code, such as `docker logs <name>`,
+must be written as code, or its tags are removed like any other.
 
 ## Moving a v1 portal into a tenant
 

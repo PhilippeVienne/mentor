@@ -5,8 +5,7 @@
 //! badges, follows them on a dashboard, and can validate a course through its exam. Sign-in is a development one for now (see [`dev`]); labs are not run yet.
 //!
 //! One catalogue is loaded at start-up and shown to every tenant; per-tenant catalogues come later. Lesson
-//! HTML is trusted as compiled: it is not sanitised yet, which is acceptable only while catalogues are written
-//! by the platform operator.
+//! HTML is inserted as compiled: `mentor-content` filters what authors wrote when it compiles the catalogue.
 
 mod api;
 pub mod brand;

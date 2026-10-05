@@ -79,7 +79,7 @@ steps:
     solution:
       - git switch -c feature-contact
   - text: 'Crée `contact.html` et commite-le sur cette branche'
-    hint: 'echo "<h1>Contact</h1>" > contact.html puis git add . puis git commit -m "Ajoute la page de contact"'
+    hint: '`echo "<h1>Contact</h1>" > contact.html` puis `git add .` puis `git commit -m "Ajoute la page de contact"`'
     checks:
       - command-succeeds: 'git cat-file -e feature-contact:contact.html'
     solution:

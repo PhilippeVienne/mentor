@@ -20,6 +20,16 @@ static SPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap())
 const HTML_FIELDS: [&str; 10] =
     ["description_html", "cheatsheet_html", "body_html", "intro_html", "intro", "text", "hint", "question", "html", "explanation"];
 
+/// Fragments where v1 let through HTML that the author meant as text (`echo "<h1>…</h1>"` in a hint,
+/// `docker logs <nom>` in an answer): the browser interpreted it and words went missing. The catalogue now
+/// writes them as code, so their text differs from v1's on purpose.
+const CORRECTED_SINCE_V1: [&str; 4] = [
+    "git-basics.lessons[3].lab.steps[1].hint",
+    "git-basics.lessons[4].lab.steps[1].hint",
+    "git-basics.lessons[5].lab.steps[4].hint",
+    "docker-hello.lessons[3].quiz[0].options[1].html",
+];
+
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
@@ -185,6 +195,11 @@ fn catalogue_structure_matches_v1() {
 
 #[test]
 fn html_fragment_text_matches_v1() {
-    let (_, html, _) = report();
+    let (_, mut html, _) = report();
+    // Each listed fragment must still differ: a correction that is gone must leave the list.
+    for corrected in CORRECTED_SINCE_V1 {
+        assert!(html.iter().any(|path| path == corrected), "{corrected} no longer differs from v1");
+    }
+    html.retain(|path| !CORRECTED_SINCE_V1.contains(&path.as_str()));
     assert!(html.is_empty(), "{} fragment(s) whose text differs:\n{}", html.len(), html.join("\n"));
 }

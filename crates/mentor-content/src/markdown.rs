@@ -1,8 +1,14 @@
 //! Markdown → HTML, with the catalogue's code blocks (commands to run, files to create, diagrams).
+//!
+//! What authors write is not trusted: Markdown lets raw HTML through, so everything rendered from their text
+//! is sanitised ([`md`]). The blocks this module builds itself (commands, files, figures, diagrams) are put
+//! in afterwards, with every author value escaped.
 
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::LazyLock;
 
+use ammonia::Builder;
 use pulldown_cmark::{html, Options, Parser};
 use regex::{Captures, Regex};
 
@@ -61,19 +67,46 @@ fn unescape(text: &str) -> String {
         .replace("&amp;", "&")
 }
 
-/// Plain Markdown (tables included), without the catalogue extensions.
+/// Alignment of a table cell, as the Markdown renderer writes it.
+const CELL_ALIGNMENTS: [&str; 3] = ["text-align: left", "text-align: center", "text-align: right"];
+
+/// What author HTML may contain: text formatting, links, images, tables, and nothing that runs or styles.
+///
+/// Scripts, event handlers, forms, frames, `style` and `class` are removed; links and images keep only
+/// `http`, `https`, `mailto` and relative addresses. Removed elements lose their tags and keep their text,
+/// except scripts and styles, which disappear entirely.
+static SANITISER: LazyLock<Builder<'static>> = LazyLock::new(|| {
+    let mut builder = Builder::default();
+    builder
+        .url_schemes(HashSet::from(["http", "https", "mailto"]))
+        // Links open in the same tab: there is no opener to protect, and the markup stays what authors wrote.
+        .link_rel(None)
+        .add_tag_attributes("th", &["style"])
+        .add_tag_attributes("td", &["style"])
+        // The only inline style kept is the column alignment written by the Markdown renderer.
+        .attribute_filter(|_, attribute, value| match attribute {
+            "style" => CELL_ALIGNMENTS.contains(&value.trim()).then(|| value.into()),
+            _ => Some(value.into()),
+        });
+    builder
+});
+
+/// Plain Markdown (tables included), without the catalogue extensions. The result is safe to embed.
 pub fn md(text: &str) -> String {
     let mut out = String::new();
     html::push_html(&mut out, Parser::new_ext(text.trim(), Options::ENABLE_TABLES));
-    out.trim_end().to_string()
+    // The filter writes no-break spaces as an entity; they go back to the character, as before filtering, so
+    // that text derived from the HTML (question identifiers, comparisons with v1) does not change.
+    SANITISER.clean(&out).to_string().replace("&nbsp;", "\u{a0}").trim_end().to_string()
 }
 
 /// One-line Markdown (question, step, objective): the wrapping paragraph is removed.
 pub fn md_inline(text: &str) -> String {
     let out = md(text);
     match out.strip_prefix("<p>").and_then(|rest| rest.strip_suffix("</p>")) {
-        Some(inner) => inner.to_string(),
-        None => out,
+        // Several paragraphs, or a block the filter moved out of its paragraph: nothing to unwrap.
+        Some(inner) if !inner.contains("<p>") && !inner.contains("</p>") => inner.to_string(),
+        _ => out,
     }
 }
 
@@ -190,7 +223,9 @@ pub fn render_md(text: &str, ctx: &mut Render) -> Result<String> {
     let text = extract_fences(text, ctx)?;
     let text = extract_figures(&text, ctx);
     let out = figures(&md(&text), ctx);
-    Ok(PLACEHOLDER_RE.replace_all(&out, |caps: &Captures| ctx.blocks[caps[1].parse::<usize>().unwrap()].clone()).into_owned())
+    // A marker that designates no block was written by the author, not by this module: it stays as text.
+    let block = |caps: &Captures| caps[1].parse::<usize>().ok().and_then(|index| ctx.blocks.get(index)).cloned();
+    Ok(PLACEHOLDER_RE.replace_all(&out, |caps: &Captures| block(caps).unwrap_or_else(|| caps[0].to_string())).into_owned())
 }
 
 #[cfg(test)]
@@ -239,6 +274,46 @@ mod tests {
     fn figure_caption_keeps_markdown_markers_verbatim() {
         assert!(render("avant\n\n![`__name__` vaut __main__](images/x.svg)\n\naprès")
             .contains("<figcaption>__name__ vaut __main__</figcaption>"));
+    }
+
+    #[test]
+    fn author_html_cannot_run_anything() {
+        let out = render("Salut <script>alert(1)</script><img src=x onerror=alert(2)> <a href=\"javascript:alert(3)\">ici</a>");
+        assert!(!out.contains("script") && !out.contains("onerror") && !out.contains("javascript:") && !out.contains("alert(1)"));
+        assert!(out.contains("Salut") && out.contains("ici"));
+        let out = render("<iframe src=\"https://evil.test\"></iframe><form action=\"https://evil.test\"><input name=p></form>\n\n<p style=\"position:fixed\" class=\"navbar\">texte</p>");
+        assert!(
+            !out.contains("iframe")
+                && !out.contains("<form")
+                && !out.contains("<input")
+                && !out.contains("style")
+                && !out.contains("class")
+        );
+        assert!(out.contains("texte"));
+        // One-line fragments (questions, options, steps) go through the same filter.
+        assert_eq!(md_inline("Un <b onclick=\"x()\">choix</b><style>*{display:none}</style>"), "Un <b>choix</b>");
+    }
+
+    #[test]
+    fn harmless_author_html_and_markdown_survive() {
+        let out = render("Appuie sur <kbd>Ctrl</kbd> + <kbd>C</kbd>, voir [la doc](https://git-scm.com/doc) ou [la suite](../suite/).\n\n<details><summary>Indice</summary>\n\nRegarde `git status`.\n\n</details>");
+        assert!(
+            out.contains("<kbd>Ctrl</kbd>") && out.contains(r#"href="https://git-scm.com/doc""#) && out.contains(r#"href="../suite/""#)
+        );
+        assert!(out.contains("<details>") && out.contains("<summary>Indice</summary>") && out.contains("<code>git status</code>"));
+        let table = render("| a | b |\n|:--|--:|\n| 1 | 2 |");
+        assert!(table.contains(r#"<th style="text-align: left">a</th>"#) && table.contains(r#"<td style="text-align: right">2</td>"#));
+        assert!(!render("<table><tr><td style=\"background:url(https://evil.test)\">x</td></tr></table>").contains("style"));
+    }
+
+    #[test]
+    fn generated_blocks_are_not_filtered_and_cannot_be_forged() {
+        let out = render("```shell run\ngit log --format=\"%h <%an>\"\n```\n\n@@BLOCK7@@");
+        assert!(out.contains(r#"data-cmd="git log --format=&quot;%h &lt;%an&gt;&quot;""#) && out.contains(r#"class="cmd__run""#));
+        // The author wrote a marker by hand: no block has that number, nothing is substituted.
+        assert!(out.contains("@@BLOCK7@@"));
+        // A button written by the author is not the one of a command block.
+        assert!(!render("<button class=\"cmd__run\" data-cmd=\"rm -rf ~\">Lancer</button>").contains("<button"));
     }
 
     #[test]

@@ -269,7 +269,8 @@ async fn progress_is_refused_without_a_session_from_another_site_or_for_another_
     // The same cookie presented to another tenant designates nobody there.
     assert_eq!(progress(&app, "plain.test", Some(&cookie), QUIZ).await.0, StatusCode::UNAUTHORIZED);
     // A tampered cookie is no session at all.
-    let tampered = format!("{}0", &cookie[..cookie.len() - 1]);
+    let flipped = if cookie.ends_with('0') { '1' } else { '0' };
+    let tampered = format!("{}{flipped}", &cookie[..cookie.len() - 1]);
     assert_eq!(progress(&app, "acme.test", Some(&tampered), QUIZ).await.0, StatusCode::UNAUTHORIZED);
 
     // Nothing above was recorded.
