@@ -1,9 +1,9 @@
 ---
 id: evaluer-le-risque
-titre: "Lire les notes de version et évaluer le risque"
-resume: "Avant de toucher au code, mesurer l'écart avec les versions actuelles et choisir un chemin de montée de version."
-duree: 30
-objectifs:
+title: "Lire les notes de version et évaluer le risque"
+summary: "Avant de toucher au code, mesurer l'écart avec les versions actuelles et choisir un chemin de montée de version."
+minutes: 30
+objectives:
   - Dresser l'état des lieux des versions d'un projet à partir de ses fichiers de dépendances
   - Lire une politique de support et des notes de version pour repérer ce qui va casser
   - Choisir un chemin de montée de version par paliers
@@ -111,54 +111,54 @@ Passer directement de 3.1 à 5.2 supprime les avertissements intermédiaires : 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu viens d'hériter d'un projet : ses fichiers `requirements.txt`, `Dockerfile` et `package.json` sont dans ton dossier de travail, avec deux petits scripts (`demo_warn.py`, `paliers.py`). Tu fais l'état des lieux dans le terminal, sans rien modifier au projet. Quatre versions de Django sont installées côte à côte dans `/opt/venvs/` (`django31`, `django32`, `django42`, `django52`) : un *environnement virtuel* est un dossier qui contient un Python et ses paquets, isolés du reste. Les commandes fonctionnent hors ligne.
-commandes:
+commands:
   - cp -R /opt/exercices/01-etat-des-lieux/. .
-etapes:
-  - texte: 'Écris dans un nouveau fichier `etat-des-lieux.txt` la ligne de `requirements.txt` qui épingle Django'
-    indice: '`grep ''^Django'' requirements.txt > etat-des-lieux.txt` : `grep` garde les lignes qui commencent par « Django », et `>` écrit le résultat dans le fichier.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie --inchange etat-des-lieux.txt ligne-django'
+steps:
+  - text: 'Écris dans un nouveau fichier `etat-des-lieux.txt` la ligne de `requirements.txt` qui épingle Django'
+    hint: '`grep ''^Django'' requirements.txt > etat-des-lieux.txt` : `grep` garde les lignes qui commencent par « Django », et `>` écrit le résultat dans le fichier.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie --inchange etat-des-lieux.txt ligne-django'
     solution:
       - grep '^Django' requirements.txt > etat-des-lieux.txt
 
-  - texte: 'Ajoute à la fin de `etat-des-lieux.txt` la ligne `FROM` du `Dockerfile`, qui donne la version de Python'
-    indice: '`grep ''^FROM'' Dockerfile >> etat-des-lieux.txt` : avec `>>`, la ligne est ajoutée à la fin au lieu d''écraser le fichier.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie --inchange etat-des-lieux.txt ligne-from'
-      - commande-reussit: '/opt/outils/verifier-legacy sortie etat-des-lieux.txt ligne-django'
+  - text: 'Ajoute à la fin de `etat-des-lieux.txt` la ligne `FROM` du `Dockerfile`, qui donne la version de Python'
+    hint: '`grep ''^FROM'' Dockerfile >> etat-des-lieux.txt` : avec `>>`, la ligne est ajoutée à la fin au lieu d''écraser le fichier.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie --inchange etat-des-lieux.txt ligne-from'
+      - command-succeeds: '/opt/outils/verifier-legacy sortie etat-des-lieux.txt ligne-django'
     solution:
       - grep '^FROM' Dockerfile >> etat-des-lieux.txt
 
-  - texte: 'Repère la ligne suspecte de `requirements.txt` (le faux paquet `django-rest-framework`) et note-la, avec son numéro de ligne, dans `suspect.txt`'
-    indice: '`grep -n ''django-rest-framework=='' requirements.txt > suspect.txt` : l''option `-n` ajoute le numéro de ligne devant chaque résultat.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie --inchange suspect.txt suspect'
+  - text: 'Repère la ligne suspecte de `requirements.txt` (le faux paquet `django-rest-framework`) et note-la, avec son numéro de ligne, dans `suspect.txt`'
+    hint: '`grep -n ''django-rest-framework=='' requirements.txt > suspect.txt` : l''option `-n` ajoute le numéro de ligne devant chaque résultat.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie --inchange suspect.txt suspect'
     solution:
       - grep -n 'django-rest-framework==' requirements.txt > suspect.txt
 
-  - texte: 'Fais apparaître l''avertissement de dépréciation du script `demo_warn.py` avec Django 5.2, et garde-le dans `avertissements.txt`'
-    indice: 'Lance le Python de l''environnement `django52` avec `-W default`, et redirige les messages d''erreur (les avertissements en font partie) avec `2>` : `/opt/venvs/django52/bin/python -W default demo_warn.py 2> avertissements.txt`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie avertissements.txt avertissements'
+  - text: 'Fais apparaître l''avertissement de dépréciation du script `demo_warn.py` avec Django 5.2, et garde-le dans `avertissements.txt`'
+    hint: 'Lance le Python de l''environnement `django52` avec `-W default`, et redirige les messages d''erreur (les avertissements en font partie) avec `2>` : `/opt/venvs/django52/bin/python -W default demo_warn.py 2> avertissements.txt`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie avertissements.txt avertissements'
     solution:
       - /opt/venvs/django52/bin/python -W default demo_warn.py 2> avertissements.txt
 
-  - texte: 'Calcule le chemin de montée de Django 3.1 vers 5.2 avec `paliers.py` et écris-le dans `chemin.txt`'
-    indice: 'Le script prend la version de départ et la version d''arrivée : `python3 paliers.py 3.1 5.2 > chemin.txt`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie chemin.txt chemin'
+  - text: 'Calcule le chemin de montée de Django 3.1 vers 5.2 avec `paliers.py` et écris-le dans `chemin.txt`'
+    hint: 'Le script prend la version de départ et la version d''arrivée : `python3 paliers.py 3.1 5.2 > chemin.txt`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie chemin.txt chemin'
     solution:
       - python3 paliers.py 3.1 5.2 > chemin.txt
 
-  - texte: 'Demande à Django 5.2 quelle version de Python il exige, et écris la réponse dans `python-requis.txt`'
-    indice: 'Les métadonnées d''un paquet installé disent quelle version de Python il accepte (champ `Requires-Python`). Lance `/opt/venvs/django52/bin/python -c "import importlib.metadata as m; print(m.metadata(''Django'')[''Requires-Python''])" > python-requis.txt`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie python-requis.txt python-requis'
+  - text: 'Demande à Django 5.2 quelle version de Python il exige, et écris la réponse dans `python-requis.txt`'
+    hint: 'Les métadonnées d''un paquet installé disent quelle version de Python il accepte (champ `Requires-Python`). Lance `/opt/venvs/django52/bin/python -c "import importlib.metadata as m; print(m.metadata(''Django'')[''Requires-Python''])" > python-requis.txt`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie python-requis.txt python-requis'
     solution:
       - |-
         /opt/venvs/django52/bin/python -c "import importlib.metadata as m; print(m.metadata('Django')['Requires-Python'])" > python-requis.txt

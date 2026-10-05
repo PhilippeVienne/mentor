@@ -1,9 +1,9 @@
 ---
 id: bonnes-pratiques
-titre: Prêt pour la production
-resume: 'Images légères (multi-stage), registry GitLab et réflexes de sécurité.'
-duree: 20
-objectifs:
+title: Prêt pour la production
+summary: 'Images légères (multi-stage), registry GitLab et réflexes de sécurité.'
+minutes: 20
+objectives:
   - "Réduire la taille d'une image avec un build multi-étapes"
   - "Étiqueter et publier une image sur un registry GitLab"
   - "Appliquer les réflexes de sécurité : utilisateur non-root, .dockerignore, versions épinglées, secrets hors de l'image"
@@ -63,7 +63,7 @@ docker:
 
 ## 3. Les réflexes de sécurité et de propreté
 
-:::cartes
+:::cards
 ### Utilisateur non-root
 
 Crée un utilisateur dédié puis ajoute `USER app` (ex. `RUN useradd -r app`) : si l'application est compromise, l'attaquant n'est pas root dans le conteneur. L'image Dockerfile de Vitrine fait exactement ça (utilisateur `django`).
@@ -93,10 +93,10 @@ Les couches d'une image sont **lisibles par tous ceux qui l'ont**. Un `COPY .env
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Compare une image « naïve » et une image multi-étapes, puis publie la plus légère sur le registry (simulé).
-fichiers:
+files:
   package.json: |
     { "name": "site", "scripts": { "build": "echo build" } }
   index.html: |
@@ -116,42 +116,42 @@ fichiers:
     COPY . .
     RUN npm run build
     CMD ["npx", "serve", "."]
-etapes:
-  - texte: "Construis l'image naïve : `docker build -t site:lourd -f Dockerfile.single .`"
-    indice: "`-f` désigne le fichier de recette à utiliser (ici `Dockerfile.single`), `-t` donne le nom et l'étiquette `lourd`."
-    verif:
-      - image-presente: 'site:lourd'
+steps:
+  - text: "Construis l'image naïve : `docker build -t site:lourd -f Dockerfile.single .`"
+    hint: "`-f` désigne le fichier de recette à utiliser (ici `Dockerfile.single`), `-t` donne le nom et l'étiquette `lourd`."
+    checks:
+      - image-present: 'site:lourd'
     solution:
       - 'docker build -t site:lourd -f Dockerfile.single .'
-  - texte: "Construis l'image multi-étapes : `docker build -t site:leger .`"
-    indice: "Cette fois le fichier par défaut (`Dockerfile`, multi-étapes) suffit : seul le tag change."
-    verif:
-      - image-presente: 'site:leger'
+  - text: "Construis l'image multi-étapes : `docker build -t site:leger .`"
+    hint: "Cette fois le fichier par défaut (`Dockerfile`, multi-étapes) suffit : seul le tag change."
+    checks:
+      - image-present: 'site:leger'
     solution:
       - 'docker build -t site:leger .'
-  - texte: 'Compare les tailles avec `docker images`'
-    indice: "Compare la colonne SIZE des deux étiquettes `site`."
-    apres: [1, 2]
-    verif:
-      - commande: ^docker images
+  - text: 'Compare les tailles avec `docker images`'
+    hint: "Compare la colonne SIZE des deux étiquettes `site`."
+    after: [1, 2]
+    checks:
+      - command: ^docker images
     solution:
       - docker images
-  - texte: "Étiquette l'image légère pour le registry GitLab : `docker tag`"
-    indice: "`docker tag SOURCE DESTINATION` : la destination commence par le nom du registry."
-    verif:
-      - image-presente: 'registry.example.org/equipe/site:master'
+  - text: "Étiquette l'image légère pour le registry GitLab : `docker tag`"
+    hint: "`docker tag SOURCE DESTINATION` : la destination commence par le nom du registry."
+    checks:
+      - image-present: 'registry.example.org/equipe/site:master'
     solution:
       - 'docker tag site:leger registry.example.org/equipe/site:master'
-  - texte: 'Connecte-toi : `docker login registry.gitlab.example.org`'
-    indice: "Le nom du registry est celui qui commence l'étiquette de l'étape précédente."
-    verif:
-      - registry-connecte: registry.gitlab.example.org
+  - text: 'Connecte-toi : `docker login registry.gitlab.example.org`'
+    hint: "Le nom du registry est celui qui commence l'étiquette de l'étape précédente."
+    checks:
+      - registry-logged-in: registry.gitlab.example.org
     solution:
       - docker login registry.gitlab.example.org
-  - texte: "Publie l'image : `docker push`"
-    indice: "Pousse l'étiquette complète créée à l'étape 4."
-    verif:
-      - image-poussee: 'registry.example.org/equipe/site:master'
+  - text: "Publie l'image : `docker push`"
+    hint: "Pousse l'étiquette complète créée à l'étape 4."
+    checks:
+      - image-pushed: 'registry.example.org/equipe/site:master'
     solution:
       - 'docker push registry.example.org/equipe/site:master'
 :::

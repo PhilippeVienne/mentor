@@ -1,9 +1,9 @@
 ---
 id: plan-et-apply
-titre: "plan et apply : lire avant d'appliquer"
-resume: "Lire un plan Terraform ligne par ligne et repérer les destructions avant qu'il soit trop tard."
-duree: 45
-objectifs:
+title: "plan et apply : lire avant d'appliquer"
+summary: "Lire un plan Terraform ligne par ligne et repérer les destructions avant qu'il soit trop tard."
+minutes: 45
+objectives:
   - Enchaîner init, plan et apply dans le bon ordre
   - Interpréter les symboles +, ~, - et -/+ d'un plan
   - Repérer « must be replaced » et « destroy » avant d'appliquer
@@ -119,58 +119,58 @@ Le contournement `-target` de `kubedb/README.md` date de mai 2019 (version 0.12.
 Ici, pas de cluster : les « ressources » sont des fichiers de configuration créés sur ton poste par le fournisseur `local`. La lecture du plan (symboles `+`, `-`, `-/+`, lignes `must be replaced` et `to destroy`) est **exactement** la même qu'en production. Les fournisseurs `helm` et `kubernetes` de l'équipe ne sont pas exécutés dans ce labo.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient un `main.tf` qui décrit deux fichiers : `app.conf` (avec le contenu `mode = test`) et `ancien.conf`. Tu vas suivre le cycle complet : `init`, plan enregistré, application de ce plan, modification, lecture d'un remplacement, puis repérage d'une destruction.
-commandes:
+commands:
   - cp -R /opt/exercices/02-plan-et-apply/. .
-etapes:
-  - texte: 'Initialise le dossier avec `terraform init`'
-    indice: 'La commande est `terraform init` ; elle crée `.terraform.lock.hcl`.'
-    verif:
-      - commande-reussit: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
+steps:
+  - text: 'Initialise le dossier avec `terraform init`'
+    hint: 'La commande est `terraform init` ; elle crée `.terraform.lock.hcl`.'
+    checks:
+      - command-succeeds: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
     solution:
       - terraform init
-  - texte: 'Calcule le plan et enregistre-le dans un fichier : `terraform plan -out=plan.tfplan`. Lis-le : deux lignes `+` (créations), `Plan: 2 to add`'
-    apres: [1]
-    indice: '`-out=plan.tfplan` écrit le plan dans un fichier. Rien n''est créé tant que tu n''appliques pas.'
-    verif:
-      - sortie-contient: ['terraform show -no-color plan.tfplan', 'local_file\.app will be created']
-      - sortie-contient: ['terraform show -no-color plan.tfplan', 'local_file\.ancien will be created']
+  - text: 'Calcule le plan et enregistre-le dans un fichier : `terraform plan -out=plan.tfplan`. Lis-le : deux lignes `+` (créations), `Plan: 2 to add`'
+    after: [1]
+    hint: '`-out=plan.tfplan` écrit le plan dans un fichier. Rien n''est créé tant que tu n''appliques pas.'
+    checks:
+      - output-contains: ['terraform show -no-color plan.tfplan', 'local_file\.app will be created']
+      - output-contains: ['terraform show -no-color plan.tfplan', 'local_file\.ancien will be created']
     solution:
       - terraform plan -out=plan.tfplan
-  - texte: 'Applique exactement ce plan avec `terraform apply plan.tfplan` (pas de confirmation à taper : tu l''as déjà relu)'
-    apres: [2]
-    indice: 'Après l''application, `ls` montre `app.conf` et `ancien.conf`.'
-    verif:
-      - fichier-contient-dans-env: [app.conf, 'mode = test']
-      - fichier-existe-dans-env: ancien.conf
-      - commande-reussit: 'terraform state list | grep -q "^local_file.app$" && terraform state list | grep -q "^local_file.ancien$"'
+  - text: 'Applique exactement ce plan avec `terraform apply plan.tfplan` (pas de confirmation à taper : tu l''as déjà relu)'
+    after: [2]
+    hint: 'Après l''application, `ls` montre `app.conf` et `ancien.conf`.'
+    checks:
+      - env-file-contains: [app.conf, 'mode = test']
+      - env-file-exists: ancien.conf
+      - command-succeeds: 'terraform state list | grep -q "^local_file.app$" && terraform state list | grep -q "^local_file.ancien$"'
     solution:
       - terraform apply plan.tfplan
-  - texte: 'Dans `main.tf`, change le contenu de `app.conf` en `mode = production`, puis lis `terraform plan` : la ressource `local_file.app` doit apparaître avec `must be replaced` (symbole `-/+`). Ne l''applique pas encore'
-    apres: [3]
-    indice: 'Édite avec `nano main.tf` (ou `sed -i ''s/mode = test/mode = production/'' main.tf`), puis `terraform plan`. Repère la ligne `# forces replacement` : changer le contenu d''un `local_file` force son remplacement.'
-    verif:
-      - fichier-contient-dans-env: [main.tf, 'mode = production']
-      - sortie-contient: ['terraform plan -no-color -input=false', 'local_file\.app must be replaced']
+  - text: 'Dans `main.tf`, change le contenu de `app.conf` en `mode = production`, puis lis `terraform plan` : la ressource `local_file.app` doit apparaître avec `must be replaced` (symbole `-/+`). Ne l''applique pas encore'
+    after: [3]
+    hint: 'Édite avec `nano main.tf` (ou `sed -i ''s/mode = test/mode = production/'' main.tf`), puis `terraform plan`. Repère la ligne `# forces replacement` : changer le contenu d''un `local_file` force son remplacement.'
+    checks:
+      - env-file-contains: [main.tf, 'mode = production']
+      - output-contains: ['terraform plan -no-color -input=false', 'local_file\.app must be replaced']
     solution:
       - sed -i 's/mode = test/mode = production/' main.tf
       - terraform plan
-  - texte: 'Applique le changement avec `terraform apply -auto-approve` : `app.conf` doit contenir `mode = production`'
-    apres: [4]
-    indice: 'Le résumé final doit être `Apply complete! Resources: 1 added, 0 changed, 1 destroyed.`'
-    verif:
-      - fichier-contient-dans-env: [app.conf, 'mode = production']
-      - commande-reussit: terraform plan -input=false -detailed-exitcode
+  - text: 'Applique le changement avec `terraform apply -auto-approve` : `app.conf` doit contenir `mode = production`'
+    after: [4]
+    hint: 'Le résumé final doit être `Apply complete! Resources: 1 added, 0 changed, 1 destroyed.`'
+    checks:
+      - env-file-contains: [app.conf, 'mode = production']
+      - command-succeeds: terraform plan -input=false -detailed-exitcode
     solution:
       - terraform apply -auto-approve
-  - texte: 'Supprime de `main.tf` tout le bloc `resource "local_file" "ancien"`, puis lance `terraform plan` : le résumé doit être `Plan: 0 to add, 0 to change, 1 to destroy.`. N''applique pas : tu viens de voir qu''un simple retrait de code ordonne une destruction'
-    apres: [5]
-    indice: 'Supprime les lignes depuis `resource "local_file" "ancien" {` jusqu''à l''accolade fermante `}` incluse. Un plan avec un « destroy » que tu n''avais pas prévu est le signal d''arrêt.'
-    verif:
-      - sortie-contient: ['terraform plan -no-color -input=false', 'Plan: 0 to add, 0 to change, 1 to destroy\.']
+  - text: 'Supprime de `main.tf` tout le bloc `resource "local_file" "ancien"`, puis lance `terraform plan` : le résumé doit être `Plan: 0 to add, 0 to change, 1 to destroy.`. N''applique pas : tu viens de voir qu''un simple retrait de code ordonne une destruction'
+    after: [5]
+    hint: 'Supprime les lignes depuis `resource "local_file" "ancien" {` jusqu''à l''accolade fermante `}` incluse. Un plan avec un « destroy » que tu n''avais pas prévu est le signal d''arrêt.'
+    checks:
+      - output-contains: ['terraform plan -no-color -input=false', 'Plan: 0 to add, 0 to change, 1 to destroy\.']
     solution:
       - sed -i '/^resource "local_file" "ancien"/,/^}/d' main.tf
       - terraform plan

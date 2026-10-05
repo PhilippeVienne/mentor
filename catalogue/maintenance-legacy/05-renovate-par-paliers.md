@@ -1,9 +1,9 @@
 ---
 id: renovate-par-paliers
-titre: "Renovate : automatiser les mises à jour"
-resume: "Régler Renovate pour qu'il avance par paliers sur un projet hérité, sans noyer l'équipe de merge requests."
-duree: 30
-objectifs:
+title: "Renovate : automatiser les mises à jour"
+summary: "Régler Renovate pour qu'il avance par paliers sur un projet hérité, sans noyer l'équipe de merge requests."
+minutes: 30
+objectives:
   - Expliquer pourquoi des mises à jour régulières évitent un nouveau retard
   - Plafonner une dépendance avec `allowedVersions` pour avancer palier par palier
   - Grouper des mises à jour liées et lire le `renovate.json` d'un projet
@@ -85,31 +85,31 @@ Un *pipeline* (la suite d'étapes automatiques de la CI) vert veut dire « les
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le `renovate.json` de l'API d'Adhésion (sans son jeton) et son `requirements.txt` sont dans ton dossier de travail. Tu les adaptes pour un projet en retard. Renovate n'est pas installé ici : le serveur vérifie que ton fichier est un JSON valide et contient les bons réglages, mais il ne lance pas le robot.
-commandes:
+commands:
   - cp -R /opt/exercices/05-renovate/. .
-etapes:
-  - texte: 'Remplace la configuration de base `config:base` par son nom actuel, `config:recommended`'
-    indice: 'Dans `extends`, un seul changement : `"extends": ["config:recommended"]`. Édite avec `nano renovate.json`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy renovate 1'
+steps:
+  - text: 'Remplace la configuration de base `config:base` par son nom actuel, `config:recommended`'
+    hint: 'Dans `extends`, un seul changement : `"extends": ["config:recommended"]`. Édite avec `nano renovate.json`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy renovate 1'
     solution:
       - sed -i 's/config:base/config:recommended/' renovate.json
 
-  - texte: 'Remplace `masterIssue` et `masterIssueApproval` par leurs noms actuels, `dependencyDashboard` et `dependencyDashboardApproval`'
-    indice: 'Les deux réglages gardent la valeur `true`. Contrôle avec `grep -n Dashboard renovate.json`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy renovate 2'
+  - text: 'Remplace `masterIssue` et `masterIssueApproval` par leurs noms actuels, `dependencyDashboard` et `dependencyDashboardApproval`'
+    hint: 'Les deux réglages gardent la valeur `true`. Contrôle avec `grep -n Dashboard renovate.json`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy renovate 2'
     solution:
       - sed -i 's/masterIssueApproval/dependencyDashboardApproval/; s/masterIssue/dependencyDashboard/' renovate.json
 
-  - texte: 'Ajoute une règle `packageRules` qui plafonne `django` avec `"allowedVersions": "<3.3"`'
-    indice: 'Une liste `packageRules` contenant `{ "matchPackageNames": ["django"], "allowedVersions": "<3.3" }`. Attention aux virgules : le fichier doit rester un JSON valide.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy renovate 3'
+  - text: 'Ajoute une règle `packageRules` qui plafonne `django` avec `"allowedVersions": "<3.3"`'
+    hint: 'Une liste `packageRules` contenant `{ "matchPackageNames": ["django"], "allowedVersions": "<3.3" }`. Attention aux virgules : le fichier doit rester un JSON valide.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy renovate 3'
     solution:
       - |-
         python3 - <<'PY'
@@ -119,11 +119,11 @@ etapes:
         json.dump(d, open("renovate.json", "w"), indent=2)
         PY
 
-  - texte: 'Ajoute une seconde règle qui regroupe `djangorestframework` et `django-import-export` dans un lot nommé `dépendances Django`'
-    indice: 'Une règle avec `"matchPackageNames": ["djangorestframework", "django-import-export"]` et `"groupName": "dépendances Django"`.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy renovate 4'
+  - text: 'Ajoute une seconde règle qui regroupe `djangorestframework` et `django-import-export` dans un lot nommé `dépendances Django`'
+    hint: 'Une règle avec `"matchPackageNames": ["djangorestframework", "django-import-export"]` et `"groupName": "dépendances Django"`.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy renovate 4'
     solution:
       - |-
         python3 - <<'PY'
@@ -133,11 +133,11 @@ etapes:
         json.dump(d, open("renovate.json", "w"), indent=2, ensure_ascii=False)
         PY
 
-  - texte: 'Le palier 3.2 est fusionné : relève le plafond de Django à `<4.3`, et garde les deux règles'
-    indice: 'Change seulement la valeur de `allowedVersions`, de `<3.3` à `<4.3`.'
-    apres: [3, 4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy renovate 5'
+  - text: 'Le palier 3.2 est fusionné : relève le plafond de Django à `<4.3`, et garde les deux règles'
+    hint: 'Change seulement la valeur de `allowedVersions`, de `<3.3` à `<4.3`.'
+    after: [3, 4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy renovate 5'
     solution:
       - sed -i 's/<3.3/<4.3/' renovate.json
 :::

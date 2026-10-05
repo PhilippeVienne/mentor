@@ -114,7 +114,7 @@ fn render_code(info: &str, code: &str, ctx: &Render) -> Result<String> {
     }
     if let Some(name) = option("file") {
         let Some(name) = name else {
-            return ctx.fail("l'option `file=` d'un bloc de code doit préciser un nom (ex. `file=Dockerfile`)");
+            return ctx.fail("the `file=` option of a code block needs a name (e.g. `file=Dockerfile`)");
         };
         return Ok(format!(
             r#"<div class="filebox" data-file="{name}" data-content="{content}"><div class="filebox__head"><span class="filebox__name">{name}</span><button type="button" class="filebox__create">Créer ce fichier dans le labo</button></div><pre class="code"><code>{code}</code></pre></div>"#,
@@ -223,7 +223,7 @@ mod tests {
     #[test]
     fn file_without_a_name_is_an_error() {
         let err = render_md("```html file=\nx\n```", &mut Render::new(Path::new("l.md"), "c")).unwrap_err();
-        assert!(err.message.contains("doit préciser un nom"));
+        assert!(err.message.contains("needs a name"));
     }
 
     #[test]

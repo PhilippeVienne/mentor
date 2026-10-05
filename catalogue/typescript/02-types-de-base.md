@@ -1,9 +1,9 @@
 ---
 id: types-de-base
-titre: "Types de base, unions et interfaces"
-resume: "Décrire la forme de tes données : types primitifs, unions, `null`, interfaces et alias de type."
-duree: 40
-objectifs:
+title: "Types de base, unions et interfaces"
+summary: "Décrire la forme de tes données : types primitifs, unions, `null`, interfaces et alias de type."
+minutes: 40
+objectives:
   - Annoter des variables et des tableaux avec les types de base
   - Écrire une union de valeurs littérales et gérer `null`
   - Décrire un objet avec une `interface`
@@ -71,7 +71,7 @@ Ligne à ligne : `interface Evenement { … }` ne crée aucun objet, elle écri
 
 MiniShop décrit ainsi chaque table (`interface Category { id: Generated<number>; name: string | null; … }`), et Adhésion définit des classes comme `StudySchool` (`id`, `name`, `short_name`) dans `metadata.service.ts`.
 
-:::cartes
+:::cards
 ### `interface`
 
 Décrit la forme d'un objet. Elle peut être étendue (`interface Concert extends Evenement`). C'est le choix habituel pour des objets.
@@ -119,32 +119,32 @@ Dans `decrire`, après le `if`, `valeur` est forcément un `number` : `toFixed`
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient cinq petits fichiers TypeScript : `statut.ts`, `evenement.ts`, `lieu.ts`, `decrire.ts` et `usage.ts`. Chacun illustre une notion de la leçon et contient une erreur à corriger. `npx tsc --noEmit` vérifie les types de tous les fichiers ; `npx tsx fichier.ts` exécute un fichier TypeScript (tsx le transforme en JavaScript puis le lance). Pour éditer, utilise `nano`. Le portail contrôle ton travail sur une copie propre, avec ses propres contrôles : `@ts-ignore`, `@ts-nocheck` et `any` ne font que taire `tsc`, ils ne valident pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/02-types-de-base/. .
   - lier-outils
-etapes:
-  - texte: 'Dans `statut.ts`, la valeur `"confirmé"` n''est pas dans l''union `StatutInscription` : corrige-la'
-    indice: 'Lis le message : `tsc` propose la bonne valeur (sans accent).'
-    verif:
-      - commande-reussit: 'verifier-ts 02 statut'
+steps:
+  - text: 'Dans `statut.ts`, la valeur `"confirmé"` n''est pas dans l''union `StatutInscription` : corrige-la'
+    hint: 'Lis le message : `tsc` propose la bonne valeur (sans accent).'
+    checks:
+      - command-succeeds: 'verifier-ts 02 statut'
     solution:
       - |
         sed -i 's/"confirmé"/"confirmee"/' statut.ts
-  - texte: 'Dans `evenement.ts`, l''objet `soiree` ne respecte pas l''interface `Evenement` : complète-le'
-    indice: 'Il manque une propriété obligatoire. Ajoute `places: 120`.'
-    verif:
-      - commande-reussit: 'verifier-ts 02 evenement'
+  - text: 'Dans `evenement.ts`, l''objet `soiree` ne respecte pas l''interface `Evenement` : complète-le'
+    hint: 'Il manque une propriété obligatoire. Ajoute `places: 120`.'
+    checks:
+      - command-succeeds: 'verifier-ts 02 evenement'
     solution:
       - |
         sed -i 's/lieu: null }/lieu: null, places: 120 }/' evenement.ts
-  - texte: 'Dans `lieu.ts`, traite le cas où `lieu` vaut `null` (renvoie `"Lieu à confirmer"`) : `npx tsx lieu.ts` ne doit plus planter'
-    indice: 'Avant `toUpperCase()`, ajoute `if (evenement.lieu === null) { return "Lieu à confirmer"; }`.'
-    verif:
-      - commande-reussit: 'verifier-ts 02 lieu'
+  - text: 'Dans `lieu.ts`, traite le cas où `lieu` vaut `null` (renvoie `"Lieu à confirmer"`) : `npx tsx lieu.ts` ne doit plus planter'
+    hint: 'Avant `toUpperCase()`, ajoute `if (evenement.lieu === null) { return "Lieu à confirmer"; }`.'
+    checks:
+      - command-succeeds: 'verifier-ts 02 lieu'
     solution:
       - |
         cat > lieu.ts <<'EOF'
@@ -165,10 +165,10 @@ etapes:
         console.log(afficherLieu({ id: 1, titre: "Gala", lieu: null, places: 200 }));
         console.log(afficherLieu({ id: 2, titre: "Soirée", lieu: "Amphi Chappe", places: 120 }));
         EOF
-  - texte: 'Dans `decrire.ts`, utilise `typeof` pour que les textes soient mis en majuscules et les nombres affichés avec deux décimales (`3.50`)'
-    indice: 'Écris `if (typeof valeur === "string") { return valeur.toUpperCase(); }` avant le `return valeur.toFixed(2);`.'
-    verif:
-      - commande-reussit: 'verifier-ts 02 decrire'
+  - text: 'Dans `decrire.ts`, utilise `typeof` pour que les textes soient mis en majuscules et les nombres affichés avec deux décimales (`3.50`)'
+    hint: 'Écris `if (typeof valeur === "string") { return valeur.toUpperCase(); }` avant le `return valeur.toFixed(2);`.'
+    checks:
+      - command-succeeds: 'verifier-ts 02 decrire'
     solution:
       - |
         cat > decrire.ts <<'EOF'
@@ -182,12 +182,12 @@ etapes:
         console.log(decrire("gala"));
         console.log(decrire(3.5));
         EOF
-  - texte: '`usage.ts` importe un type `Inscription` qui n''existe pas encore : crée `inscription.ts` qui exporte une interface `Inscription` (`id`, `statut` de type `StatutInscription`, `commentaire` facultatif)'
-    indice: 'Dans `inscription.ts`, écris `export type StatutInscription = ...` (l''union de la leçon) puis `export interface Inscription { ... }`. Le champ facultatif se note `commentaire?: string`.'
-    verif:
-      - commande-reussit: 'verifier-ts 02 inscription'
+  - text: '`usage.ts` importe un type `Inscription` qui n''existe pas encore : crée `inscription.ts` qui exporte une interface `Inscription` (`id`, `statut` de type `StatutInscription`, `commentaire` facultatif)'
+    hint: 'Dans `inscription.ts`, écris `export type StatutInscription = ...` (l''union de la leçon) puis `export interface Inscription { ... }`. Le champ facultatif se note `commentaire?: string`.'
+    checks:
+      - command-succeeds: 'verifier-ts 02 inscription'
     solution:
-      - |
+      - |-
         cat > inscription.ts <<'EOF'
         export type StatutInscription = "en_attente" | "confirmee" | "annulee";
 

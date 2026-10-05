@@ -1,9 +1,9 @@
 ---
 id: typer-api
-titre: "Typer les réponses d'une API"
-resume: "`fetch` ne sait pas ce que le serveur renvoie : décrire la réponse, puis la vérifier vraiment avec `unknown` et un type guard."
-duree: 40
-objectifs:
+title: "Typer les réponses d'une API"
+summary: "`fetch` ne sait pas ce que le serveur renvoie : décrire la réponse, puis la vérifier vraiment avec `unknown` et un type guard."
+minutes: 40
+objectives:
   - Typer une fonction `async` avec `Promise<T>`
   - Expliquer pourquoi `as` ne vérifie rien
   - Valider une réponse inconnue avec `unknown` et un type guard
@@ -119,18 +119,18 @@ MiniShop n'écrit pas à la main les types de sa base de données : le script `
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Il n'y a pas de réseau dans cet environnement : le fichier `serveur.ts` simule un serveur, avec une réponse correcte (`reponseCorrecte`) et une réponse « cassée » dont le champ `places` a disparu (`reponseCassee`). Tu vas écrire un type guard, l'utiliser pour charger les données, puis gérer l'erreur. `npx tsc --noEmit` vérifie les types ; `npx tsx fichier.ts` exécute un fichier. Utilise `nano` pour éditer. Le portail contrôle ton travail sur une copie propre, avec ses propres contrôles : `@ts-ignore`, `@ts-nocheck` et `any` ne font que taire `tsc`, ils ne valident pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/05-typer-api/. .
   - lier-outils
-etapes:
-  - texte: 'Dans `brut.ts`, `brut` est de type `unknown` et `brut.a` est refusé : vérifie la valeur avant de lire `a`. `npx tsx brut.ts` doit afficher `1`'
-    indice: 'Teste que `brut` est un objet non `null` qui contient `"a"` : `if (typeof brut === "object" && brut !== null && "a" in brut) { ... }`.'
-    verif:
-      - commande-reussit: 'verifier-ts 05 brut'
+steps:
+  - text: 'Dans `brut.ts`, `brut` est de type `unknown` et `brut.a` est refusé : vérifie la valeur avant de lire `a`. `npx tsx brut.ts` doit afficher `1`'
+    hint: 'Teste que `brut` est un objet non `null` qui contient `"a"` : `if (typeof brut === "object" && brut !== null && "a" in brut) { ... }`.'
+    checks:
+      - command-succeeds: 'verifier-ts 05 brut'
     solution:
       - |
         cat > brut.ts <<'EOF'
@@ -140,10 +140,10 @@ etapes:
           console.log(brut.a);
         }
         EOF
-  - texte: 'Dans `garde.ts`, écris pour de bon le type guard `estEvenement` : il doit vérifier le type de chaque champ. `npx tsx garde.test.ts` doit réussir'
-    indice: 'Reprends la fonction de la leçon : refuse ce qui n''est pas un objet, puis teste `id` (nombre), `titre` (texte), `places` (nombre) et `lieu` (texte ou `null`).'
-    verif:
-      - commande-reussit: 'verifier-ts 05 garde'
+  - text: 'Dans `garde.ts`, écris pour de bon le type guard `estEvenement` : il doit vérifier le type de chaque champ. `npx tsx garde.test.ts` doit réussir'
+    hint: 'Reprends la fonction de la leçon : refuse ce qui n''est pas un objet, puis teste `id` (nombre), `titre` (texte), `places` (nombre) et `lieu` (texte ou `null`).'
+    checks:
+      - command-succeeds: 'verifier-ts 05 garde'
     solution:
       - |
         cat > garde.ts <<'EOF'
@@ -162,11 +162,11 @@ etapes:
           );
         }
         EOF
-  - texte: 'Dans `charger.ts`, remplace l''affirmation `as Evenement[]` par une vraie vérification avec `estEvenement` : la fonction doit lever une erreur si la réponse est mal formée. `npx tsx charger.test.ts` doit réussir'
-    indice: 'Après `await lire()`, teste `!Array.isArray(donnees) || !donnees.every(estEvenement)` et lance `throw new Error("...")`.'
-    apres: [2]
-    verif:
-      - commande-reussit: 'verifier-ts 05 charger'
+  - text: 'Dans `charger.ts`, remplace l''affirmation `as Evenement[]` par une vraie vérification avec `estEvenement` : la fonction doit lever une erreur si la réponse est mal formée. `npx tsx charger.test.ts` doit réussir'
+    hint: 'Après `await lire()`, teste `!Array.isArray(donnees) || !donnees.every(estEvenement)` et lance `throw new Error("...")`.'
+    after: [2]
+    checks:
+      - command-succeeds: 'verifier-ts 05 charger'
     solution:
       - |
         cat > charger.ts <<'EOF'
@@ -181,13 +181,13 @@ etapes:
           return donnees;
         }
         EOF
-  - texte: 'Dans `main.ts`, attrape l''erreur avec `try` et `catch` et affiche une ligne qui commence par `Erreur` : `npx tsx main.ts` doit se terminer normalement et afficher ce message'
-    indice: 'Entoure le chargement et l''affichage d''un `try { ... } catch (erreur) { console.log(`Erreur : ${...}`); }`. Pour lire le message : `erreur instanceof Error ? erreur.message : String(erreur)`.'
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-ts 05 main'
+  - text: 'Dans `main.ts`, attrape l''erreur avec `try` et `catch` et affiche une ligne qui commence par `Erreur` : `npx tsx main.ts` doit se terminer normalement et afficher ce message'
+    hint: 'Entoure le chargement et l''affichage d''un `try { ... } catch (erreur) { console.log(`Erreur : ${...}`); }`. Pour lire le message : `erreur instanceof Error ? erreur.message : String(erreur)`.'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-ts 05 main'
     solution:
-      - |
+      - |-
         cat > main.ts <<'EOF'
         import { chargerEvenements } from "./charger";
         import { reponseCassee } from "./serveur";

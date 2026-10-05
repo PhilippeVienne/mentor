@@ -1,9 +1,9 @@
 ---
 id: retention
-titre: "Versionnement et politiques de conservation"
-resume: "Garder un historique utile sans remplir le stockage : activer le versionnement d'un bucket et lui appliquer une règle de cycle de vie."
-duree: 30
-objectifs:
+title: "Versionnement et politiques de conservation"
+summary: "Garder un historique utile sans remplir le stockage : activer le versionnement d'un bucket et lui appliquer une règle de cycle de vie."
+minutes: 30
+objectives:
   - Activer le versionnement d'un bucket et lister les versions d'un objet
   - Lire et appliquer une politique de cycle de vie
   - Choisir une durée de conservation adaptée
@@ -104,50 +104,50 @@ backup.py historique journal.txt journal.txt
 - `backup.py historique journal.txt journal.txt` envoie le fichier local `journal.txt` dans le bucket `historique`, sous le nom d'objet `journal.txt`.
 - `echo "jour 2" >> journal.txt` **ajoute** la ligne « jour 2 » à la fin du fichier (`>>` ajoute, alors que `>` remplace tout le contenu).
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Un MinIO local est démarré pour toi (identifiants factices), et le fichier `journal.txt` contient une ligne `jour 1`. `aws` est déjà réglé pour parler à ce serveur : inutile de donner l'adresse. Les étapes sont vérifiées sur l'état du bucket : son réglage de versionnement, le nombre de versions de `journal.txt` et la règle de cycle de vie.
-fichiers:
+files:
   journal.txt: |
     jour 1
-commandes:
+commands:
   - demarrer-minio
-etapes:
-  - texte: 'Crée le bucket `historique` avec `mc mb`'
-    indice: 'mc mb labo/historique'
-    verif:
-      - commande-reussit: mc ls labo/historique
+steps:
+  - text: 'Crée le bucket `historique` avec `mc mb`'
+    hint: 'mc mb labo/historique'
+    checks:
+      - command-succeeds: mc ls labo/historique
     solution:
       - mc mb labo/historique
-  - texte: 'Active le versionnement du bucket `historique` avec `aws s3api put-bucket-versioning`'
-    indice: 'aws s3api put-bucket-versioning --bucket historique --versioning-configuration Status=Enabled'
-    apres: [1]
-    verif:
-      - sortie-contient:
+  - text: 'Active le versionnement du bucket `historique` avec `aws s3api put-bucket-versioning`'
+    hint: 'aws s3api put-bucket-versioning --bucket historique --versioning-configuration Status=Enabled'
+    after: [1]
+    checks:
+      - output-contains:
           - aws s3api get-bucket-versioning --bucket historique
           - 'Enabled'
     solution:
       - aws s3api put-bucket-versioning --bucket historique --versioning-configuration Status=Enabled
-  - texte: 'Envoie `journal.txt` dans `historique`, ajoute une ligne au fichier, puis envoie-le encore : le bucket doit contenir au moins deux versions de `journal.txt`'
-    indice: 'Les trois commandes du cours : backup.py historique journal.txt journal.txt, puis echo "jour 2" >> journal.txt, puis backup.py une seconde fois.'
-    apres: [2]
-    verif:
-      - sortie-contient:
+  - text: 'Envoie `journal.txt` dans `historique`, ajoute une ligne au fichier, puis envoie-le encore : le bucket doit contenir au moins deux versions de `journal.txt`'
+    hint: 'Les trois commandes du cours : backup.py historique journal.txt journal.txt, puis echo "jour 2" >> journal.txt, puis backup.py une seconde fois.'
+    after: [2]
+    checks:
+      - output-contains:
           - aws s3api list-object-versions --bucket historique --prefix journal.txt --query 'length(Versions)'
           - '^([2-9]|[1-9][0-9]+)$'
     solution:
       - backup.py historique journal.txt journal.txt
       - echo "jour 2" >> journal.txt
       - backup.py historique journal.txt journal.txt
-  - texte: 'Écris le fichier `lifecycle_policy.json` : une règle active, avec un filtre vide, qui supprime les versions non courantes au bout de 365 jours'
-    indice: 'Recopie le JSON de la section « Le cycle de vie » avec nano lifecycle_policy.json.'
-    verif:
-      - commande-reussit: python3 -m json.tool lifecycle_policy.json
-      - fichier-contient-dans-env: [lifecycle_policy.json, 'NoncurrentVersionExpiration']
-      - fichier-contient-dans-env: [lifecycle_policy.json, '"NoncurrentDays": *365']
+  - text: 'Écris le fichier `lifecycle_policy.json` : une règle active, avec un filtre vide, qui supprime les versions non courantes au bout de 365 jours'
+    hint: 'Recopie le JSON de la section « Le cycle de vie » avec nano lifecycle_policy.json.'
+    checks:
+      - command-succeeds: python3 -m json.tool lifecycle_policy.json
+      - env-file-contains: [lifecycle_policy.json, 'NoncurrentVersionExpiration']
+      - env-file-contains: [lifecycle_policy.json, '"NoncurrentDays": *365']
     solution:
-      - ecrire:
+      - write:
           lifecycle_policy.json: |
             {
                 "Rules": [
@@ -161,20 +161,20 @@ etapes:
                     }
                 ]
             }
-  - texte: 'Applique cette règle au bucket `historique` avec `aws s3api put-bucket-lifecycle-configuration`'
-    indice: 'aws s3api put-bucket-lifecycle-configuration --bucket historique --lifecycle-configuration file://lifecycle_policy.json'
-    apres: [1, 4]
-    verif:
-      - sortie-contient:
+  - text: 'Applique cette règle au bucket `historique` avec `aws s3api put-bucket-lifecycle-configuration`'
+    hint: 'aws s3api put-bucket-lifecycle-configuration --bucket historique --lifecycle-configuration file://lifecycle_policy.json'
+    after: [1, 4]
+    checks:
+      - output-contains:
           - aws s3api get-bucket-lifecycle-configuration --bucket historique
           - 'NoncurrentVersionExpiration'
     solution:
       - aws s3api put-bucket-lifecycle-configuration --bucket historique --lifecycle-configuration file://lifecycle_policy.json
-  - texte: 'Garde la liste des versions de `journal.txt` dans le fichier `versions.json`'
-    indice: 'aws s3api list-object-versions --bucket historique --prefix journal.txt > versions.json'
-    apres: [3]
-    verif:
-      - fichier-contient-dans-env: [versions.json, 'VersionId']
+  - text: 'Garde la liste des versions de `journal.txt` dans le fichier `versions.json`'
+    hint: 'aws s3api list-object-versions --bucket historique --prefix journal.txt > versions.json'
+    after: [3]
+    checks:
+      - env-file-contains: [versions.json, 'VersionId']
     solution:
       - aws s3api list-object-versions --bucket historique --prefix journal.txt > versions.json
 :::

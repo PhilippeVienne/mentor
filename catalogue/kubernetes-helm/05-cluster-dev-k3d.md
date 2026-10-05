@@ -1,9 +1,9 @@
 ---
 id: cluster-dev-k3d
-titre: "Un cluster de dev avec k3d, kubectl et Lens"
-resume: "Monter sur ton poste un mini cluster Kubernetes avec les scripts d'infra-dev, y installer Keycloak et comprendre ses limites."
-duree: 45
-objectifs:
+title: "Un cluster de dev avec k3d, kubectl et Lens"
+summary: "Monter sur ton poste un mini cluster Kubernetes avec les scripts d'infra-dev, y installer Keycloak et comprendre ses limites."
+minutes: 45
+objectives:
   - Expliquer ce qu'apportent k3d et k3s par rapport à un vrai cluster
   - Lire les scripts startme.sh et install-keycloak.sh ligne à ligne
   - Citer trois différences entre le cluster de dev et la production
@@ -147,54 +147,54 @@ Le cluster de dev d'`infra-dev` est-il toujours maintenu (versions de k3d, de Ke
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   **Il n'y a ni Docker, ni k3d, ni cluster dans cet atelier** : impossible de lancer `startme.sh` pour de vrai. Tu travailles sur les fichiers d'`infra-dev` (reconstitués et simplifiés d'après la leçon, avec des valeurs factices) : tu corriges ce qui peut l'être hors ligne, et tu fabriques avec `kubectl ... --dry-run=client` les objets que `install-keycloak.sh` créerait. Rien n'est envoyé à un cluster.
-commandes:
+commands:
   - cp /opt/exercices/05-cluster-dev/* .
-etapes:
-  - texte: 'Le cluster de dev ne sait pas créer de volume `ReadWriteMany`. Dans `keycloak-h2pvc.yaml`, remplace le mode d''accès par `ReadWriteOnce` (garde `storageClassName: local-path`)'
-    indice: 'Le mode est dans la liste `accessModes`. Valide ensuite avec `kubeconform keycloak-h2pvc.yaml`.'
-    verif:
-      - commande-reussit: 'kubeconform keycloak-h2pvc.yaml'
-      - commande-reussit: "verifier-k8s champ --kind PersistentVolumeClaim --chemin 'spec.accessModes' --egal '[ReadWriteOnce]' keycloak-h2pvc.yaml"
-      - commande-reussit: "verifier-k8s champ --kind PersistentVolumeClaim --chemin 'spec.storageClassName' --texte local-path keycloak-h2pvc.yaml"
+steps:
+  - text: 'Le cluster de dev ne sait pas créer de volume `ReadWriteMany`. Dans `keycloak-h2pvc.yaml`, remplace le mode d''accès par `ReadWriteOnce` (garde `storageClassName: local-path`)'
+    hint: 'Le mode est dans la liste `accessModes`. Valide ensuite avec `kubeconform keycloak-h2pvc.yaml`.'
+    checks:
+      - command-succeeds: 'kubeconform keycloak-h2pvc.yaml'
+      - command-succeeds: "verifier-k8s champ --kind PersistentVolumeClaim --chemin 'spec.accessModes' --egal '[ReadWriteOnce]' keycloak-h2pvc.yaml"
+      - command-succeeds: "verifier-k8s champ --kind PersistentVolumeClaim --chemin 'spec.storageClassName' --texte local-path keycloak-h2pvc.yaml"
     solution:
       - sed -i 's/ReadWriteMany/ReadWriteOnce/' keycloak-h2pvc.yaml
-  - texte: 'Le message de `startme.sh` annonce le port 8081, alors que la commande relie le port 80. Corrige le message (`nano startme.sh`) pour qu''il dise `http://localhost`, puis contrôle la syntaxe du script avec `bash -n startme.sh` (qui le lit sans l''exécuter)'
-    indice: 'C''est la ligne `echo` à la fin du script. Ne touche pas à la ligne `k3d cluster create`.'
-    verif:
-      - commande-reussit: 'bash -n startme.sh'
-      - sortie-contient: ['k3d() { echo "K3D $*"; }; . ./startme.sh', 'K3D cluster create .*80:80@loadbalancer']
-      - sortie-contient: ['k3d() { echo "K3D $*"; }; . ./startme.sh', 'http://localhost($|[^:0-9])']
-      - commande-echoue: 'k3d() { echo "K3D $*"; }; . ./startme.sh | grep -q 8081'
+  - text: 'Le message de `startme.sh` annonce le port 8081, alors que la commande relie le port 80. Corrige le message (`nano startme.sh`) pour qu''il dise `http://localhost`, puis contrôle la syntaxe du script avec `bash -n startme.sh` (qui le lit sans l''exécuter)'
+    hint: 'C''est la ligne `echo` à la fin du script. Ne touche pas à la ligne `k3d cluster create`.'
+    checks:
+      - command-succeeds: 'bash -n startme.sh'
+      - output-contains: ['k3d() { echo "K3D $*"; }; . ./startme.sh', 'K3D cluster create .*80:80@loadbalancer']
+      - output-contains: ['k3d() { echo "K3D $*"; }; . ./startme.sh', 'http://localhost($|[^:0-9])']
+      - command-fails: 'k3d() { echo "K3D $*"; }; . ./startme.sh | grep -q 8081'
     solution:
       - sed -i 's/localhost:8081/localhost/' startme.sh
-  - texte: 'Première ligne de `install-keycloak.sh` : fabrique le namespace sans cluster avec `kubectl create namespace keycloak --dry-run=client -o yaml > namespace.yaml`'
-    indice: 'Le résultat est un objet `Namespace` : vérifie-le avec `kubeconform namespace.yaml`.'
-    verif:
-      - commande-reussit: 'kubeconform namespace.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Namespace --nom keycloak --existe namespace.yaml"
+  - text: 'Première ligne de `install-keycloak.sh` : fabrique le namespace sans cluster avec `kubectl create namespace keycloak --dry-run=client -o yaml > namespace.yaml`'
+    hint: 'Le résultat est un objet `Namespace` : vérifie-le avec `kubeconform namespace.yaml`.'
+    checks:
+      - command-succeeds: 'kubeconform namespace.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Namespace --nom keycloak --existe namespace.yaml"
     solution:
       - kubectl create namespace keycloak --dry-run=client -o yaml > namespace.yaml
-  - texte: 'Troisième ligne du script : fabrique le Secret `realm-secret` à partir du fichier `mon-realm.json`, dans le namespace `keycloak`, avec `kubectl -n keycloak create secret generic realm-secret --from-file=mon-realm.json --dry-run=client -o yaml > realm-secret.yaml`'
-    indice: 'Dans `realm-secret.yaml`, une clé `mon-realm.json` contient le fichier encodé en base64 (leçon 2).'
-    verif:
-      - commande-reussit: 'kubeconform realm-secret.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Secret --nom realm-secret --chemin 'metadata.namespace' --texte keycloak realm-secret.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Secret --nom realm-secret --chemin 'data[mon-realm.json]' --decode-base64 --fichier mon-realm.json realm-secret.yaml"
+  - text: 'Troisième ligne du script : fabrique le Secret `realm-secret` à partir du fichier `mon-realm.json`, dans le namespace `keycloak`, avec `kubectl -n keycloak create secret generic realm-secret --from-file=mon-realm.json --dry-run=client -o yaml > realm-secret.yaml`'
+    hint: 'Dans `realm-secret.yaml`, une clé `mon-realm.json` contient le fichier encodé en base64 (leçon 2).'
+    checks:
+      - command-succeeds: 'kubeconform realm-secret.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Secret --nom realm-secret --chemin 'metadata.namespace' --texte keycloak realm-secret.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Secret --nom realm-secret --chemin 'data[mon-realm.json]' --decode-base64 --fichier mon-realm.json realm-secret.yaml"
     solution:
       - kubectl -n keycloak create secret generic realm-secret --from-file=mon-realm.json --dry-run=client -o yaml > realm-secret.yaml
-  - texte: 'Dans `values-keycloak.yaml`, mets l''hôte `sso.172.17.0.1.nip.io` (à la place de `sso.exemple.invalid`) et remplace le bloc `tls` par une liste vide : `tls: []` (pas de HTTPS en local)'
-    indice: 'Le nom d''hôte apparaît deux fois dans le fichier d''origine ; après ta correction, il ne reste plus de `sso-tls`.'
-    verif:
-      - commande-reussit: "verifier-k8s champ --chemin 'ingress.enabled' --egal true values-keycloak.yaml"
-      - commande-reussit: "verifier-k8s champ --chemin 'ingress.rules[0].host' --texte sso.172.17.0.1.nip.io values-keycloak.yaml"
-      - commande-reussit: "verifier-k8s champ --chemin 'ingress.tls' --egal '[]' values-keycloak.yaml"
+  - text: 'Dans `values-keycloak.yaml`, mets l''hôte `sso.172.17.0.1.nip.io` (à la place de `sso.exemple.invalid`) et remplace le bloc `tls` par une liste vide : `tls: []` (pas de HTTPS en local)'
+    hint: 'Le nom d''hôte apparaît deux fois dans le fichier d''origine ; après ta correction, il ne reste plus de `sso-tls`.'
+    checks:
+      - command-succeeds: "verifier-k8s champ --chemin 'ingress.enabled' --egal true values-keycloak.yaml"
+      - command-succeeds: "verifier-k8s champ --chemin 'ingress.rules[0].host' --texte sso.172.17.0.1.nip.io values-keycloak.yaml"
+      - command-succeeds: "verifier-k8s champ --chemin 'ingress.tls' --egal '[]' values-keycloak.yaml"
     solution:
-      - ecrire:
-          values-keycloak.yaml: |
+      - write:
+          values-keycloak.yaml: |-
             # Extrait de values-keycloak.yaml (leçon 4) : l'Ingress de Keycloak pour le cluster de dev.
             ingress:
               enabled: true

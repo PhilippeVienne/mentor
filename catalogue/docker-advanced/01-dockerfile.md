@@ -1,9 +1,9 @@
 ---
 id: dockerfile
-titre: Écrire un Dockerfile
-resume: "Construire ta propre image à partir d'une application Python."
-duree: 20
-objectifs:
+title: Écrire un Dockerfile
+summary: "Construire ta propre image à partir d'une application Python."
+minutes: 20
+objectives:
   - "Écrire un Dockerfile pour une application Python/Flask"
   - "Construire une image avec `docker build` et la lancer"
   - "Expliquer les couches d'une image et ordonner les instructions pour profiter du cache"
@@ -80,10 +80,10 @@ Une couche invalidée invalide **toutes les suivantes**. En copiant `requirement
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Le projet contient `app.py` et `requirements.txt`. Écris le Dockerfile (bouton « Créer ce fichier » dans la leçon, ou `nano Dockerfile`) puis construis ton image.
-fichiers:
+files:
   app.py: |
     from flask import Flask
 
@@ -99,13 +99,13 @@ fichiers:
         app.run(host="0.0.0.0", port=5000)
   requirements.txt: |
     flask==3.0.3
-etapes:
-  - texte: 'Crée un fichier `Dockerfile` qui commence par `FROM`'
-    indice: Clique sur « Créer ce fichier dans le labo » sous le Dockerfile de la leçon.
-    verif:
-      - fichier-contient: [Dockerfile, '^FROM ']
+steps:
+  - text: 'Crée un fichier `Dockerfile` qui commence par `FROM`'
+    hint: Clique sur « Créer ce fichier dans le labo » sous le Dockerfile de la leçon.
+    checks:
+      - file-contains: [Dockerfile, '^FROM ']
     solution:
-      - ecrire:
+      - write:
           Dockerfile: |
             FROM python:3.13-slim
             WORKDIR /app
@@ -114,32 +114,32 @@ etapes:
             COPY . .
             EXPOSE 5000
             CMD ["python", "app.py"]
-  - texte: "Construis l'image : `docker build -t demo-app .`"
-    indice: "`docker build` avec `-t` pour le nom de l'image, et un point final : le contexte de build est le dossier courant."
-    verif:
-      - image-presente: demo-app
+  - text: "Construis l'image : `docker build -t demo-app .`"
+    hint: "`docker build` avec `-t` pour le nom de l'image, et un point final : le contexte de build est le dossier courant."
+    checks:
+      - image-present: demo-app
     solution:
       - docker build -t demo-app .
-  - texte: 'Lance-la : détachée, nommée `app`, port `5000`'
-    indice: "C'est un `docker run` comme celui de nginx, mais avec ton image : le port 5000 est celui d'écoute de Flask."
-    verif:
-      - conteneur-actif: app
+  - text: 'Lance-la : détachée, nommée `app`, port `5000`'
+    hint: "C'est un `docker run` comme celui de nginx, mais avec ton image : le port 5000 est celui d'écoute de Flask."
+    checks:
+      - container-running: app
     solution:
       - 'docker run -d --name app -p 5000:5000 demo-app'
-  - texte: 'Interroge ton application : `curl localhost:5000`'
-    indice: "Même principe que pour nginx : le port publié côté machine."
-    apres: [3]
-    verif:
-      - commande: '^curl .*5000'
+  - text: 'Interroge ton application : `curl localhost:5000`'
+    hint: "Même principe que pour nginx : le port publié côté machine."
+    after: [3]
+    checks:
+      - command: '^curl .*5000'
     solution:
       - 'curl localhost:5000'
-  - texte: 'Modifie `app.py` (change le message), puis reconstruis : observe le `CACHED`'
-    indice: "Édite `app.py` (clique sur le fichier dans le labo), puis refais exactement le même `docker build` qu'avant."
-    verif:
-      - commande-compte: [^docker build, 2]
-      - fichier-modifie: app.py
+  - text: 'Modifie `app.py` (change le message), puis reconstruis : observe le `CACHED`'
+    hint: "Édite `app.py` (clique sur le fichier dans le labo), puis refais exactement le même `docker build` qu'avant."
+    checks:
+      - command-count: [^docker build, 2]
+      - file-modified: app.py
     solution:
-      - ecrire:
+      - write:
           app.py: |
             from flask import Flask
 

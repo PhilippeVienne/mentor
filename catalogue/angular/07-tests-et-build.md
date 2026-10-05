@@ -1,9 +1,9 @@
 ---
 id: tests-et-build
-titre: "Tests et build de production"
-resume: "Écrire un premier test, produire la version de production et comprendre comment elle est déployée."
-duree: 40
-objectifs:
+title: "Tests et build de production"
+summary: "Écrire un premier test, produire la version de production et comprendre comment elle est déployée."
+minutes: 40
+objectives:
   - Expliquer ce qu'est un test unitaire et lire un fichier `*.spec.ts`
   - Tester un composant avec `TestBed` et un service avec `HttpTestingController`
   - Lancer `ng build` et dire ce qui change en production
@@ -153,25 +153,25 @@ Les valeurs remplacées par `sed` se retrouvent dans des fichiers JavaScript que
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet de `/workspace` contient deux choses : du code à tester (`src/app/`) et le résultat d'un **vrai build de production** de l'application (`dist/club/browser/`, des fichiers JavaScript minifiés), fait une fois pour toutes quand l'environnement a été préparé. Le conteneur n'a que 512 Mo de mémoire : `ng build` n'y tient pas toujours, et tu n'as pas besoin de le relancer pour comprendre ce qui se passe après.
 
   Pour les tests, `tester` joue les `*.spec.ts` avec **Vitest** (et non Karma, voir la leçon) : leur écriture (`describe`, `it`, `expect`, `TestBed`) est la même que dans un projet Angular classique. `tester` contrôle ton travail sur une copie du projet : un test qui ne vérifie rien, ou dont tu as retiré des lignes, n'est pas accepté.
-commandes:
+commands:
   - cp -R /opt/exercices/07-tests-et-build/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Écris ton premier test : crée `src/app/total.spec.ts` pour la fonction `calculerTotal` de `src/app/total.ts`, avec au moins deux `it(…)` (par exemple `[5, 10]` donne `15` et la liste vide donne `0`). Lance `tester total` : au moins deux tests doivent réussir.
-    indice: >-
+    hint: >-
       `import { calculerTotal } from './total';` puis `describe('calculerTotal', () => { it('additionne les prix', () => { expect(calculerTotal([5, 10])).toBe(15); }); … });`
-    verif:
-      - commande-reussit: tester total
-      - commande-reussit: controler-ecrit src/app/total.spec.ts /opt/exercices/07-tests-et-build/src/app/total.ts /opt/angular/mutants/total
+    checks:
+      - command-succeeds: tester total
+      - command-succeeds: controler-ecrit src/app/total.spec.ts /opt/exercices/07-tests-et-build/src/app/total.ts /opt/angular/mutants/total
     solution:
-      - ecrire:
+      - write:
           src/app/total.spec.ts: |
             import { calculerTotal } from './total';
 
@@ -184,37 +184,37 @@ etapes:
                 expect(calculerTotal([])).toBe(0);
               });
             });
-  - texte: >-
+  - text: >-
       Lance `tester titre` : le test d'un composant échoue (`expected '' to be 'Mes adhérents'`) parce que le gabarit n'a jamais été calculé. Dans `src/app/titre.spec.ts`, remplace le commentaire `À FAIRE` par `fixture.detectChanges();`, qui demande à Angular de calculer le gabarit. Relance : le test passe.
-    indice: >-
+    hint: >-
       L'appel va juste après `fixture = TestBed.createComponent(TitreComponent);`, dans le `beforeEach`.
-    apres: [1]
-    verif:
-      - commande-reussit: tester titre
-      - commande-reussit: contient src/app/titre.spec.ts 'fixture\.detectChanges\s*\(\s*\)'
+    after: [1]
+    checks:
+      - command-succeeds: tester titre
+      - command-succeeds: contient src/app/titre.spec.ts 'fixture\.detectChanges\s*\(\s*\)'
     solution:
       - sed -i 's|    // À FAIRE (étape 2).*|    fixture.detectChanges();|' src/app/titre.spec.ts
-  - texte: >-
+  - text: >-
       Dans `src/app/membres.service.spec.ts`, le test d'un service HTTP oublie de **simuler la réponse** du serveur. Remplace le commentaire `À FAIRE` par `requete.flush({ count: 0, results: [] });` : `flush` envoie la réponse simulée. Vérifie avec `tester membres.service`.
-    indice: >-
+    hint: >-
       `requete` est la requête interceptée par `HttpTestingController` ; `flush(…)` lui donne la réponse qu'on veut.
-    apres: [2]
-    verif:
-      - commande-reussit: tester membres.service
-      - commande-reussit: contient src/app/membres.service.spec.ts 'requete\.flush\s*\('
+    after: [2]
+    checks:
+      - command-succeeds: tester membres.service
+      - command-succeeds: contient src/app/membres.service.spec.ts 'requete\.flush\s*\('
     solution:
       - 'sed -i ''s|    // À FAIRE (étape 3).*|    requete.flush({ count: 0, results: [] });|'' src/app/membres.service.spec.ts'
-  - texte: >-
+  - text: >-
       Passe au conteneur. Les fichiers de `dist/club/browser/` contiennent des marqueurs comme `__ADHESION_API_URL__` (essaie `grep -o __ADHESION_API_URL__ dist/club/browser/*.js`). Écris un script `start.sh` qui les remplace, avec `sed -i`, par les valeurs des variables d'environnement `ADHESION_API_URL`, `KEYCLOAK_URL`, `KEYCLOAK_REALM` et `KEYCLOAK_CLIENT_ID`, dans tous les `dist/club/browser/*.js`. Puis lance-le : `ADHESION_API_URL=https://adhesion.example.org KEYCLOAK_URL=https://keycloak.example.org KEYCLOAK_REALM=exemple KEYCLOAK_CLIENT_ID=adhesion-frontend sh start.sh`.
-    indice: >-
+    hint: >-
       Une option `-e 's#__ADHESION_API_URL__#'"$ADHESION_API_URL"'#g'` par marqueur, puis le chemin `dist/club/browser/*.js` à la fin de la commande `sed -i`.
-    apres: [3]
-    verif:
-      - commande-reussit: verifier-start
-      - commande-echoue: grep -rqE '__(ADHESION_API_URL|KEYCLOAK_URL|KEYCLOAK_REALM|KEYCLOAK_CLIENT_ID)__' dist/club/browser
-      - commande-reussit: grep -rq 'https://adhesion\.example\.org' dist/club/browser
+    after: [3]
+    checks:
+      - command-succeeds: verifier-start
+      - command-fails: grep -rqE '__(ADHESION_API_URL|KEYCLOAK_URL|KEYCLOAK_REALM|KEYCLOAK_CLIENT_ID)__' dist/club/browser
+      - command-succeeds: grep -rq 'https://adhesion\.example\.org' dist/club/browser
     solution:
-      - ecrire:
+      - write:
           start.sh: |
             #!/bin/sh
             sed -i -e 's#__ADHESION_API_URL__#'"$ADHESION_API_URL"'#g' \
@@ -222,12 +222,12 @@ etapes:
               -e 's#__KEYCLOAK_REALM__#'"$KEYCLOAK_REALM"'#g' \
               -e 's#__KEYCLOAK_CLIENT_ID__#'"$KEYCLOAK_CLIENT_ID"'#g' dist/club/browser/*.js
       - ADHESION_API_URL=https://adhesion.example.org KEYCLOAK_URL=https://keycloak.example.org KEYCLOAK_REALM=exemple KEYCLOAK_CLIENT_ID=adhesion-frontend sh start.sh
-  - texte: >-
+  - text: >-
       Dernier maillon : le serveur web. Dans `nginx/default.conf`, remplace le commentaire `À FAIRE` du bloc `location /` par la ligne `try_files $uri $uri/ /index.html;` : si l'adresse demandée n'est pas un fichier, nginx renvoie `index.html` et le routeur d'Angular prend le relais dans le navigateur.
-    indice: >-
+    hint: >-
       Une seule ligne dans le bloc `location / { … }`, terminée par un point-virgule : `try_files $uri $uri/ /index.html;`.
-    verif:
-      - commande-reussit: contient nginx/default.conf 'location\s+/\s*\{[^}]*try_files\s+\$uri\s+\$uri/\s+/index\.html\s*;'
+    checks:
+      - command-succeeds: contient nginx/default.conf 'location\s+/\s*\{[^}]*try_files\s+\$uri\s+\$uri/\s+/index\.html\s*;'
     solution:
       - 'sed -i ''s|        # À FAIRE.*|        try_files $uri $uri/ /index.html;|'' nginx/default.conf'
 :::

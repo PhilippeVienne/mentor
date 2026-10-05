@@ -1,9 +1,9 @@
 ---
 id: tests-docker
-titre: "Tests et compilation dans une image Docker minimale"
-resume: "Vérifier ton code avec go test et go vet, puis le livrer dans une image Docker légère construite en deux étapes."
-duree: 50
-objectifs:
+title: "Tests et compilation dans une image Docker minimale"
+summary: "Vérifier ton code avec go test et go vet, puis le livrer dans une image Docker légère construite en deux étapes."
+minutes: 50
+objectives:
   - Écrire un test avec le paquet `testing` et `httptest`, en tableau de cas
   - Lancer `go vet` et `go test ./...` et lire leur résultat
   - Expliquer un Dockerfile en deux étapes et pourquoi `CGO_ENABLED=0` aide
@@ -132,18 +132,18 @@ Passer le `go.mod` de `mgmt` de 1.16 à une version récente demande peu de chan
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu reprends le serveur de la leçon 3 (`serveur.go` et `main.go`), sans aucun test. À toi de le tester puis de préparer sa livraison. Les tests vont dans un fichier `main_test.go` que tu crées toi-même (copie-colle l'exemple de la leçon et complète-le). Ce conteneur n'a pas Docker : tu écris le `Dockerfile`, mais tu ne le construis pas. Tes tests doivent réussir sur le serveur correct **et** échouer sur une version défectueuse : ils seront essayés sur les deux.
-commandes:
+commands:
   - cp -R /opt/exercices/07-tests-docker/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Crée `main_test.go` avec un test `TestAjoute` **en tableau** d''au moins trois cas (jeu valide `201`, titre manquant `400`, JSON cassé `400`) lancés avec `t.Run`. `go test -v` doit afficher trois sous-tests réussis'
-    indice: 'Reprends l''exemple de la leçon : `package main`, les imports (`net/http`, `net/http/httptest`, `strings`, `testing`) et la fonction `TestAjoute`. Lance ensuite `go test -v ./...`.'
-    verif:
-      - commande-reussit: 'verifier-go tests-ecrits 07-tests-docker TestAjoute 3'
+steps:
+  - text: 'Crée `main_test.go` avec un test `TestAjoute` **en tableau** d''au moins trois cas (jeu valide `201`, titre manquant `400`, JSON cassé `400`) lancés avec `t.Run`. `go test -v` doit afficher trois sous-tests réussis'
+    hint: 'Reprends l''exemple de la leçon : `package main`, les imports (`net/http`, `net/http/httptest`, `strings`, `testing`) et la fonction `TestAjoute`. Lance ensuite `go test -v ./...`.'
+    checks:
+      - command-succeeds: 'verifier-go tests-ecrits 07-tests-docker TestAjoute 3'
     solution:
       - |
         cat > main_test.go <<'EOF'
@@ -181,10 +181,10 @@ etapes:
         	}
         }
         EOF
-  - texte: 'Dans un second fichier `liste_test.go`, écris `TestListe` : ajoute un jeu à un `serveur`, appelle `liste` avec un `httptest.NewRecorder()`, et vérifie le statut `200` et la présence du titre dans `rec.Body.String()`. `go test -v` doit afficher `--- PASS: TestListe`'
-    indice: 'Fabrique `s := &serveur{jeux: []Jeu{{Titre: "Azul", Joueurs: 4}}}`, appelle `s.liste(rec, httptest.NewRequest("GET", "/jeux", nil))`, puis teste `rec.Code` et `strings.Contains(rec.Body.String(), "Azul")`.'
-    verif:
-      - commande-reussit: 'verifier-go tests-ecrits 07-tests-docker TestListe 0'
+  - text: 'Dans un second fichier `liste_test.go`, écris `TestListe` : ajoute un jeu à un `serveur`, appelle `liste` avec un `httptest.NewRecorder()`, et vérifie le statut `200` et la présence du titre dans `rec.Body.String()`. `go test -v` doit afficher `--- PASS: TestListe`'
+    hint: 'Fabrique `s := &serveur{jeux: []Jeu{{Titre: "Azul", Joueurs: 4}}}`, appelle `s.liste(rec, httptest.NewRequest("GET", "/jeux", nil))`, puis teste `rec.Code` et `strings.Contains(rec.Body.String(), "Azul")`.'
+    checks:
+      - command-succeeds: 'verifier-go tests-ecrits 07-tests-docker TestListe 0'
     solution:
       - |
         cat > liste_test.go <<'EOF'
@@ -210,25 +210,25 @@ etapes:
         	}
         }
         EOF
-  - texte: 'Lance `go vet ./...` : il signale un défaut dans `serveur.go` (un mutex copié par un récepteur « valeur »). Corrige-le pour que `go vet ./...` ne dise plus rien'
-    indice: 'Lis le message de `go vet` : la méthode `liste` a un récepteur `(s serveur)` qui copie le mutex. Passe-la en `(s *serveur)`, comme `ajoute`.'
-    verif:
-      - commande-reussit: 'verifier-go vet 07-tests-docker'
+  - text: 'Lance `go vet ./...` : il signale un défaut dans `serveur.go` (un mutex copié par un récepteur « valeur »). Corrige-le pour que `go vet ./...` ne dise plus rien'
+    hint: 'Lis le message de `go vet` : la méthode `liste` a un récepteur `(s serveur)` qui copie le mutex. Passe-la en `(s *serveur)`, comme `ajoute`.'
+    checks:
+      - command-succeeds: 'verifier-go vet 07-tests-docker'
     solution:
       - sed -i 's/func (s serveur) liste/func (s *serveur) liste/' serveur.go
-  - texte: 'Compile un exécutable **100 % Go** nommé `ludotheque` avec `CGO_ENABLED=0 go build -o ludotheque .`. Le fichier `ludotheque` doit exister'
-    indice: 'Tape exactement `CGO_ENABLED=0 go build -o ludotheque .` (dans ce labo, `CGO_ENABLED=0` est déjà le réglage par défaut, mais il faut savoir l''écrire).'
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-go binaire 07-tests-docker ludotheque'
+  - text: 'Compile un exécutable **100 % Go** nommé `ludotheque` avec `CGO_ENABLED=0 go build -o ludotheque .`. Le fichier `ludotheque` doit exister'
+    hint: 'Tape exactement `CGO_ENABLED=0 go build -o ludotheque .` (dans ce labo, `CGO_ENABLED=0` est déjà le réglage par défaut, mais il faut savoir l''écrire).'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-go binaire 07-tests-docker ludotheque'
     solution:
       - CGO_ENABLED=0 go build -o ludotheque .
-  - texte: 'Écris un `Dockerfile` **en deux étapes** : une première étape nommée `build` (`FROM golang:1.25 AS build`) qui compile avec `CGO_ENABLED=0`, une seconde sur `alpine:3.22` qui copie le programme avec `COPY --from=build` et le lance avec un utilisateur non-root (`USER`)'
-    indice: 'Reprends le Dockerfile de la leçon. Il doit contenir deux lignes `FROM`, `CGO_ENABLED=0`, `COPY --from=build` et `USER appli`.'
-    verif:
-      - commande-reussit: 'verifier-go dockerfile 07-tests-docker'
+  - text: 'Écris un `Dockerfile` **en deux étapes** : une première étape nommée `build` (`FROM golang:1.25 AS build`) qui compile avec `CGO_ENABLED=0`, une seconde sur `alpine:3.22` qui copie le programme avec `COPY --from=build` et le lance avec un utilisateur non-root (`USER`)'
+    hint: 'Reprends le Dockerfile de la leçon. Il doit contenir deux lignes `FROM`, `CGO_ENABLED=0`, `COPY --from=build` et `USER appli`.'
+    checks:
+      - command-succeeds: 'verifier-go dockerfile 07-tests-docker'
     solution:
-      - |
+      - |-
         cat > Dockerfile <<'EOF'
         # Étape 1 : compiler (image lourde, avec tout Go)
         FROM golang:1.25 AS build

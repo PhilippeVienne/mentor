@@ -1,3 +1,7 @@
+> **This guide still describes the v1 format, with French names.** The catalogue in this repository uses the
+> English v2 names (`course.md`, `title`, `:::lab`, `steps`, `checks`, `command-succeeds`…). Until the guide is
+> rewritten, the correspondence is in [`../conformance/v1-names.json`](../conformance/v1-names.json).
+
 # Catalogue des formations : guide de l'auteur
 
 Ce dossier contient **toutes les formations du portail**, écrites en Markdown. Il n'y a pas de code à écrire pour ajouter ou corriger une leçon : un fichier `.md`, éventuellement une image, et c'est tout. Au déploiement (et avec `pipenv run sync-catalog`), le portail compile ce dossier, valide chaque fichier et met la base de données à jour.

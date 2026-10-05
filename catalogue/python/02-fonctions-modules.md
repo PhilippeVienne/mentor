@@ -1,9 +1,9 @@
 ---
 id: fonctions-modules
-titre: "Fonctions et modules"
-resume: "Découpe ton code en fonctions réutilisables, range-les dans des modules et teste-les."
-duree: 25
-objectifs:
+title: "Fonctions et modules"
+summary: "Découpe ton code en fonctions réutilisables, range-les dans des modules et teste-les."
+minutes: 25
+objectives:
   - Définir une fonction avec des paramètres et une valeur de retour
   - Documenter une fonction avec une docstring
   - Importer une fonction depuis un autre fichier (un module)
@@ -87,17 +87,17 @@ pytest -q
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le module `mathutils.py` et ses tests (`test_mathutils.py`) sont dans ton dossier de travail. Les fonctions ne sont pas écrites : lance `pytest -q`, observe les échecs, puis corrige-les un par un.
-commandes:
+commands:
   - cp -R /opt/exercices/02-fonctions-modules/. .
-etapes:
-  - texte: 'Écris `carre(n)` dans `mathutils.py` : le test `test_carre` doit passer'
-    indice: 'Ouvre `mathutils.py` (avec `nano` ou VS Code), remplace la ligne `raise NotImplementedError(...)` par un `return`. Puis `pytest -q -k carre`.'
-    verif:
-      - commande-reussit: 'pytest -q test_mathutils.py -k "test_carre"'
+steps:
+  - text: 'Écris `carre(n)` dans `mathutils.py` : le test `test_carre` doit passer'
+    hint: 'Ouvre `mathutils.py` (avec `nano` ou VS Code), remplace la ligne `raise NotImplementedError(...)` par un `return`. Puis `pytest -q -k carre`.'
+    checks:
+      - command-succeeds: 'pytest -q test_mathutils.py -k "test_carre"'
     solution:
       - |
         cat > mathutils.py <<'EOF'
@@ -117,12 +117,12 @@ etapes:
             """Retourne True si n est pair, False sinon."""
             raise NotImplementedError("À toi de jouer : regarde le reste de la division par 2")
         EOF
-  - texte: 'Écris `moyenne(valeurs)` avec **une docstring** : `test_moyenne` et `test_moyenne_documentee` doivent passer'
-    indice: 'La moyenne est `sum(valeurs) / len(valeurs)`. La docstring est une phrase entre triples guillemets, juste sous la ligne `def`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_mathutils.py -k moyenne'
-      - fichier-contient-dans-env: [mathutils.py, 'def moyenne\(valeurs\):\n\s+"""']
+  - text: 'Écris `moyenne(valeurs)` avec **une docstring** : `test_moyenne` et `test_moyenne_documentee` doivent passer'
+    hint: 'La moyenne est `sum(valeurs) / len(valeurs)`. La docstring est une phrase entre triples guillemets, juste sous la ligne `def`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_mathutils.py -k moyenne'
+      - env-file-contains: [mathutils.py, 'def moyenne\(valeurs\):\n\s+"""']
     solution:
       - |
         cat > mathutils.py <<'EOF'
@@ -143,11 +143,11 @@ etapes:
             """Retourne True si n est pair, False sinon."""
             raise NotImplementedError("À toi de jouer : regarde le reste de la division par 2")
         EOF
-  - texte: 'Écris `est_pair(n)` : `test_est_pair` doit passer'
-    indice: 'Un nombre est pair quand le reste de sa division par 2 vaut 0. L''expression `n % 2 == 0` est déjà un booléen.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_mathutils.py -k est_pair'
+  - text: 'Écris `est_pair(n)` : `test_est_pair` doit passer'
+    hint: 'Un nombre est pair quand le reste de sa division par 2 vaut 0. L''expression `n % 2 == 0` est déjà un booléen.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_mathutils.py -k est_pair'
     solution:
       - |
         cat > mathutils.py <<'EOF'
@@ -168,12 +168,12 @@ etapes:
             """Retourne True si n est pair, False sinon."""
             return n % 2 == 0
         EOF
-  - texte: 'Crée `app.py` qui **importe** `carre` depuis `mathutils` et affiche `144` quand on le lance, **sans** rien afficher quand on l''importe'
-    indice: 'Mets l''appel à `print(carre(12))` dans une fonction `main()`, appelée sous `if __name__ == "__main__":`.'
-    apres: [1]
-    verif:
-      - sortie-contient: ['python3 app.py', '^144$']
-      - commande-reussit: 'test -z "$(python3 -c ''import app'')"'
+  - text: 'Crée `app.py` qui **importe** `carre` depuis `mathutils` et affiche `144` quand on le lance, **sans** rien afficher quand on l''importe'
+    hint: 'Mets l''appel à `print(carre(12))` dans une fonction `main()`, appelée sous `if __name__ == "__main__":`.'
+    after: [1]
+    checks:
+      - output-contains: ['python3 app.py', '^144$']
+      - command-succeeds: 'test -z "$(python3 -c ''import app'')"'
     solution:
       - |
         cat > app.py <<'EOF'
@@ -189,11 +189,11 @@ etapes:
         if __name__ == "__main__":
             main()
         EOF
-  - texte: 'Lance toute la suite avec `pytest -q` : tout doit être vert'
-    indice: 'Si un test échoue encore, lis le premier message d''erreur : il indique la fonction et la valeur attendue.'
-    apres: [2, 3]
-    verif:
-      - commande-reussit: 'pytest -q test_mathutils.py'
+  - text: 'Lance toute la suite avec `pytest -q` : tout doit être vert'
+    hint: 'Si un test échoue encore, lis le premier message d''erreur : il indique la fonction et la valeur attendue.'
+    after: [2, 3]
+    checks:
+      - command-succeeds: 'pytest -q test_mathutils.py'
     solution:
       - pytest -q
 :::

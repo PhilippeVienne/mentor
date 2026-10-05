@@ -1,9 +1,9 @@
 ---
 id: tsconfig
-titre: "Configurer tsconfig.json et le vérificateur"
-resume: "Lire le tsconfig de MiniShop : mode strict, résolution des modules, alias `@/` et vérification en ligne de commande."
-duree: 30
-objectifs:
+title: "Configurer tsconfig.json et le vérificateur"
+summary: "Lire le tsconfig de MiniShop : mode strict, résolution des modules, alias `@/` et vérification en ligne de commande."
+minutes: 30
+objectives:
   - Lancer le vérificateur avec `npx tsc --noEmit`
   - Expliquer le rôle de `strict`, `noEmit`, `include` et `paths`
   - Savoir pourquoi le mode strict évite des bogues
@@ -116,26 +116,26 @@ Dans TypeScript 6 et suivants, `strict` vaut `true` par défaut quand il n'est p
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un petit projet inspiré d'Adhésion : un `tsconfig.json` **indulgent** (`strict` vaut `false`), un `package.json` et trois fichiers dans `src/`. Aucune erreur n'apparaît quand on lance `npx tsc --noEmit`, mais des fautes sont cachées. Tu vas durcir la configuration, corriger ce qui apparaît, ajouter un alias d'import et un script `ts-check`. Pour éditer, utilise `nano`. Le portail contrôle ton travail sur une copie propre, avec ses propres contrôles : `@ts-ignore`, `@ts-nocheck` et `any` ne font que taire `tsc`, ils ne valident pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/04-tsconfig/. .
   - lier-outils
-etapes:
-  - texte: 'Dans `tsconfig.json`, passe l''option `strict` à `true`'
-    indice: 'Ouvre le fichier avec `nano tsconfig.json` et remplace `"strict": false` par `"strict": true`.'
-    verif:
-      - commande-reussit: 'verifier-ts 04 strict'
+steps:
+  - text: 'Dans `tsconfig.json`, passe l''option `strict` à `true`'
+    hint: 'Ouvre le fichier avec `nano tsconfig.json` et remplace `"strict": false` par `"strict": true`.'
+    checks:
+      - command-succeeds: 'verifier-ts 04 strict'
     solution:
       - |
         sed -i 's/"strict": false/"strict": true/' tsconfig.json
-  - texte: 'Corrige `src/lieu.ts` : avec `strict`, `tsc` signale que `lieu` peut être `null`. Renvoie `"Lieu à confirmer"` dans ce cas'
-    indice: 'Teste `if (evenement.lieu === null)` avant d''appeler `toUpperCase()`. Pour voir l''erreur sans attendre l''étape 1, lance `npx tsc --noEmit --strict`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-ts 04 lieu'
+  - text: 'Corrige `src/lieu.ts` : avec `strict`, `tsc` signale que `lieu` peut être `null`. Renvoie `"Lieu à confirmer"` dans ce cas'
+    hint: 'Teste `if (evenement.lieu === null)` avant d''appeler `toUpperCase()`. Pour voir l''erreur sans attendre l''étape 1, lance `npx tsc --noEmit --strict`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-ts 04 lieu'
     solution:
       - |
         cat > src/lieu.ts <<'EOF'
@@ -151,11 +151,11 @@ etapes:
           return evenement.lieu.toUpperCase();
         }
         EOF
-  - texte: 'Corrige `src/association.ts` : les propriétés de la classe `Association` ne sont jamais initialisées'
-    indice: 'Donne une valeur initiale à chaque propriété, par exemple `nom = "";` et `adherents = 0;`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-ts 04 association'
+  - text: 'Corrige `src/association.ts` : les propriétés de la classe `Association` ne sont jamais initialisées'
+    hint: 'Donne une valeur initiale à chaque propriété, par exemple `nom = "";` et `adherents = 0;`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-ts 04 association'
     solution:
       - |
         cat > src/association.ts <<'EOF'
@@ -164,20 +164,20 @@ etapes:
           adherents = 0;
         }
         EOF
-  - texte: '`src/main.ts` importe `@/lieu`, que `tsc` ne trouve pas. Ajoute dans `compilerOptions` un alias `paths` pour que `@/` désigne le dossier `src/`'
-    indice: 'Ajoute `"paths": { "@/*": ["./src/*"] },` dans `compilerOptions` (comme le tsconfig d''MiniShop de la leçon).'
-    verif:
-      - commande-reussit: 'verifier-ts 04 alias'
+  - text: '`src/main.ts` importe `@/lieu`, que `tsc` ne trouve pas. Ajoute dans `compilerOptions` un alias `paths` pour que `@/` désigne le dossier `src/`'
+    hint: 'Ajoute `"paths": { "@/*": ["./src/*"] },` dans `compilerOptions` (comme le tsconfig d''MiniShop de la leçon).'
+    checks:
+      - command-succeeds: 'verifier-ts 04 alias'
     solution:
       - |
         sed -i 's|"noEmit": true,|"noEmit": true,\n        "paths": { "@/*": ["./src/*"] },|' tsconfig.json
-  - texte: 'Ajoute dans `package.json` un script `ts-check` qui lance `tsc --noEmit`, puis lance `npm run ts-check` : il doit réussir'
-    indice: 'Dans la section `scripts`, ajoute `"ts-check": "tsc --noEmit"` (sans oublier la virgule entre deux scripts).'
-    apres: [1, 2, 3, 4]
-    verif:
-      - commande-reussit: 'verifier-ts 04 script'
+  - text: 'Ajoute dans `package.json` un script `ts-check` qui lance `tsc --noEmit`, puis lance `npm run ts-check` : il doit réussir'
+    hint: 'Dans la section `scripts`, ajoute `"ts-check": "tsc --noEmit"` (sans oublier la virgule entre deux scripts).'
+    after: [1, 2, 3, 4]
+    checks:
+      - command-succeeds: 'verifier-ts 04 script'
     solution:
-      - |
+      - |-
         sed -i 's|"build": "echo pas de build ici"|"build": "echo pas de build ici",\n        "ts-check": "tsc --noEmit"|' package.json
 :::
 

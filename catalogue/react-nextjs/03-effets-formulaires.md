@@ -1,9 +1,9 @@
 ---
 id: effets-formulaires
-titre: "Effets et formulaires"
-resume: "Charger des données au bon moment avec `useEffect` et construire un formulaire contrôlé."
-duree: 40
-objectifs:
+title: "Effets et formulaires"
+summary: "Charger des données au bon moment avec `useEffect` et construire un formulaire contrôlé."
+minutes: 40
+objectives:
   - Expliquer ce qu'est un effet de bord et quand utiliser `useEffect`
   - Lire un tableau de dépendances et écrire une fonction de nettoyage
   - Construire un formulaire contrôlé avec validation et état d'envoi
@@ -169,27 +169,27 @@ Les formulaires de MiniShop utilisent le composant `Form` de la bibliothèque **
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Deux composants t'attendent dans `src` : `ListeGoodies.tsx` (qui doit charger une liste depuis un serveur) et `FormulaireContact.tsx` (un formulaire de contact). Modifie-les avec `nano` (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte).
 
   Il n'y a pas de réseau dans l'environnement : les **tests** (de petits programmes qui vérifient ton travail) remplacent `fetch` par un faux serveur qui répond ce qu'ils décident (une liste, une erreur 500, une panne, une réponse très lente…). `npx vitest run liste-chargement` lance les tests dont le nom de fichier contient `liste-chargement`. Comme ils attendent des réponses, ils sont **asynchrones** : ils utilisent `findBy…`, qui patiente jusqu'à ce que l'élément apparaisse.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/03-effets-formulaires/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/ListeGoodies.tsx`, charge les goodies : crée un état `goodies` (au départ un tableau vide) et un état `chargement` (au départ `true`). Dans un `useEffect` qui dépend de `boutique`, appelle `fetch` sur `/api/boutiques/<boutique>/goodies`, range le résultat dans `goodies` et passe `chargement` à `false`. Tant que ça charge, affiche « Chargement… » ; ensuite une liste `<ul>`. Vérifie avec `npx vitest run liste-chargement`.
-    indice: >-
+    hint: >-
       Une fonction `async` déclarée **dans** l'effet : `async function charger() { const reponse = await fetch(…); setGoodies(await reponse.json()); setChargement(false); }`, appelée par `void charger();`. Le tableau de dépendances est `[boutique]`.
-    verif:
-      - commande-reussit: controler tests 03-effets-formulaires liste-chargement
-      - commande-reussit: contient src/ListeGoodies.tsx 'useEffect\s*\('
-      - commande-reussit: contient src/ListeGoodies.tsx '\bfetch\s*\('
+    checks:
+      - command-succeeds: controler tests 03-effets-formulaires liste-chargement
+      - command-succeeds: contient src/ListeGoodies.tsx 'useEffect\s*\('
+      - command-succeeds: contient src/ListeGoodies.tsx '\bfetch\s*\('
     solution:
-      - ecrire:
+      - write:
           'src/ListeGoodies.tsx': |
             import { useEffect, useState } from "react";
 
@@ -218,16 +218,16 @@ etapes:
                 </ul>
               );
             }
-  - texte: >-
+  - text: >-
       Gère les échecs. Ajoute un état `erreur`. Si la réponse n'est pas `ok` (par exemple un code 500), lance une erreur avec `throw new Error("Erreur HTTP " + reponse.status)` ; entoure l'appel d'un `try … catch … finally` pour ranger le message dans `erreur` et éteindre `chargement` dans tous les cas. Affiche l'erreur dans un `<p role="alert">`. Vérifie avec `npx vitest run liste-erreur`.
-    indice: >-
+    hint: >-
       `catch (e) { setErreur(e instanceof Error ? e.message : "Erreur inconnue"); } finally { setChargement(false); }`, puis `if (erreur) return <p role="alert">{erreur}</p>;` avant la liste.
-    verif:
-      - commande-reussit: controler tests 03-effets-formulaires liste-erreur
-      - commande-reussit: contient src/ListeGoodies.tsx '\bcatch\b'
-    apres: [1]
+    checks:
+      - command-succeeds: controler tests 03-effets-formulaires liste-erreur
+      - command-succeeds: contient src/ListeGoodies.tsx '\bcatch\b'
+    after: [1]
     solution:
-      - ecrire:
+      - write:
           'src/ListeGoodies.tsx': |
             import { useEffect, useState } from "react";
 
@@ -266,16 +266,16 @@ etapes:
                 </ul>
               );
             }
-  - texte: >-
+  - text: >-
       La personne change de boutique pendant qu'une requête est encore en vol : la réponse en retard de l'ancienne boutique ne doit pas écraser la nouvelle. Ajoute à l'effet une variable `annule` (au départ `false`), une fonction de **nettoyage** qui la passe à `true`, et n'appelle les fonctions `set…` que si `annule` est faux. Vérifie avec `npx vitest run liste-boutique`.
-    indice: >-
+    hint: >-
       Au début de l'effet : `let annule = false;`. À la fin : `return () => { annule = true; };`. Dans le `try`, `catch` et `finally`, écris `if (!annule) setGoodies(donnees);` (et de même pour les deux autres).
-    verif:
-      - commande-reussit: controler tests 03-effets-formulaires liste-boutique
-      - commande-reussit: contient src/ListeGoodies.tsx '\bannule\b'
-    apres: [2]
+    checks:
+      - command-succeeds: controler tests 03-effets-formulaires liste-boutique
+      - command-succeeds: contient src/ListeGoodies.tsx '\bannule\b'
+    after: [2]
     solution:
-      - ecrire:
+      - write:
           'src/ListeGoodies.tsx': |
             import { useEffect, useState } from "react";
 
@@ -320,15 +320,15 @@ etapes:
                 </ul>
               );
             }
-  - texte: >-
+  - text: >-
       Passe au formulaire, dans `src/FormulaireContact.tsx`. Rends les champs **contrôlés** : un état `email` et un état `texte`, reliés à `value` et à `onChange`. Calcule `emailValide` avec l'expression régulière `/^\S+@\S+\.\S+$/` (sans le stocker dans un état), affiche « Adresse invalide » quand l'e-mail est non vide et invalide, et désactive le bouton tant que l'e-mail n'est pas valide. Vérifie avec `npx vitest run formulaire-validation`.
-    indice: >-
+    hint: >-
       `value={email}` et `onChange={(e) => setEmail(e.target.value)}` sur l'`<input>` ; même chose pour la `<textarea>`. `{email !== "" && !emailValide && <p>Adresse invalide</p>}` et `disabled={!emailValide}` sur le bouton.
-    verif:
-      - commande-reussit: controler tests 03-effets-formulaires formulaire-validation
-      - commande-reussit: contient src/FormulaireContact.tsx '\bvalue\s*='
+    checks:
+      - command-succeeds: controler tests 03-effets-formulaires formulaire-validation
+      - command-succeeds: contient src/FormulaireContact.tsx '\bvalue\s*='
     solution:
-      - ecrire:
+      - write:
           'src/FormulaireContact.tsx': |
             import { useState } from "react";
 
@@ -353,17 +353,17 @@ etapes:
                 </form>
               );
             }
-  - texte: >-
+  - text: >-
       Gère l'envoi. Ajoute un gestionnaire `onSubmit` qui appelle `event.preventDefault()` (pour que le navigateur ne recharge pas la page), ne fait rien si le message est vide, passe un état `envoi` à `true`, attend `onEnvoyer({ email, texte })`, vide ensuite le message ; en cas d'échec, affiche « Envoi impossible, réessaie dans un instant. » dans un `<p role="alert">` ; dans tous les cas, `envoi` redevient `false`. Pendant l'envoi, le bouton affiche « Envoi… » et est désactivé. Vérifie avec `npx vitest run formulaire-envoi`.
-    indice: >-
+    hint: >-
       Reprends la structure `try … catch … finally` de l'étape 2. Le bouton : `disabled={envoi || !emailValide}` et `{envoi ? "Envoi…" : "Envoyer"}`. Le formulaire : `<form onSubmit={handleSubmit}>`.
-    verif:
-      - commande-reussit: controler tests 03-effets-formulaires formulaire-envoi
-      - commande-reussit: contient src/FormulaireContact.tsx 'preventDefault\s*\('
-    apres: [4]
+    checks:
+      - command-succeeds: controler tests 03-effets-formulaires formulaire-envoi
+      - command-succeeds: contient src/FormulaireContact.tsx 'preventDefault\s*\('
+    after: [4]
     solution:
-      - ecrire:
-          'src/FormulaireContact.tsx': |
+      - write:
+          'src/FormulaireContact.tsx': |-
             import { useState, type FormEvent } from "react";
 
             export type Message = { email: string; texte: string };

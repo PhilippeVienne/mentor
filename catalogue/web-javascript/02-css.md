@@ -1,9 +1,9 @@
 ---
 id: css
-titre: "Mettre en forme avec CSS"
-resume: "Sélecteurs, modèle de boîte, flexbox, grille et pages qui s'adaptent à tous les écrans, vérifiés sur une vraie page."
-duree: 30
-objectifs:
+title: "Mettre en forme avec CSS"
+summary: "Sélecteurs, modèle de boîte, flexbox, grille et pages qui s'adaptent à tous les écrans, vérifiés sur une vraie page."
+minutes: 30
+objectives:
   - Cibler des éléments avec des sélecteurs et comprendre la cascade
   - Expliquer le modèle de boîte (contenu, marge intérieure, bordure, marge extérieure)
   - Aligner des éléments avec flexbox et une grille CSS
@@ -163,33 +163,33 @@ Préfère `rem` (relatif à la taille de police de la page) ou `%` aux `px` pour
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient `page.html`, une page déjà écrite (un titre, un menu `.menu`, une carte `.carte` et une galerie `.galerie` de six vignettes), et `style.css`, une feuille de style vide déjà reliée à la page. Ouvre `style.css` avec `nano style.css` et écris-y les règles demandées. Après chaque étape, `verifier-page page.html` te montre ce que contient la page ; pour lire une valeur de style précise, ajoute `--style .carte width 300px`, par exemple : l'outil te dit si la valeur calculée correspond.
-commandes:
+commands:
   - cp -R /opt/exercices/02-css/. .
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `style.css`, écris une règle `h1` qui colore le titre en rouge `#E32618` (propriété `color`).
-    indice: >-
+    hint: >-
       `h1 { color: #E32618; }`. Pense au point-virgule après la valeur.
-    verif:
-      - commande-reussit: 'verifier-web 02 regle'
+    checks:
+      - command-succeeds: 'verifier-web 02 regle'
     solution:
-      - ecrire:
+      - write:
           style.css: |
             h1 {
               color: #E32618;
             }
-  - texte: >-
+  - text: >-
       Mets en forme la carte : une règle `.carte` avec `width: 300px`, `padding: 16px`, `border: 2px solid #334155` et `box-sizing: border-box`.
-    indice: >-
+    hint: >-
       Une classe se cible avec un point : `.carte { … }`. Écris une déclaration par ligne.
-    verif:
-      - commande-reussit: 'verifier-web 02 carte'
+    checks:
+      - command-succeeds: 'verifier-web 02 carte'
     solution:
-      - ecrire:
+      - write:
           style.css: |
             h1 {
               color: #E32618;
@@ -201,14 +201,14 @@ etapes:
               border: 2px solid #334155;
               box-sizing: border-box;
             }
-  - texte: >-
+  - text: >-
       Aligne le menu avec flexbox : une règle `.menu` avec `display: flex`, `justify-content: space-between` et `gap: 1rem`.
-    indice: >-
+    hint: >-
       Les trois liens sont les enfants de `.menu` : c'est le conteneur `.menu` qui reçoit `display: flex`, pas les liens.
-    verif:
-      - commande-reussit: 'verifier-web 02 flex'
+    checks:
+      - command-succeeds: 'verifier-web 02 flex'
     solution:
-      - ecrire:
+      - write:
           style.css: |
             h1 {
               color: #E32618;
@@ -226,14 +226,14 @@ etapes:
               justify-content: space-between;
               gap: 1rem;
             }
-  - texte: >-
+  - text: >-
       Organise la galerie en grille : une règle `.galerie` avec `display: grid`, `grid-template-columns: repeat(3, 1fr)` et `gap: 1rem`.
-    indice: >-
+    hint: >-
       `repeat(3, 1fr)` crée trois colonnes de même largeur. Ajoute les trois déclarations dans une règle `.galerie { … }`.
-    verif:
-      - commande-reussit: 'verifier-web 02 grille'
+    checks:
+      - command-succeeds: 'verifier-web 02 grille'
     solution:
-      - ecrire:
+      - write:
           style.css: |
             h1 {
               color: #E32618;
@@ -257,16 +257,16 @@ etapes:
               grid-template-columns: repeat(3, 1fr);
               gap: 1rem;
             }
-  - texte: >-
+  - text: >-
       Rends la galerie adaptative, en partant du téléphone : une seule colonne (`1fr`) par défaut, et trois colonnes (`repeat(3, 1fr)`) seulement à partir de `768px` de large, avec `@media (min-width: 768px)`. Pour tester, l'outil simule la largeur de la fenêtre : `verifier-page page.html --largeur 400 --style .galerie grid-template-columns 1fr`.
-    indice: >-
+    hint: >-
       Remplace `repeat(3, 1fr)` dans la règle `.galerie` par `1fr`, puis ajoute en dessous un bloc `@media (min-width: 768px) { .galerie { grid-template-columns: repeat(3, 1fr); } }`.
-    apres: [4]
-    verif:
-      - commande-reussit: 'verifier-web 02 adaptatif'
+    after: [4]
+    checks:
+      - command-succeeds: 'verifier-web 02 adaptatif'
     solution:
-      - ecrire:
-          style.css: |
+      - write:
+          style.css: |-
             h1 {
               color: #E32618;
             }

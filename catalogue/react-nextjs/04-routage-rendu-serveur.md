@@ -1,9 +1,9 @@
 ---
 id: routage-rendu-serveur
-titre: "Pages, routes et rendu côté serveur"
-resume: "Comprendre comment Next.js transforme des dossiers en pages et où s'exécute chaque composant."
-duree: 50
-objectifs:
+title: "Pages, routes et rendu côté serveur"
+summary: "Comprendre comment Next.js transforme des dossiers en pages et où s'exécute chaque composant."
+minutes: 50
+objectives:
   - Associer une arborescence de dossiers `app/` à des URL
   - Distinguer un composant serveur d'un composant client (`"use client"`)
   - Lire une page dynamique qui reçoit `params` et produit ses métadonnées
@@ -160,28 +160,28 @@ Une action `"use server"` est une adresse que **n'importe qui** peut appeler, m�
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Tu vas construire un morceau d'application Next.js : une page de fiche produit à l'adresse `/<boutique>/produit/<numéro>`, un composant interactif et une route d'API. Les fichiers se créent avec `nano` (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte) ; `mkdir -p` crée un dossier, y compris ses dossiers parents. Dans `src/produits.ts`, une fausse base de données contient deux produits (numéros 12 et 13). L'alias `@/` désigne le dossier `src`, comme dans MiniShop.
 
   Il n'y a pas de navigateur ni de serveur à lancer : des **tests** appellent tes pages comme le ferait Next.js (une page serveur est une simple fonction `async`) et regardent le résultat. `npx vitest run page-produit` lance les tests dont le nom de fichier contient `page-produit`.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/04-routage-rendu-serveur/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Crée la page `app/[boutique]/produit/[id]/page.tsx` (les crochets forment des **segments dynamiques** : n'importe quelle valeur est acceptée). Elle exporte par défaut une fonction `async` qui reçoit `params` (une promesse contenant `boutique` et `id`, toujours des textes), attend `params`, charge le produit avec `chargerProduit(Number(id))` et affiche son nom dans un `<h1>`. Pour créer le dossier : `mkdir -p "app/[boutique]/produit/[id]"`. Vérifie avec `npx vitest run page-produit`.
-    indice: >-
+    hint: >-
       `const { id } = await params;` puis `const produit = await chargerProduit(Number(id));` et `return <h1>{produit?.nom}</h1>;`. Importe `chargerProduit` avec `import { chargerProduit } from "@/produits";`.
-    verif:
-      - fichier-existe-dans-env: app/[boutique]/produit/[id]/page.tsx
-      - commande-reussit: controler tests 04-routage-rendu-serveur page-produit
-      - commande-reussit: contient 'app/[boutique]/produit/[id]/page.tsx' 'chargerProduit\s*\('
+    checks:
+      - env-file-exists: app/[boutique]/produit/[id]/page.tsx
+      - command-succeeds: controler tests 04-routage-rendu-serveur page-produit
+      - command-succeeds: contient 'app/[boutique]/produit/[id]/page.tsx' 'chargerProduit\s*\('
     solution:
       - mkdir -p "app/[boutique]/produit/[id]"
-      - ecrire:
+      - write:
           'app/[boutique]/produit/[id]/page.tsx': |
             import { chargerProduit } from "@/produits";
 
@@ -192,16 +192,16 @@ etapes:
               const produit = await chargerProduit(Number(id));
               return <h1>{produit?.nom}</h1>;
             }
-  - texte: >-
+  - text: >-
       Un identifiant inconnu (`999`) ou absurde (`abc`) ne doit pas afficher une page vide. Convertis l'identifiant avec `Number`, repère `Number.isNaN`, et appelle `notFound()` (importée de `next/navigation`) quand il n'y a pas de produit : Next.js affiche alors sa page 404. Vérifie avec `npx vitest run page-introuvable`.
-    indice: >-
+    hint: >-
       Écris une fonction `lireProduit(params)` qui renvoie `null` si `Number.isNaN(produitId)`, sinon `await chargerProduit(produitId)`. Dans la page : `if (!produit) notFound();`. Après ce `if`, TypeScript sait que `produit` existe.
-    verif:
-      - commande-reussit: controler tests 04-routage-rendu-serveur page-introuvable
-      - commande-reussit: contient 'app/[boutique]/produit/[id]/page.tsx' '\bnotFound\s*\('
-    apres: [1]
+    checks:
+      - command-succeeds: controler tests 04-routage-rendu-serveur page-introuvable
+      - command-succeeds: contient 'app/[boutique]/produit/[id]/page.tsx' '\bnotFound\s*\('
+    after: [1]
     solution:
-      - ecrire:
+      - write:
           'app/[boutique]/produit/[id]/page.tsx': |
             import { notFound } from "next/navigation";
             import { chargerProduit } from "@/produits";
@@ -219,16 +219,16 @@ etapes:
               if (!produit) notFound();
               return <h1>{produit.nom}</h1>;
             }
-  - texte: >-
+  - text: >-
       Ajoute à la même page la fonction `generateMetadata` (exportée, `async`, avec les mêmes `params`) : elle renvoie `{ title, description }`, avec le nom et la description du produit, ou le titre « Produit introuvable » (sans description) quand il n'existe pas. Son type de retour est `Promise<Metadata>`, importé de `next`. Vérifie avec `npx vitest run metadonnees`.
-    indice: >-
+    hint: >-
       Réutilise `lireProduit` : `return { title: produit ? produit.nom : "Produit introuvable", description: produit?.description };`.
-    verif:
-      - commande-reussit: controler tests 04-routage-rendu-serveur metadonnees
-      - commande-reussit: contient 'app/[boutique]/produit/[id]/page.tsx' 'export\s+(async\s+)?function\s+generateMetadata'
-    apres: [2]
+    checks:
+      - command-succeeds: controler tests 04-routage-rendu-serveur metadonnees
+      - command-succeeds: contient 'app/[boutique]/produit/[id]/page.tsx' 'export\s+(async\s+)?function\s+generateMetadata'
+    after: [2]
     solution:
-      - ecrire:
+      - write:
           'app/[boutique]/produit/[id]/page.tsx': |
             import type { Metadata } from "next";
             import { notFound } from "next/navigation";
@@ -255,18 +255,18 @@ etapes:
                 description: produit?.description,
               };
             }
-  - texte: >-
+  - text: >-
       Rends la fiche interactive. Un composant serveur ne peut pas utiliser `useState` : dans `src/FicheProduit.tsx`, ajoute `"use client"` en toute première ligne, un état `quantite` (au départ 1), un `<output>` qui l'affiche et un bouton « Une de plus » qui l'augmente. Puis fais afficher `<FicheProduit initial={produit} />` par la page, à la place du `<h1>` seul. Vérifie avec `npx vitest run fiche-client`.
-    indice: >-
+    hint: >-
       `"use client";` doit être la première ligne du fichier, avant les imports. Le composant garde le `<h1>{initial.nom}</h1>` et ajoute `<output>{quantite}</output>` et le bouton.
-    verif:
-      - fichier-existe-dans-env: src/FicheProduit.tsx
-      - commande-reussit: contient -d src/FicheProduit.tsx '[\x27"]use client[\x27"]'
-      - commande-reussit: controler tests 04-routage-rendu-serveur fiche-client
-      - commande-reussit: contient 'app/[boutique]/produit/[id]/page.tsx' '<FicheProduit'
-    apres: [3]
+    checks:
+      - env-file-exists: src/FicheProduit.tsx
+      - command-succeeds: contient -d src/FicheProduit.tsx '[\x27"]use client[\x27"]'
+      - command-succeeds: controler tests 04-routage-rendu-serveur fiche-client
+      - command-succeeds: contient 'app/[boutique]/produit/[id]/page.tsx' '<FicheProduit'
+    after: [3]
     solution:
-      - ecrire:
+      - write:
           'src/FicheProduit.tsx': |
             "use client";
 
@@ -312,17 +312,17 @@ etapes:
                 description: produit?.description,
               };
             }
-  - texte: >-
+  - text: >-
       Crée une **route d'API** : le fichier `app/api/cron_jobs/route.ts` exporte une fonction `POST` qui reçoit une `Request`. Elle répond `401` avec `{ error: "Unauthorized" }` quand l'en-tête `authorization` n'est pas exactement `Bearer ` suivi du secret lu dans `process.env.CRON_SECRET`, ou quand ce secret n'est pas défini ; sinon elle répond `{ message: "ok" }`. Vérifie avec `npx vitest run cron`.
-    indice: >-
+    hint: >-
       `Response.json({ error: "Unauthorized" }, { status: 401 })`. Compare `req.headers.get("authorization")` à `` `Bearer ${secret}` ``, et refuse d'emblée si `secret` est vide : `if (!secret || … )`.
-    verif:
-      - fichier-existe-dans-env: app/api/cron_jobs/route.ts
-      - commande-reussit: controler tests 04-routage-rendu-serveur cron
-      - commande-reussit: contient app/api/cron_jobs/route.ts 'export\s+(async\s+)?function\s+POST'
+    checks:
+      - env-file-exists: app/api/cron_jobs/route.ts
+      - command-succeeds: controler tests 04-routage-rendu-serveur cron
+      - command-succeeds: contient app/api/cron_jobs/route.ts 'export\s+(async\s+)?function\s+POST'
     solution:
       - mkdir -p app/api/cron_jobs
-      - ecrire:
+      - write:
           'app/api/cron_jobs/route.ts': |
             export async function POST(req: Request) {
               const secret = process.env.CRON_SECRET;
@@ -331,15 +331,15 @@ etapes:
               }
               return Response.json({ message: "ok" });
             }
-  - texte: >-
+  - text: >-
       Fais compiler l'ensemble par Next.js : lance `npx next build --webpack` (compte environ une minute ; l'option `--webpack` choisit le compilateur classique, parce que le compilateur par défaut n'accepte pas le dossier `node_modules` de cet environnement). Next.js vérifie les types, compile les pages et affiche la liste des routes. Le build réussi laisse un dossier `.next` qui décrit tes routes.
-    indice: >-
+    hint: >-
       Si le build s'arrête sur une erreur de type, Next.js indique le fichier et la ligne. Corrige-la, puis relance la commande.
-    verif:
-      - fichier-contient-dans-env:
+    checks:
+      - env-file-contains:
           - .next/app-path-routes-manifest.json
           - produit/\[id\]
-    apres: [4, 5]
+    after: [4, 5]
     solution:
       - npx next build --webpack
 :::

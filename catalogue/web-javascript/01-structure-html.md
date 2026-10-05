@@ -1,9 +1,9 @@
 ---
 id: structure-html
-titre: "La structure d'une page HTML"
-resume: "Écris le squelette d'une page, choisis les bonnes balises, ajoute liens, images et formulaire, et vérifie le résultat."
-duree: 30
-objectifs:
+title: "La structure d'une page HTML"
+summary: "Écris le squelette d'une page, choisis les bonnes balises, ajoute liens, images et formulaire, et vérifie le résultat."
+minutes: 30
+objectives:
   - Écrire le squelette minimal d'une page HTML valide
   - Choisir la balise sémantique qui décrit le mieux un contenu
   - Créer des liens, des images et un formulaire accessibles
@@ -157,21 +157,21 @@ Ne choisis pas `<h3>` parce que tu le trouves joli : les niveaux de titres form
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Tu vas construire la page du Club Photo dans un fichier `index.html`, que tu écris avec `nano`. Après chaque étape, `verifier-page index.html` te montre la structure que ton navigateur imaginaire a comprise. Une dernière étape te demande de réparer une page abîmée, `a-corriger.html`, déjà présente dans ton dossier.
-commandes:
+commands:
   - cp -R /opt/exercices/01-structure-html/. .
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Crée `index.html` avec `nano index.html` et écris le squelette : la ligne `<!DOCTYPE html>`, un élément `<html lang="fr">` qui contient un `<head>` (avec `<meta charset="utf-8">` et un `<title>`) puis un `<body>`. Enregistre (`Ctrl+O`, `Entrée`), quitte (`Ctrl+X`) et lance `verifier-page index.html`.
-    indice: >-
+    hint: >-
       Recopie l'exemple de la leçon jusqu'à `<body>` et `</body>`, sans rien mettre dans le corps pour l'instant. N'oublie pas la balise fermante `</html>`.
-    verif:
-      - commande-reussit: 'verifier-page index.html --existe "html[lang=fr] > head > meta[charset]" --existe "html > head > title" --existe "html > body"'
+    checks:
+      - command-succeeds: 'verifier-page index.html --existe "html[lang=fr] > head > meta[charset]" --existe "html > head > title" --existe "html > body"'
     solution:
-      - ecrire:
+      - write:
           index.html: |
             <!DOCTYPE html>
             <html lang="fr">
@@ -182,15 +182,15 @@ etapes:
               <body>
               </body>
             </html>
-  - texte: >-
+  - text: >-
       Dans le `<body>`, ajoute un `<header>` qui contient un titre `<h1>` et un `<nav>` avec deux liens `<a>` ; puis, à la suite, un `<main>` et un `<footer>`.
-    indice: >-
+    hint: >-
       Un lien s'écrit `<a href="index.html">Accueil</a>`. Les trois blocs `<header>`, `<main>` et `<footer>` sont des enfants directs de `<body>`, l'un après l'autre.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-page index.html --existe "body > header > h1" --existe "body > header > nav > a:nth-of-type(2)" --existe "body > main" --existe "body > footer"'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-page index.html --existe "body > header > h1" --existe "body > header > nav > a:nth-of-type(2)" --existe "body > main" --existe "body > footer"'
     solution:
-      - ecrire:
+      - write:
           index.html: |
             <!DOCTYPE html>
             <html lang="fr">
@@ -213,15 +213,15 @@ etapes:
                 </footer>
               </body>
             </html>
-  - texte: >-
+  - text: >-
       Dans `<main>`, ajoute un titre `<h2>`, un paragraphe `<p>` contenant un mot entouré de `<strong>`, et une image `<img>` avec un texte alternatif `alt` qui n'est pas vide.
-    indice: >-
+    hint: >-
       `<img src="sortie.jpg" alt="Un groupe de photographes sur le campus">` : le fichier `sortie.jpg` n'existe pas dans le labo, ce n'est pas grave, seule la balise compte.
-    apres: [2]
-    verif:
-      - commande-reussit: 'verifier-page index.html --existe "main > h2" --existe "main > p strong" --existe "main > img[alt]:not([alt=\"\"])"'
+    after: [2]
+    checks:
+      - command-succeeds: 'verifier-page index.html --existe "main > h2" --existe "main > p strong" --existe "main > img[alt]:not([alt=\"\"])"'
     solution:
-      - ecrire:
+      - write:
           index.html: |
             <!DOCTYPE html>
             <html lang="fr">
@@ -247,15 +247,15 @@ etapes:
                 </footer>
               </body>
             </html>
-  - texte: >-
+  - text: >-
       Ajoute dans `<main>` un formulaire `<form>` avec un `<label for="email">`, un champ `<input id="email" name="email" type="email" required>` et un bouton `<button type="submit">`.
-    indice: >-
+    hint: >-
       Le `for` du libellé et l'`id` du champ doivent avoir exactement la même valeur : `email`.
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-page index.html --existe "main form label[for=email]" --existe "form input#email[type=email][required][name=email]" --existe "form button[type=submit]"'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-page index.html --existe "main form label[for=email]" --existe "form input#email[type=email][required][name=email]" --existe "form button[type=submit]"'
     solution:
-      - ecrire:
+      - write:
           index.html: |
             <!DOCTYPE html>
             <html lang="fr">
@@ -286,15 +286,15 @@ etapes:
                 </footer>
               </body>
             </html>
-  - texte: >-
+  - text: >-
       Répare `a-corriger.html` : `verifier-page a-corriger.html --accessible` y signale plusieurs défauts (langue, saut de niveau de titre, image sans `alt`, champ sans libellé relié). Corrige-les avec `nano a-corriger.html` jusqu'à ce que la commande ne signale plus aucun problème.
-    indice: >-
+    hint: >-
       Chaque ligne « ÉCHEC » du diagnostic décrit un défaut. Ajoute `lang="fr"` sur `<html>`, passe le `<h4>` en `<h2>`, donne un `alt` à l'image et un `for="email"` au `<label>`.
-    verif:
-      - commande-reussit: 'verifier-web 01 reparer'
+    checks:
+      - command-succeeds: 'verifier-web 01 reparer'
     solution:
-      - ecrire:
-          a-corriger.html: |
+      - write:
+          a-corriger.html: |-
             <!DOCTYPE html>
             <html lang="fr">
               <head>

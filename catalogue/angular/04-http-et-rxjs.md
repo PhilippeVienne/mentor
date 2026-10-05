@@ -1,9 +1,9 @@
 ---
 id: http-et-rxjs
-titre: "Appels HTTP et RxJS"
-resume: "Interroger une API avec HttpClient, comprendre les Observables et écrire une recherche réactive."
-duree: 40
-objectifs:
+title: "Appels HTTP et RxJS"
+summary: "Interroger une API avec HttpClient, comprendre les Observables et écrire une recherche réactive."
+minutes: 40
+objectives:
   - Écrire un service qui appelle une API avec `HttpClient` et des types
   - Expliquer ce qu'est un `Observable` et pourquoi il faut s'y abonner
   - Combiner `map`, `debounceTime`, `distinctUntilChanged` et `switchMap`
@@ -155,25 +155,25 @@ Une réponse HTTP termine l'Observable : pas de fuite à craindre. En revanche,
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet de `/workspace` contient un `MembresService` qui n'appelle pas encore l'API (`src/app/membres.service.ts`) et un composant de recherche `RechercheComponent` (`src/app/recherche.ts`) à compléter. Les tests ne font **aucun vrai appel réseau** : ils remplacent `HttpClient` par un faux serveur (`HttpTestingController`) qui note les requêtes et répond ce qu'ils décident. Ne modifie pas les fichiers `*.spec.ts` (`tester` remet de toute façon les tests d'origine dans une copie : les modifier ne servirait à rien).
 
   Tu lances un groupe de tests avec `tester fichier -t "mot-du-groupe"`, ou un fichier entier avec `tester fichier`.
-commandes:
+commands:
   - cp -R /opt/exercices/04-http-et-rxjs/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/app/membres.service.ts`, écris `rechercher(texte)` : crée les paramètres avec `new HttpParams({ fromObject: { search: texte } })` et renvoie `this.http.get<Page<Membre>>(`${this.urlApi}/membres/`, { params })`. Vérifie avec `tester membres.service -t "rechercher envoie"`.
-    indice: >-
+    hint: >-
       Le corps de la méthode a deux lignes : `const params = …;` puis `return this.http.get<Page<Membre>>(…, { params });`. `HttpParams` est déjà importé.
-    verif:
-      - commande-reussit: tester membres.service -t 'rechercher envoie'
-      - commande-reussit: contient src/app/membres.service.ts 'new\s+HttpParams\s*\('
+    checks:
+      - command-succeeds: tester membres.service -t 'rechercher envoie'
+      - command-succeeds: contient src/app/membres.service.ts 'new\s+HttpParams\s*\('
     solution:
-      - ecrire:
+      - write:
           src/app/membres.service.ts: |
             import { HttpClient, HttpParams } from '@angular/common/http';
             import { inject, Injectable } from '@angular/core';
@@ -205,16 +205,16 @@ etapes:
                 return of({ id: 0, ...membre });
               }
             }
-  - texte: >-
+  - text: >-
       Écris `creer(membre)` dans le même fichier : elle renvoie `this.http.post<Membre>(`${this.urlApi}/membres/`, membre)`. Tu peux supprimer l'import `of`, devenu inutile. Vérifie avec `tester membres.service`.
-    indice: >-
+    hint: >-
       `return this.http.post<Membre>(`${this.urlApi}/membres/`, membre);` : le deuxième argument est le corps de la requête.
-    apres: [1]
-    verif:
-      - commande-reussit: tester membres.service
-      - commande-reussit: contient src/app/membres.service.ts 'this\.http\.post\s*<'
+    after: [1]
+    checks:
+      - command-succeeds: tester membres.service
+      - command-succeeds: contient src/app/membres.service.ts 'this\.http\.post\s*<'
     solution:
-      - ecrire:
+      - write:
           src/app/membres.service.ts: |
             import { HttpClient, HttpParams } from '@angular/common/http';
             import { inject, Injectable } from '@angular/core';
@@ -245,17 +245,17 @@ etapes:
                 return this.http.post<Membre>(`${this.urlApi}/membres/`, membre);
               }
             }
-  - texte: >-
+  - text: >-
       Dans `src/app/recherche.ts`, rends la recherche réactive : devant le `switchMap` de `resultats$`, ajoute `debounceTime(300)` (attendre 300 ms de silence) puis `distinctUntilChanged()` (ignorer un terme identique au précédent). Importe-les depuis `rxjs`. Vérifie avec `tester recherche -t "rafale|identique"`.
-    indice: >-
+    hint: >-
       Dans `.pipe(…)`, l'ordre compte : `debounceTime(300), distinctUntilChanged(), switchMap(…)`.
-    apres: [2]
-    verif:
-      - commande-reussit: tester recherche -t 'rafale|identique'
-      - commande-reussit: contient src/app/recherche.ts 'debounceTime\s*\(\s*300\s*\)'
-      - commande-reussit: contient src/app/recherche.ts 'distinctUntilChanged\s*\('
+    after: [2]
+    checks:
+      - command-succeeds: tester recherche -t 'rafale|identique'
+      - command-succeeds: contient src/app/recherche.ts 'debounceTime\s*\(\s*300\s*\)'
+      - command-succeeds: contient src/app/recherche.ts 'distinctUntilChanged\s*\('
     solution:
-      - ecrire:
+      - write:
           src/app/recherche.ts: |
             import { Component, inject } from '@angular/core';
             import { debounceTime, distinctUntilChanged, Observable, Subject, switchMap } from 'rxjs';
@@ -284,17 +284,17 @@ etapes:
                 this.terme$.subscribe((terme) => (this.dernierTerme = terme));
               }
             }
-  - texte: >-
+  - text: >-
       Affiche les résultats dans le gabarit de `RechercheComponent` : sous le champ, `@if (resultats$ | async; as page) { … }` avec un `<p>` qui affiche `{{ page.count }} résultat(s)` et un `<ul>` dont chaque `<li>` (bloc `@for`, `track m.id`) affiche `{{ m.prenom }} {{ m.nom }}`. Il faut importer `AsyncPipe` (de `@angular/common`) dans `imports`. Vérifie avec `tester recherche -t "nombre de r"`.
-    indice: >-
+    hint: >-
       Le tube `async` s'abonne à `resultats$` et se désabonne tout seul. `@if (resultats$ | async; as page)` range la valeur reçue dans `page`.
-    apres: [3]
-    verif:
-      - commande-reussit: tester recherche -t 'nombre de r'
-      - commande-reussit: contient src/app/recherche.ts '@for\s*\('
-      - commande-reussit: contient src/app/recherche.ts 'AsyncPipe'
+    after: [3]
+    checks:
+      - command-succeeds: tester recherche -t 'nombre de r'
+      - command-succeeds: contient src/app/recherche.ts '@for\s*\('
+      - command-succeeds: contient src/app/recherche.ts 'AsyncPipe'
     solution:
-      - ecrire:
+      - write:
           src/app/recherche.ts: |
             import { AsyncPipe } from '@angular/common';
             import { Component, inject } from '@angular/core';
@@ -335,18 +335,18 @@ etapes:
                 this.terme$.subscribe((terme) => (this.dernierTerme = terme));
               }
             }
-  - texte: >-
+  - text: >-
       L'abonnement du constructeur (`this.terme$.subscribe(…)`) n'est jamais coupé : le test `destruction` le montre. Ajoute `takeUntilDestroyed()` (de `@angular/core/rxjs-interop`) dans un `.pipe(…)` avant le `subscribe`. Puis lance `tester` : tout le projet doit être vert.
-    indice: >-
+    hint: >-
       `this.terme$.pipe(takeUntilDestroyed()).subscribe(…)` : `takeUntilDestroyed()` s'appelle dans le constructeur, qui est un contexte d'injection.
-    apres: [4]
-    verif:
-      - commande-reussit: tester recherche -t destruction
-      - commande-reussit: tester
-      - commande-reussit: contient src/app/recherche.ts 'takeUntilDestroyed\s*\('
+    after: [4]
+    checks:
+      - command-succeeds: tester recherche -t destruction
+      - command-succeeds: tester
+      - command-succeeds: contient src/app/recherche.ts 'takeUntilDestroyed\s*\('
     solution:
-      - ecrire:
-          src/app/recherche.ts: |
+      - write:
+          src/app/recherche.ts: |-
             import { AsyncPipe } from '@angular/common';
             import { Component, inject } from '@angular/core';
             import { takeUntilDestroyed } from '@angular/core/rxjs-interop';

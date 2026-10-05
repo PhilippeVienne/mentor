@@ -1,9 +1,9 @@
 ---
 id: index-et-explain
-titre: "Index et plan de requête avec EXPLAIN"
-resume: "Comprendre pourquoi une requête est lente, lire son plan avec EXPLAIN et savoir quand créer un index."
-duree: 30
-objectifs:
+title: "Index et plan de requête avec EXPLAIN"
+summary: "Comprendre pourquoi une requête est lente, lire son plan avec EXPLAIN et savoir quand créer un index."
+minutes: 30
+objectives:
   - Expliquer ce qu'est un index et son coût
   - "Lire un plan `EXPLAIN` : `Seq Scan` ou `Index Scan`"
   - Savoir quelles colonnes PostgreSQL indexe d'office, et lesquelles non
@@ -120,50 +120,50 @@ Sur une petite table, PostgreSQL préfère souvent un `Seq Scan` : lire quelque
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le labo a chargé les quatre tables **et** 20 000 adhérent·e·s fictif·ve·s (puis lancé `ANALYZE adherents;`). Tu vas voir le plan changer en créant un index. Pour garder une trace vérifiable d'un plan, redirige-le dans un fichier : `psql -c "EXPLAIN …" > plan-avant.txt` (`>` écrit la sortie de la commande dans le fichier ; relis-le avec `cat`).
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
   - psql -q -v ON_ERROR_STOP=1 -f /opt/exercices/schema.sql -f /opt/exercices/donnees.sql -f /opt/exercices/volume.sql
-etapes:
-  - texte: 'Avant de créer l''index, enregistre dans `plan-avant.txt` le plan (`EXPLAIN`) de `SELECT * FROM adherents WHERE nom = ''Haddad'';` : tu dois y lire `Seq Scan`'
-    indice: 'Commande : `psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" > plan-avant.txt`, puis `cat plan-avant.txt`.'
-    verif:
-      - fichier-contient-dans-env: [plan-avant.txt, 'Seq Scan on adherents']
-      - commande-reussit: 'printf "SET enable_indexscan = off;\nSET enable_bitmapscan = off;\nEXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';\n" | psql -q -f - | cmp -s - plan-avant.txt'
+steps:
+  - text: 'Avant de créer l''index, enregistre dans `plan-avant.txt` le plan (`EXPLAIN`) de `SELECT * FROM adherents WHERE nom = ''Haddad'';` : tu dois y lire `Seq Scan`'
+    hint: 'Commande : `psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" > plan-avant.txt`, puis `cat plan-avant.txt`.'
+    checks:
+      - env-file-contains: [plan-avant.txt, 'Seq Scan on adherents']
+      - command-succeeds: 'printf "SET enable_indexscan = off;\nSET enable_bitmapscan = off;\nEXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';\n" | psql -q -f - | cmp -s - plan-avant.txt'
     solution:
       - psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = 'Haddad';" > plan-avant.txt
-  - texte: 'Crée un index nommé `idx_adherents_nom` sur la colonne `nom` de `adherents`'
-    indice: 'psql -c "CREATE INDEX idx_adherents_nom ON adherents (nom);"'
-    apres: [1]
-    verif:
-      - sortie-contient:
+  - text: 'Crée un index nommé `idx_adherents_nom` sur la colonne `nom` de `adherents`'
+    hint: 'psql -c "CREATE INDEX idx_adherents_nom ON adherents (nom);"'
+    after: [1]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT indexname FROM pg_indexes WHERE tablename = 'adherents' AND indexname = 'idx_adherents_nom'"
           - '^idx_adherents_nom$'
     solution:
       - psql -c "CREATE INDEX idx_adherents_nom ON adherents (nom);"
-  - texte: 'Enregistre dans `plan-apres.txt` le plan de la **même** requête : il doit maintenant utiliser `Index Scan using idx_adherents_nom`'
-    indice: 'Même commande qu''avant, avec `> plan-apres.txt`. Compare le coût (`cost=`) des deux fichiers.'
-    apres: [2]
-    verif:
-      - fichier-contient-dans-env: [plan-apres.txt, 'Index Scan using idx_adherents_nom']
-      - commande-reussit: 'psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" | cmp -s - plan-apres.txt'
+  - text: 'Enregistre dans `plan-apres.txt` le plan de la **même** requête : il doit maintenant utiliser `Index Scan using idx_adherents_nom`'
+    hint: 'Même commande qu''avant, avec `> plan-apres.txt`. Compare le coût (`cost=`) des deux fichiers.'
+    after: [2]
+    checks:
+      - env-file-contains: [plan-apres.txt, 'Index Scan using idx_adherents_nom']
+      - command-succeeds: 'psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" | cmp -s - plan-apres.txt'
     solution:
       - psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = 'Haddad';" > plan-apres.txt
-  - texte: 'Enregistre dans `analyse.txt` le résultat de `EXPLAIN ANALYZE` pour la même requête (il exécute la requête et ajoute les temps réels) : tu dois y trouver `Execution Time`'
-    indice: 'Commande : `psql -c "EXPLAIN ANALYZE SELECT * FROM adherents WHERE nom = ''Haddad'';" > analyse.txt`.'
-    apres: [2]
-    verif:
-      - fichier-contient-dans-env: [analyse.txt, '(?s)Index Scan using idx_adherents_nom.*Execution Time']
-      - commande-reussit: 'COUT=$(psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" | grep -o "cost=[0-9.]*" | head -1) && grep -q "$COUT" analyse.txt && grep -q "actual time=" analyse.txt'
+  - text: 'Enregistre dans `analyse.txt` le résultat de `EXPLAIN ANALYZE` pour la même requête (il exécute la requête et ajoute les temps réels) : tu dois y trouver `Execution Time`'
+    hint: 'Commande : `psql -c "EXPLAIN ANALYZE SELECT * FROM adherents WHERE nom = ''Haddad'';" > analyse.txt`.'
+    after: [2]
+    checks:
+      - env-file-contains: [analyse.txt, '(?s)Index Scan using idx_adherents_nom.*Execution Time']
+      - command-succeeds: 'COUT=$(psql -c "EXPLAIN SELECT * FROM adherents WHERE nom = ''Haddad'';" | grep -o "cost=[0-9.]*" | head -1) && grep -q "$COUT" analyse.txt && grep -q "actual time=" analyse.txt'
     solution:
       - psql -c "EXPLAIN ANALYZE SELECT * FROM adherents WHERE nom = 'Haddad';" > analyse.txt
-  - texte: 'PostgreSQL n''indexe pas les clés étrangères : crée un index (le nom que tu veux) sur la seule colonne `evenement_id` de `inscriptions`, pour accélérer les jointures par événement'
-    indice: 'psql -c "CREATE INDEX idx_inscriptions_evenement ON inscriptions (evenement_id);" — la clé primaire existante commence par `adherent_id`, elle ne sert pas ici.'
-    verif:
-      - sortie-contient:
+  - text: 'PostgreSQL n''indexe pas les clés étrangères : crée un index (le nom que tu veux) sur la seule colonne `evenement_id` de `inscriptions`, pour accélérer les jointures par événement'
+    hint: 'psql -c "CREATE INDEX idx_inscriptions_evenement ON inscriptions (evenement_id);" — la clé primaire existante commence par `adherent_id`, elle ne sert pas ici.'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM pg_indexes WHERE tablename = 'inscriptions' AND indexdef LIKE '%(evenement_id)%'"
           - '^1$'
     solution:

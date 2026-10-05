@@ -1,9 +1,9 @@
 ---
 id: script-shell
-titre: "Écrire un petit script shell"
-resume: "Variables, conditions, boucles et codes de retour : lire et écrire un script comme ceux des dépôts de l'équipe."
-duree: 35
-objectifs:
+title: "Écrire un petit script shell"
+summary: "Variables, conditions, boucles et codes de retour : lire et écrire un script comme ceux des dépôts de l'équipe."
+minutes: 35
+objectives:
   - Écrire un script avec shebang, variables et arguments
   - Utiliser un code de retour, `if` et `for`
   - Lire un script réel de l'équipe et expliquer ce que fait `set -e`
@@ -93,20 +93,20 @@ Lis ton script ligne par ligne avant de le lancer sur un vrai serveur. Pour voir
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu écris quatre petits scripts dans ton dossier de travail. Un fichier `liste.txt` s'y trouve déjà. Crée chaque script avec `nano` (ou l'éditeur de ton choix), puis teste-le. Pour lancer un script avec `./`, il faut d'abord le rendre exécutable (`chmod +x`).
-commandes:
+commands:
   - cp -R /opt/exercices/05-script/. .
-etapes:
-  - texte: 'Crée `salut.sh` : avec un argument, il affiche `Bonjour <argument>` ; sans argument, il affiche `Bonjour monde`. Commence par le shebang `#!/bin/bash`'
-    indice: 'Reprends le premier exemple de la leçon : `NOM="${1:-monde}"` puis `echo "Bonjour $NOM"`. Teste avec `bash salut.sh Alice` puis `bash salut.sh`.'
-    verif:
-      - sortie-contient: ['bash salut.sh Alice', '^Bonjour Alice$']
-      - sortie-contient: ['bash salut.sh Zoé', '^Bonjour Zoé$']
-      - sortie-contient: ['bash salut.sh', '^Bonjour monde$']
-      - fichier-contient-dans-env: [salut.sh, '^#!/bin/bash']
+steps:
+  - text: 'Crée `salut.sh` : avec un argument, il affiche `Bonjour <argument>` ; sans argument, il affiche `Bonjour monde`. Commence par le shebang `#!/bin/bash`'
+    hint: 'Reprends le premier exemple de la leçon : `NOM="${1:-monde}"` puis `echo "Bonjour $NOM"`. Teste avec `bash salut.sh Alice` puis `bash salut.sh`.'
+    checks:
+      - output-contains: ['bash salut.sh Alice', '^Bonjour Alice$']
+      - output-contains: ['bash salut.sh Zoé', '^Bonjour Zoé$']
+      - output-contains: ['bash salut.sh', '^Bonjour monde$']
+      - env-file-contains: [salut.sh, '^#!/bin/bash']
     solution:
       - |
         cat > salut.sh <<'EOF'
@@ -114,19 +114,19 @@ etapes:
         NOM="${1:-monde}"
         echo "Bonjour $NOM"
         EOF
-  - texte: 'Rends `salut.sh` exécutable et lance-le avec `./salut.sh Alice`'
-    indice: '`chmod +x salut.sh`, puis `./salut.sh Alice`. Le `./` désigne le script du dossier courant.'
-    apres: [1]
-    verif:
-      - sortie-contient: ['./salut.sh Alice', '^Bonjour Alice$']
+  - text: 'Rends `salut.sh` exécutable et lance-le avec `./salut.sh Alice`'
+    hint: '`chmod +x salut.sh`, puis `./salut.sh Alice`. Le `./` désigne le script du dossier courant.'
+    after: [1]
+    checks:
+      - output-contains: ['./salut.sh Alice', '^Bonjour Alice$']
     solution:
       - chmod +x salut.sh
       - ./salut.sh Alice
-  - texte: 'Crée `verifier.sh` : s''il trouve `liste.txt` dans le dossier courant, il affiche `liste trouvée` ; sinon il écrit `liste absente` sur la sortie d''erreur et termine avec le code `1`'
-    indice: 'Structure : `if test -f liste.txt; then echo "liste trouvée"; else echo "liste absente" >&2; exit 1; fi`. Teste-le ici, puis depuis un autre dossier avec `cd /tmp` : `bash /workspace/verifier.sh; echo $?`.'
-    verif:
-      - sortie-contient: ['bash verifier.sh', '^liste trouvée$']
-      - commande-echoue: 'cd /tmp && bash /workspace/verifier.sh'
+  - text: 'Crée `verifier.sh` : s''il trouve `liste.txt` dans le dossier courant, il affiche `liste trouvée` ; sinon il écrit `liste absente` sur la sortie d''erreur et termine avec le code `1`'
+    hint: 'Structure : `if test -f liste.txt; then echo "liste trouvée"; else echo "liste absente" >&2; exit 1; fi`. Teste-le ici, puis depuis un autre dossier avec `cd /tmp` : `bash /workspace/verifier.sh; echo $?`.'
+    checks:
+      - output-contains: ['bash verifier.sh', '^liste trouvée$']
+      - command-fails: 'cd /tmp && bash /workspace/verifier.sh'
     solution:
       - |
         cat > verifier.sh <<'EOF'
@@ -138,11 +138,11 @@ etapes:
             exit 1
         fi
         EOF
-  - texte: 'Crée `boucle.sh` : pour chaque fichier `*.txt` du dossier courant, il affiche `Fichier : <nom>`'
-    indice: '`for FICHIER in *.txt; do echo "Fichier : $FICHIER"; done`, sur plusieurs lignes comme dans la leçon.'
-    verif:
-      - sortie-contient: ['bash boucle.sh', '^Fichier : liste\.txt$']
-      - commande-reussit: 'D=$(mktemp -d) && cd "$D" && touch a.txt b.txt c.md && test "$(bash /workspace/boucle.sh)" = "$(printf "Fichier : a.txt\nFichier : b.txt")"'
+  - text: 'Crée `boucle.sh` : pour chaque fichier `*.txt` du dossier courant, il affiche `Fichier : <nom>`'
+    hint: '`for FICHIER in *.txt; do echo "Fichier : $FICHIER"; done`, sur plusieurs lignes comme dans la leçon.'
+    checks:
+      - output-contains: ['bash boucle.sh', '^Fichier : liste\.txt$']
+      - command-succeeds: 'D=$(mktemp -d) && cd "$D" && touch a.txt b.txt c.md && test "$(bash /workspace/boucle.sh)" = "$(printf "Fichier : a.txt\nFichier : b.txt")"'
     solution:
       - |
         cat > boucle.sh <<'EOF'
@@ -151,14 +151,14 @@ etapes:
             echo "Fichier : $FICHIER"
         done
         EOF
-  - texte: 'Crée `strict.sh` qui commence par `set -e`, puis lance `ls dossier-inconnu` (qui échoue), puis `echo "fin"`. Grâce à `set -e`, `fin` ne doit jamais s''afficher'
-    indice: 'Lance `bash strict.sh; echo $?` : le code affiché ne doit pas être `0`, et le mot `fin` doit être absent.'
-    verif:
-      - fichier-contient-dans-env: [strict.sh, '^set -e']
-      - commande-echoue: 'bash strict.sh > /dev/null 2>&1'
-      - commande-echoue: 'bash strict.sh 2>/dev/null | grep -q "^fin$"'
+  - text: 'Crée `strict.sh` qui commence par `set -e`, puis lance `ls dossier-inconnu` (qui échoue), puis `echo "fin"`. Grâce à `set -e`, `fin` ne doit jamais s''afficher'
+    hint: 'Lance `bash strict.sh; echo $?` : le code affiché ne doit pas être `0`, et le mot `fin` doit être absent.'
+    checks:
+      - env-file-contains: [strict.sh, '^set -e']
+      - command-fails: 'bash strict.sh > /dev/null 2>&1'
+      - command-fails: 'bash strict.sh 2>/dev/null | grep -q "^fin$"'
     solution:
-      - |
+      - |-
         cat > strict.sh <<'EOF'
         #!/bin/bash
         set -e

@@ -1,9 +1,9 @@
 ---
 id: lint-formatage
-titre: "Lint et formatage : ESLint et Prettier"
-resume: "Trois outils, trois rôles : `tsc` vérifie les types, ESLint repère les mauvaises pratiques, Prettier uniformise la mise en forme."
-duree: 30
-objectifs:
+title: "Lint et formatage : ESLint et Prettier"
+summary: "Trois outils, trois rôles : `tsc` vérifie les types, ESLint repère les mauvaises pratiques, Prettier uniformise la mise en forme."
+minutes: 30
+objectives:
   - Distinguer `tsc`, ESLint et Prettier
   - Lire la configuration ESLint et Prettier de MiniShop
   - Lancer les contrôles et le formatage avec les scripts npm
@@ -17,7 +17,7 @@ Un **linter** (« peluche », comme celle qu'on retire d'un vêtement) est u
 
 ## Trois outils, trois rôles
 
-:::cartes
+:::cards
 ### `tsc`
 
 Vérifie les **types**. Il ne dit rien d'une variable inutilisée ni d'une indentation bancale.
@@ -125,18 +125,18 @@ Dans cet essai, ESLint était configuré avec `typescript-eslint` (règles « 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un mini-projet avec `src/asso.ts`, le fichier de la leçon : il passe `tsc`, mais ESLint et Prettier ont des remarques. ESLint, `typescript-eslint` et Prettier sont déjà installés (pas de réseau ici, donc pas de `npm install`). Tu vas écrire la configuration d'ESLint et celle de Prettier, corriger le fichier, puis ajouter les scripts `lint` et `prettier-check`. Utilise `nano` pour éditer. Le portail contrôle ton travail sur une copie propre : un commentaire `eslint-disable` ne corrige rien, il faut corriger le code.
-commandes:
+commands:
   - cp -R /opt/exercices/06-lint-formatage/. .
   - lier-outils
-etapes:
-  - texte: 'Crée la configuration d''ESLint, `eslint.config.mjs`, avec les règles recommandées d''ESLint et de `typescript-eslint` : `npx eslint .` doit alors signaler `no-explicit-any`'
-    indice: 'Importe `defineConfig` depuis `"eslint/config"`, `eslint` depuis `"@eslint/js"` et `tseslint` depuis `"typescript-eslint"`, puis exporte `defineConfig(eslint.configs.recommended, tseslint.configs.recommended)`.'
-    verif:
-      - commande-reussit: 'verifier-ts 06 config'
+steps:
+  - text: 'Crée la configuration d''ESLint, `eslint.config.mjs`, avec les règles recommandées d''ESLint et de `typescript-eslint` : `npx eslint .` doit alors signaler `no-explicit-any`'
+    hint: 'Importe `defineConfig` depuis `"eslint/config"`, `eslint` depuis `"@eslint/js"` et `tseslint` depuis `"typescript-eslint"`, puis exporte `defineConfig(eslint.configs.recommended, tseslint.configs.recommended)`.'
+    checks:
+      - command-succeeds: 'verifier-ts 06 config'
     solution:
       - |
         cat > eslint.config.mjs <<'EOF'
@@ -146,11 +146,11 @@ etapes:
 
         export default defineConfig(eslint.configs.recommended, tseslint.configs.recommended);
         EOF
-  - texte: 'Corrige `src/asso.ts` pour que `npx eslint . --max-warnings 0` ne signale plus rien : plus de `any`, plus de variable inutilisée'
-    indice: 'Remplace `any` par `number` et supprime la constante `inutilisee`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-ts 06 asso'
+  - text: 'Corrige `src/asso.ts` pour que `npx eslint . --max-warnings 0` ne signale plus rien : plus de `any`, plus de variable inutilisée'
+    hint: 'Remplace `any` par `number` et supprime la constante `inutilisee`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-ts 06 asso'
     solution:
       - |
         cat > src/asso.ts <<'EOF'
@@ -158,10 +158,10 @@ etapes:
           return prix * quantite;
         }
         EOF
-  - texte: 'Crée `.prettierrc` pour fixer le style de l''équipe : lignes de 100 caractères au plus (`printWidth`) et indentation de 4 espaces (`tabWidth`)'
-    indice: 'Le fichier est du JSON : `{ "printWidth": 100, "tabWidth": 4 }`.'
-    verif:
-      - commande-reussit: 'verifier-ts 06 prettierrc'
+  - text: 'Crée `.prettierrc` pour fixer le style de l''équipe : lignes de 100 caractères au plus (`printWidth`) et indentation de 4 espaces (`tabWidth`)'
+    hint: 'Le fichier est du JSON : `{ "printWidth": 100, "tabWidth": 4 }`.'
+    checks:
+      - command-succeeds: 'verifier-ts 06 prettierrc'
     solution:
       - |
         cat > .prettierrc <<'EOF'
@@ -170,20 +170,20 @@ etapes:
             "tabWidth": 4
         }
         EOF
-  - texte: 'Mets le dossier `src` en forme avec Prettier : `npx prettier --check src` doit réussir'
-    indice: 'Lance `npx prettier --write src` : Prettier réécrit les fichiers selon `.prettierrc`.'
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-ts 06 format'
+  - text: 'Mets le dossier `src` en forme avec Prettier : `npx prettier --check src` doit réussir'
+    hint: 'Lance `npx prettier --write src` : Prettier réécrit les fichiers selon `.prettierrc`.'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-ts 06 format'
     solution:
       - npx prettier --write src
-  - texte: 'Ajoute dans `package.json` les scripts `lint` (qui lance `eslint`) et `prettier-check` (qui lance `prettier --check src`), puis vérifie que `npm run lint && npm run prettier-check` réussit'
-    indice: 'Comme pour `ts-check`, ajoute deux lignes dans la section `scripts` : `"lint": "eslint"` et `"prettier-check": "prettier --check src"`.'
-    apres: [2, 4]
-    verif:
-      - commande-reussit: 'verifier-ts 06 scripts'
+  - text: 'Ajoute dans `package.json` les scripts `lint` (qui lance `eslint`) et `prettier-check` (qui lance `prettier --check src`), puis vérifie que `npm run lint && npm run prettier-check` réussit'
+    hint: 'Comme pour `ts-check`, ajoute deux lignes dans la section `scripts` : `"lint": "eslint"` et `"prettier-check": "prettier --check src"`.'
+    after: [2, 4]
+    checks:
+      - command-succeeds: 'verifier-ts 06 scripts'
     solution:
-      - |
+      - |-
         sed -i 's|"ts-check": "tsc --noEmit"|"ts-check": "tsc --noEmit",\n        "lint": "eslint",\n        "prettier-check": "prettier --check src"|' package.json
 :::
 

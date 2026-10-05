@@ -1,9 +1,9 @@
 ---
 id: composants-et-gabarits
-titre: "Composants, modules et gabarits"
-resume: "Lire et écrire un composant Angular : classe, gabarit, liaisons et blocs de contrôle."
-duree: 45
-objectifs:
+title: "Composants, modules et gabarits"
+summary: "Lire et écrire un composant Angular : classe, gabarit, liaisons et blocs de contrôle."
+minutes: 45
+objectives:
   - Décrire les trois parties d'un composant (classe, gabarit, styles)
   - Utiliser les liaisons `{{ }}`, `[ ]`, `( )` et `[( )]`
   - Écrire un gabarit avec `@if` et `@for`
@@ -177,7 +177,7 @@ Le parent écrit `<app-carte-membre [prenom]="m.prenom" (selectionne)="ouvrir($e
 
 Angular doit savoir quelles balises sont connues dans un gabarit : sinon `<app-carte-membre>` serait pour lui une balise HTML inconnue. Il existe deux façons de le lui dire.
 
-:::cartes
+:::cards
 ### Composant autonome (*standalone*)
 
 Le composant déclare lui-même ses dépendances dans `imports: [...]`. C'est le **comportement par défaut depuis Angular 19** : tu n'as rien à écrire de plus.
@@ -212,40 +212,40 @@ Si tu crées un composant dans Adhésion sans l'ajouter à `declarations` d'`App
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu travailles dans un petit projet Angular déjà prêt (le dossier `/workspace`) : un club photo avec une liste de membres. Ton travail : écrire le **gabarit** (le HTML d'un composant) de `src/app/liste-membres.html`, puis compléter une carte de membre.
 
   Les fichiers `*.spec.ts` sont des **tests** : de petits programmes qui vérifient ce que l'écran affiche. Ne les modifie pas, fais-les passer (`tester` remet de toute façon les tests d'origine dans une copie : les modifier ne servirait à rien). La commande `tester` les lance : elle compile ton code avec le compilateur d'Angular en mode strict, puis joue les tests dans un faux navigateur en mémoire (il n'y a pas de vrai navigateur dans ce terminal). Une ligne `✓` signifie « test réussi », une ligne `×` « test échoué ». Édite les fichiers avec `nano`.
-commandes:
+commands:
   - cp -R /opt/exercices/01-composants-et-gabarits/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/app/liste-membres.html`, fais afficher le nombre de membres dans le titre avec une liaison `{{ }}` : le titre doit devenir `Membres (2)`. Vérifie avec `tester liste-membres -t "nombre de membres"` : la ligne du test doit afficher ✓.
-    indice: >-
+    hint: >-
       `<h2>Membres ({{ membres.length }})</h2>` : `membres` est le tableau de la classe `ListeMembresComponent`, `length` donne sa taille.
-    verif:
-      - commande-reussit: tester liste-membres -t 'nombre de membres'
-      - commande-reussit: contient src/app/liste-membres.html '\{\{\s*membres\.length\s*\}\}'
+    checks:
+      - command-succeeds: tester liste-membres -t 'nombre de membres'
+      - command-succeeds: contient src/app/liste-membres.html '\{\{\s*membres\.length\s*\}\}'
     solution:
-      - ecrire:
+      - write:
           src/app/liste-membres.html: |
             <h2>Membres ({{ membres.length }})</h2>
             <button type="button">Ajouter un membre</button>
-  - texte: >-
+  - text: >-
       Affiche la liste : une balise `<ul>` qui contient, grâce à un bloc `@for` (avec `track m.id`), un `<li>` par membre au format `Camille DURAND` (le nom en majuscules avec le tube `uppercase`). Un tube doit être **importé** : dans `liste-membres.ts`, ajoute `UpperCasePipe` (de `@angular/common`) à `imports`. Sans cela, `tester` répond « No pipe found with name 'uppercase' ». Vérifie avec `tester liste-membres -t majuscules`.
-    indice: >-
+    hint: >-
       `@for (m of membres; track m.id) { <li>{{ m.prenom }} {{ m.nom | uppercase }}</li> }` dans une balise `<ul>`, et `imports: [UpperCasePipe]` dans le décorateur.
-    apres: [1]
-    verif:
-      - commande-reussit: tester liste-membres -t majuscules
-      - commande-reussit: contient src/app/liste-membres.html '@for\s*\(.*track\s+m\.id'
-      - commande-reussit: contient src/app/liste-membres.html '\|\s*uppercase'
-      - commande-reussit: contient src/app/liste-membres.ts 'imports\s*:\s*\[[^\]]*UpperCasePipe'
+    after: [1]
+    checks:
+      - command-succeeds: tester liste-membres -t majuscules
+      - command-succeeds: contient src/app/liste-membres.html '@for\s*\(.*track\s+m\.id'
+      - command-succeeds: contient src/app/liste-membres.html '\|\s*uppercase'
+      - command-succeeds: contient src/app/liste-membres.ts 'imports\s*:\s*\[[^\]]*UpperCasePipe'
     solution:
-      - ecrire:
+      - write:
           src/app/liste-membres.ts: |
             import { UpperCasePipe } from '@angular/common';
             import { Component } from '@angular/core';
@@ -267,7 +267,7 @@ etapes:
                 this.membres = [...this.membres, { id, prenom: 'Nouveau', nom: 'Membre', cotisationPayee: false }];
               }
             }
-      - ecrire:
+      - write:
           src/app/liste-membres.html: |
             <h2>Membres ({{ membres.length }})</h2>
             <ul>
@@ -276,16 +276,16 @@ etapes:
               }
             </ul>
             <button type="button">Ajouter un membre</button>
-  - texte: >-
+  - text: >-
       Avec un bloc `@if`, ajoute dans chaque `<li>` la mention `<strong>(cotisation à régler)</strong>`, seulement pour les membres dont `cotisationPayee` est faux. Vérifie avec `tester liste-membres -t cotisation`.
-    indice: >-
+    hint: >-
       Après le nom, dans le `<li>` : `@if (!m.cotisationPayee) { <strong>(cotisation à régler)</strong> }`. Le `!` veut dire « n'est pas ».
-    apres: [2]
-    verif:
-      - commande-reussit: tester liste-membres -t cotisation
-      - commande-reussit: contient src/app/liste-membres.html '@if\s*\(.*cotisationPayee'
+    after: [2]
+    checks:
+      - command-succeeds: tester liste-membres -t cotisation
+      - command-succeeds: contient src/app/liste-membres.html '@if\s*\(.*cotisationPayee'
     solution:
-      - ecrire:
+      - write:
           src/app/liste-membres.html: |
             <h2>Membres ({{ membres.length }})</h2>
             <ul>
@@ -299,17 +299,17 @@ etapes:
               }
             </ul>
             <button type="button">Ajouter un membre</button>
-  - texte: >-
+  - text: >-
       Gère la liste vide : s'il n'y a aucun membre, affiche `<p>Aucun membre pour l'instant.</p>` à la place de la liste (un `@if (membres.length === 0) { … } @else { … }` autour du `<ul>`). Vérifie avec `tester liste-membres -t vide`.
-    indice: >-
+    hint: >-
       `@if (membres.length === 0) { <p>Aucun membre pour l'instant.</p> } @else { <ul>…</ul> }` : le `<ul>` existant passe dans le bloc `@else`.
-    apres: [3]
-    verif:
-      - commande-reussit: tester liste-membres -t vide
-      - commande-reussit: contient src/app/liste-membres.html '@if\s*\(.*membres\.length'
-      - commande-reussit: contient src/app/liste-membres.html '@else'
+    after: [3]
+    checks:
+      - command-succeeds: tester liste-membres -t vide
+      - command-succeeds: contient src/app/liste-membres.html '@if\s*\(.*membres\.length'
+      - command-succeeds: contient src/app/liste-membres.html '@else'
     solution:
-      - ecrire:
+      - write:
           src/app/liste-membres.html: |
             <h2>Membres ({{ membres.length }})</h2>
             @if (membres.length === 0) {
@@ -327,16 +327,16 @@ etapes:
               </ul>
             }
             <button type="button">Ajouter un membre</button>
-  - texte: >-
+  - text: >-
       Fais réagir le bouton : sur la balise `<button>`, ajoute une liaison d'évènement qui appelle la méthode `ajouter()` de la classe au clic. Le test clique sur le bouton et attend trois membres. Vérifie avec `tester liste-membres -t "au clic"`.
-    indice: >-
+    hint: >-
       `<button type="button" (click)="ajouter()">Ajouter un membre</button>` : les parenthèses désignent un évènement.
-    apres: [4]
-    verif:
-      - commande-reussit: tester liste-membres -t 'au clic'
-      - commande-reussit: contient src/app/liste-membres.html '\(click\)\s*=\s*.\s*ajouter\(\)'
+    after: [4]
+    checks:
+      - command-succeeds: tester liste-membres -t 'au clic'
+      - command-succeeds: contient src/app/liste-membres.html '\(click\)\s*=\s*.\s*ajouter\(\)'
     solution:
-      - ecrire:
+      - write:
           src/app/liste-membres.html: |
             <h2>Membres ({{ membres.length }})</h2>
             @if (membres.length === 0) {
@@ -354,18 +354,18 @@ etapes:
               </ul>
             }
             <button type="button" (click)="ajouter()">Ajouter un membre</button>
-  - texte: >-
+  - text: >-
       Ouvre `src/app/carte-membre.ts` et fais de la carte un composant qui dialogue avec son parent : une entrée **obligatoire** `prenom` (`input.required<string>()`), une sortie `selectionne` (`output<string>()`), un `<h3>` qui affiche le prénom (en l'appelant comme une fonction : `prenom()`) et un bouton qui émet le prénom au clic (`selectionne.emit(prenom())`). Pense à importer `input` et `output` de `@angular/core`. Termine par `tester` sans argument : tout le projet doit être vert.
-    indice: >-
+    hint: >-
       Dans la classe : `readonly prenom = input.required<string>();` et `readonly selectionne = output<string>();`. Dans le gabarit : `<h3>{{ prenom() }}</h3>` et `(click)="selectionne.emit(prenom())"`.
-    apres: [5]
-    verif:
-      - commande-reussit: tester
-      - commande-reussit: contient src/app/carte-membre.ts 'input\.required\s*<\s*string\s*>'
-      - commande-reussit: contient src/app/carte-membre.ts '\boutput\s*<\s*string\s*>\s*\('
+    after: [5]
+    checks:
+      - command-succeeds: tester
+      - command-succeeds: contient src/app/carte-membre.ts 'input\.required\s*<\s*string\s*>'
+      - command-succeeds: contient src/app/carte-membre.ts '\boutput\s*<\s*string\s*>\s*\('
     solution:
-      - ecrire:
-          src/app/carte-membre.ts: |
+      - write:
+          src/app/carte-membre.ts: |-
             import { Component, input, output } from '@angular/core';
 
             @Component({

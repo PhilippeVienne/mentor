@@ -1,9 +1,9 @@
 ---
 id: bases-javascript
-titre: "JavaScript : variables, fonctions, tableaux et objets"
-resume: "Les briques du langage : déclarer, calculer, boucler sur des listes et décrire des données, avec des scripts que tu lances toi-même."
-duree: 30
-objectifs:
+title: "JavaScript : variables, fonctions, tableaux et objets"
+summary: "Les briques du langage : déclarer, calculer, boucler sur des listes et décrire des données, avec des scripts que tu lances toi-même."
+minutes: 30
+objectives:
   - Déclarer des variables avec `const` et `let`
   - Écrire une fonction, y compris une fonction fléchée
   - Transformer un tableau avec `map`, `filter` et `find`
@@ -171,19 +171,19 @@ On **enchaîne** deux méthodes : `filter` garde les événements qui ont encor
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu vas écrire de petits scripts et les lancer avec `node`. Ton dossier contient déjà `evenements.js` (des données à compléter), `statistiques.js` (deux fonctions à écrire) et `statistiques.test.js` (les tests de la dernière étape). Écris les autres fichiers avec `nano`. L'outil de vérification regarde ce que tes scripts **affichent** ou **renvoient**, pas la façon dont tu les as écrits, mais il les essaie aussi avec d'autres valeurs que celles de l'énoncé : écrire le résultat « en dur » ne valide pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/03-bases-javascript/. .
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Crée `boutique.js` avec une constante `nom` (`"Club Photo"`), une variable `places` (`20`) que tu diminues de 1, puis un `console.log` avec un texte à backticks qui affiche exactement `Club Photo : 19 places restantes`. Lance `node boutique.js`.
-    indice: >-
+    hint: >-
       ``console.log(`${nom} : ${places} places restantes`);`` après avoir écrit `places = places - 1;`. Les backticks sont obligatoires pour que `${…}` fonctionne.
-    verif:
-      - commande-reussit: 'verifier-web 03 boutique'
+    checks:
+      - command-succeeds: 'verifier-web 03 boutique'
     solution:
       - |
         cat > boutique.js <<'EOF'
@@ -192,12 +192,12 @@ etapes:
         places = places - 1;
         console.log(`${nom} : ${places} places restantes`);
         EOF
-  - texte: >-
+  - text: >-
       Crée `prix.js` avec la fonction `prixTotal(prix, quantite)` et la fonction fléchée `prixAvecRemise(prix, quantite)` (10 % de remise à partir de 5 articles), puis affiche `prixTotal(4.5, 2)` et `prixAvecRemise(4.5, 10)`, un résultat par ligne. `node prix.js` doit afficher `9` puis `40.5`.
-    indice: >-
+    hint: >-
       Reprends les deux fonctions de la leçon et termine par deux `console.log(…)`, un par appel.
-    verif:
-      - commande-reussit: 'verifier-web 03 prix'
+    checks:
+      - command-succeeds: 'verifier-web 03 prix'
     solution:
       - |
         cat > prix.js <<'EOF'
@@ -213,12 +213,12 @@ etapes:
         console.log(prixTotal(4.5, 2));
         console.log(prixAvecRemise(4.5, 10));
         EOF
-  - texte: >-
+  - text: >-
       Ouvre `evenements.js` (le tableau `evenements` est déjà écrit) et ajoute sous la ligne de consigne : une constante `disponibles` (les titres des événements qui ont encore des places, avec `filter` puis `map`) et une constante `grand` (le premier événement qui a plus de 30 places, avec `find`). Affiche `disponibles`, puis `grand.titre`. `node evenements.js` doit afficher `[ 'Sortie photo', 'Exposition' ]` puis `Exposition`.
-    indice: >-
+    hint: >-
       `const disponibles = evenements.filter(e => e.places > 0).map(e => e.titre);` puis `const grand = evenements.find(e => e.places > 30);` et deux `console.log`.
-    verif:
-      - commande-reussit: 'verifier-web 03 evenements'
+    checks:
+      - command-succeeds: 'verifier-web 03 evenements'
     solution:
       - |
         cat >> evenements.js <<'EOF'
@@ -227,12 +227,12 @@ etapes:
         console.log(disponibles);
         console.log(grand.titre);
         EOF
-  - texte: >-
+  - text: >-
       Crée `copie.js` : un objet `evenement` avec `titre: "Sortie photo"` et `places: 20`, une déstructuration `const { titre, places } = evenement;` qui affiche `Sortie photo 20`, puis une copie `{ ...evenement, places: 19 }` dont tu affiches les places suivies de celles de l'original : `19 20`.
-    indice: >-
+    hint: >-
       `console.log(titre, places);` met un espace entre les deux valeurs. Même principe pour `console.log(copie.places, evenement.places);`.
-    verif:
-      - commande-reussit: 'verifier-web 03 copie'
+    checks:
+      - command-succeeds: 'verifier-web 03 copie'
     solution:
       - |
         cat > copie.js <<'EOF'
@@ -242,14 +242,14 @@ etapes:
         const copie = { ...evenement, places: 19 };
         console.log(copie.places, evenement.places);
         EOF
-  - texte: >-
+  - text: >-
       Complète les deux fonctions de `statistiques.js` : `moyenne(nombres)` (la moyenne, ou `0` pour un tableau vide) et `titresDisponibles(evenements)` (les titres des événements qui ont encore des places). Lance les tests avec `node --test statistiques.test.js` : ils exécutent ton fichier et vérifient ce que renvoient tes fonctions.
-    indice: >-
+    hint: >-
       Pour la moyenne, additionne avec une boucle `for…of` puis divise par `nombres.length`. Pour les titres, c'est le même `filter` puis `map` qu'à l'étape 3, dans une fonction qui `return` le résultat.
-    verif:
-      - commande-reussit: 'verifier-web 03 stats'
+    checks:
+      - command-succeeds: 'verifier-web 03 stats'
     solution:
-      - |
+      - |-
         cat > statistiques.js <<'EOF'
         function moyenne(nombres) {
           if (nombres.length === 0) {

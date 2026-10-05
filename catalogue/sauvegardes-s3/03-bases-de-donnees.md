@@ -1,9 +1,9 @@
 ---
 id: bases-de-donnees
-titre: "Sauvegarder PostgreSQL et MySQL"
-resume: "Faire un dump logique d'une base, l'envoyer vers un stockage objet sans exposer de mot de passe, et comprendre comment le planifier."
-duree: 35
-objectifs:
+title: "Sauvegarder PostgreSQL et MySQL"
+summary: "Faire un dump logique d'une base, l'envoyer vers un stockage objet sans exposer de mot de passe, et comprendre comment le planifier."
+minutes: 35
+objectives:
   - Expliquer ce que produit `pg_dump` et pourquoi on ne copie pas les fichiers d'une base en marche
   - Lire la configuration de l'image `docker-postgres-backup`, y compris sa commande `docker run` et sa fréquence cron
   - Repérer les défauts du script MySQL de l'équipe
@@ -112,48 +112,48 @@ Ce script passe le mot de passe avec `-p${MYSQL_PASSWORD}`. Sur une machine part
 
 Dans le labo, une vraie base PostgreSQL `asso` (deux associations, cinq adhérent·e·s, données inventées) tourne dans ton conteneur, ainsi qu'un MinIO local. Tu sauvegardes la base des deux façons vues plus haut, puis tu écris la ligne cron qui automatiserait la sauvegarde. `docker run` n'est pas exécuté ici (le conteneur n'a pas de Docker) : seule la partie `pg_dump` et S3 est pratiquée.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   La base PostgreSQL `asso` et un MinIO local sont démarrés pour toi, avec des identifiants factices. `pg_dump`, `pg_restore`, `psql`, `aws` et `mc` sont déjà connectés à ces services (inutile de donner `-h` ni `-U`). Pour voir la base, essaie `psql -c "SELECT * FROM adherents;"`. Le script `backup.py`, version simplifiée de celui de `backups3`, envoie un fichier vers un bucket : `backup.py BUCKET FICHIER OBJET`. Les étapes sont vérifiées sur les fichiers et sur le contenu du bucket.
-commandes:
+commands:
   - demarrer-minio
   - demarrer-postgres
-etapes:
-  - texte: 'Fais un dump de la base `asso` au format *custom* dans le fichier `asso.dump`'
-    indice: 'pg_dump -Fc -f asso.dump'
-    verif:
-      - fichier-existe-dans-env: asso.dump
-      - commande-reussit: pg_restore -l asso.dump
+steps:
+  - text: 'Fais un dump de la base `asso` au format *custom* dans le fichier `asso.dump`'
+    hint: 'pg_dump -Fc -f asso.dump'
+    checks:
+      - env-file-exists: asso.dump
+      - command-succeeds: pg_restore -l asso.dump
     solution:
       - pg_dump -Fc -f asso.dump
-  - texte: 'Crée le bucket `sauvegardes-bd` avec `mc mb`'
-    indice: 'mc mb labo/sauvegardes-bd'
-    verif:
-      - commande-reussit: mc ls labo/sauvegardes-bd
+  - text: 'Crée le bucket `sauvegardes-bd` avec `mc mb`'
+    hint: 'mc mb labo/sauvegardes-bd'
+    checks:
+      - command-succeeds: mc ls labo/sauvegardes-bd
     solution:
       - mc mb labo/sauvegardes-bd
-  - texte: 'Envoie `asso.dump` dans le bucket `sauvegardes-bd`, sous le même nom, avec `backup.py`'
-    indice: 'backup.py -v sauvegardes-bd asso.dump asso.dump'
-    apres: [1, 2]
-    verif:
-      - commande-reussit: mc stat labo/sauvegardes-bd/asso.dump
+  - text: 'Envoie `asso.dump` dans le bucket `sauvegardes-bd`, sous le même nom, avec `backup.py`'
+    hint: 'backup.py -v sauvegardes-bd asso.dump asso.dump'
+    after: [1, 2]
+    checks:
+      - command-succeeds: mc stat labo/sauvegardes-bd/asso.dump
     solution:
       - backup.py -v sauvegardes-bd asso.dump asso.dump
-  - texte: 'Sans fichier intermédiaire, envoie un dump SQL compressé dans l''objet `asso.sql.gz` du même bucket, avec `pg_dump | gzip | aws s3 cp -`'
-    indice: 'pg_dump | gzip | aws s3 cp - s3://sauvegardes-bd/asso.sql.gz'
-    apres: [2]
-    verif:
-      - sortie-contient:
+  - text: 'Sans fichier intermédiaire, envoie un dump SQL compressé dans l''objet `asso.sql.gz` du même bucket, avec `pg_dump | gzip | aws s3 cp -`'
+    hint: 'pg_dump | gzip | aws s3 cp - s3://sauvegardes-bd/asso.sql.gz'
+    after: [2]
+    checks:
+      - output-contains:
           - aws s3api head-object --bucket sauvegardes-bd --key asso.sql.gz --query ContentLength --output text
           - '^[1-9][0-9]*$'
-      - commande-reussit: aws s3 cp s3://sauvegardes-bd/asso.sql.gz - | gzip -dc | grep -q "CREATE TABLE"
+      - command-succeeds: aws s3 cp s3://sauvegardes-bd/asso.sql.gz - | gzip -dc | grep -q "CREATE TABLE"
     solution:
       - pg_dump | gzip | aws s3 cp - s3://sauvegardes-bd/asso.sql.gz
-  - texte: 'Écris dans `crontab.txt` la ligne cron qui lance `/usr/local/bin/sauvegarder.sh` chaque jour à 2 h 30 (cinq champs cron, puis la commande)'
-    indice: 'Minute 30, heure 2, puis trois étoiles : echo ''30 2 * * * /usr/local/bin/sauvegarder.sh'' > crontab.txt'
-    verif:
-      - fichier-contient-dans-env: [crontab.txt, '^30 2 \* \* \* /usr/local/bin/sauvegarder\.sh\s*$']
+  - text: 'Écris dans `crontab.txt` la ligne cron qui lance `/usr/local/bin/sauvegarder.sh` chaque jour à 2 h 30 (cinq champs cron, puis la commande)'
+    hint: 'Minute 30, heure 2, puis trois étoiles : echo ''30 2 * * * /usr/local/bin/sauvegarder.sh'' > crontab.txt'
+    checks:
+      - env-file-contains: [crontab.txt, '^30 2 \* \* \* /usr/local/bin/sauvegarder\.sh\s*$']
     solution:
       - echo '30 2 * * * /usr/local/bin/sauvegarder.sh' > crontab.txt
 :::

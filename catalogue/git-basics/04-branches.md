@@ -1,9 +1,9 @@
 ---
 id: branches
-titre: Branches et fusions
-resume: 'Travailler en parallèle sans rien casser, puis réunir les travaux.'
-duree: 15
-objectifs:
+title: Branches et fusions
+summary: 'Travailler en parallèle sans rien casser, puis réunir les travaux.'
+minutes: 15
+objectives:
   - "Expliquer qu'une branche n'est qu'un pointeur léger"
   - "Créer une branche, y travailler puis revenir sur `main`"
   - "Fusionner avec `git merge` et distinguer fast-forward et fusion à 3 voies"
@@ -62,51 +62,51 @@ Dans le labo ci-contre, `main` n'avancera pas pendant que tu travailles sur ta b
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ajoute une page de contact sur une branche dédiée, puis fusionne-la dans `main`. Pour voir le graphe : `git log --oneline --graph --all`.
-commandes:
+commands:
   - git init -q
   - 'echo "# Site du club" > README.md'
   - 'echo "<h1>Accueil</h1>" > index.html'
   - 'git add . && git commit -q -m "Initialise le site"'
-etapes:
-  - texte: 'Crée et rejoins la branche `feature-contact`'
-    indice: git switch -c feature-contact
-    verif:
-      - sortie-contient: ['git branch --show-current', '^feature-contact$']
+steps:
+  - text: 'Crée et rejoins la branche `feature-contact`'
+    hint: git switch -c feature-contact
+    checks:
+      - output-contains: ['git branch --show-current', '^feature-contact$']
     solution:
       - git switch -c feature-contact
-  - texte: 'Crée `contact.html` et commite-le sur cette branche'
-    indice: 'echo "<h1>Contact</h1>" > contact.html puis git add . puis git commit -m "Ajoute la page de contact"'
-    verif:
-      - commande-reussit: 'git cat-file -e feature-contact:contact.html'
+  - text: 'Crée `contact.html` et commite-le sur cette branche'
+    hint: 'echo "<h1>Contact</h1>" > contact.html puis git add . puis git commit -m "Ajoute la page de contact"'
+    checks:
+      - command-succeeds: 'git cat-file -e feature-contact:contact.html'
     solution:
       - 'echo "<h1>Contact</h1>" > contact.html'
       - git add .
       - 'git commit -m "Ajoute la page de contact"'
-  - texte: 'Reviens sur `main` : `contact.html` disparaît !'
-    indice: git switch main
-    verif:
-      - sortie-contient: ['git branch --show-current', '^main$']
-      - commande-reussit: 'git rev-parse --verify -q feature-contact'
-      - fichier-absent-dans-env: contact.html
+  - text: 'Reviens sur `main` : `contact.html` disparaît !'
+    hint: git switch main
+    checks:
+      - output-contains: ['git branch --show-current', '^main$']
+      - command-succeeds: 'git rev-parse --verify -q feature-contact'
+      - env-file-absent: contact.html
     solution:
       - git switch main
-  - texte: 'Fusionne la branche dans `main`'
-    indice: git merge feature-contact
-    verif:
-      - sortie-contient: ['git branch --show-current', '^main$']
-      - commande-reussit: 'git merge-base --is-ancestor feature-contact main'
-      - fichier-existe-dans-env: contact.html
+  - text: 'Fusionne la branche dans `main`'
+    hint: git merge feature-contact
+    checks:
+      - output-contains: ['git branch --show-current', '^main$']
+      - command-succeeds: 'git merge-base --is-ancestor feature-contact main'
+      - env-file-exists: contact.html
     solution:
       - git merge feature-contact
-  - texte: 'Supprime la branche devenue inutile avec `git branch -d`'
-    indice: git branch -d feature-contact
-    verif:
-      - commande-echoue: 'git rev-parse --verify -q feature-contact'
-      - fichier-existe-dans-env: contact.html
+  - text: 'Supprime la branche devenue inutile avec `git branch -d`'
+    hint: git branch -d feature-contact
+    checks:
+      - command-fails: 'git rev-parse --verify -q feature-contact'
+      - env-file-exists: contact.html
     solution:
       - git branch -d feature-contact
 :::

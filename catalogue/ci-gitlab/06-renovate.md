@@ -1,9 +1,9 @@
 ---
 id: renovate
-titre: "Mises à jour automatiques avec Renovate"
-resume: "Laisser un robot proposer les mises à jour de dépendances, et relire ses merge requests."
-duree: 30
-objectifs:
+title: "Mises à jour automatiques avec Renovate"
+summary: "Laisser un robot proposer les mises à jour de dépendances, et relire ses merge requests."
+minutes: 30
+objectives:
   - Expliquer ce que fait Renovate et pourquoi l'équipe l'utilise
   - Lire un `renovate.json`
   - Écrire un `renovate.json` valide, sans y mettre de secret
@@ -73,46 +73,46 @@ Un pipeline vert ne prouve que ce que tes tests couvrent. Une dépendance peut c
 Le robot ne tourne pas dans ce labo (il lui faudrait le réseau et un accès au dépôt). `verifier-renovate` est un petit outil de l'équipe qui lit un `renovate.json`, repère les erreurs que Renovate signalerait (JSON mal formé, option inconnue, règle sans effet, jeton en clair) et résume ce que la configuration demande. Sa liste d'options est partielle : en cas de doute, la documentation de Renovate fait foi.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient deux fichiers à réparer, `renovate-casse.json` et `renovate-fuite.json`, ainsi qu'un `package.json` et un `Dockerfile` qui jouent les fichiers de dépendances. Modifie les fichiers avec `nano` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code. Pour contrôler un fichier : `verifier-renovate renovate-casse.json`.
-commandes:
+commands:
   - cp -R /opt/exercices/06-renovate/. .
-etapes:
-  - texte: 'Répare `renovate-casse.json` : `verifier-renovate renovate-casse.json` signale d''abord un JSON mal formé, puis une option inconnue. Corrige jusqu''à ce que le fichier soit valide'
-    indice: 'JSON refuse la virgule après le dernier élément d''un objet. Ensuite, l''option mal orthographiée doit s''appeler `labels`.'
-    verif:
-      - commande-reussit: verifier-renovate renovate-casse.json
-      - sortie-contient: ['verifier-renovate renovate-casse.json', 'labels : ']
+steps:
+  - text: 'Répare `renovate-casse.json` : `verifier-renovate renovate-casse.json` signale d''abord un JSON mal formé, puis une option inconnue. Corrige jusqu''à ce que le fichier soit valide'
+    hint: 'JSON refuse la virgule après le dernier élément d''un objet. Ensuite, l''option mal orthographiée doit s''appeler `labels`.'
+    checks:
+      - command-succeeds: verifier-renovate renovate-casse.json
+      - output-contains: ['verifier-renovate renovate-casse.json', 'labels : ']
     solution:
-      - ecrire:
+      - write:
           renovate-casse.json: |
             {
               "extends": ["config:base"],
               "labels": ["Dependencies"]
             }
-  - texte: 'Écris un `renovate.json` neuf : il étend `config:recommended` et colle les étiquettes `Dependencies` et `Maintenance` sur les merge requests du robot. `verifier-renovate --strict renovate.json` doit réussir'
-    indice: 'Un objet JSON avec deux clés : `"extends": ["config:recommended"]` et `"labels": ["Dependencies", "Maintenance"]`, séparées par une virgule.'
-    verif:
-      - commande-reussit: verifier-renovate --strict renovate.json
-      - sortie-contient: ['verifier-renovate renovate.json', 'extends : .*config:recommended']
-      - sortie-contient: ['verifier-renovate renovate.json', 'labels : .*Dependencies.*Maintenance']
+  - text: 'Écris un `renovate.json` neuf : il étend `config:recommended` et colle les étiquettes `Dependencies` et `Maintenance` sur les merge requests du robot. `verifier-renovate --strict renovate.json` doit réussir'
+    hint: 'Un objet JSON avec deux clés : `"extends": ["config:recommended"]` et `"labels": ["Dependencies", "Maintenance"]`, séparées par une virgule.'
+    checks:
+      - command-succeeds: verifier-renovate --strict renovate.json
+      - output-contains: ['verifier-renovate renovate.json', 'extends : .*config:recommended']
+      - output-contains: ['verifier-renovate renovate.json', 'labels : .*Dependencies.*Maintenance']
     solution:
-      - ecrire:
+      - write:
           renovate.json: |
             {
               "extends": ["config:recommended"],
               "labels": ["Dependencies", "Maintenance"]
             }
-  - texte: 'Marque les mises à jour de sécurité : ajoute `vulnerabilityAlerts` avec l''étiquette `Priority::Critical`'
-    indice: 'Après `labels`, ajoute une virgule puis `"vulnerabilityAlerts": { "labels": ["Priority::Critical"] }`.'
-    apres: [2]
-    verif:
-      - commande-reussit: verifier-renovate --strict renovate.json
-      - sortie-contient: ['verifier-renovate renovate.json', 'alertes de vulnérabilité : labels .*Priority::Critical']
+  - text: 'Marque les mises à jour de sécurité : ajoute `vulnerabilityAlerts` avec l''étiquette `Priority::Critical`'
+    hint: 'Après `labels`, ajoute une virgule puis `"vulnerabilityAlerts": { "labels": ["Priority::Critical"] }`.'
+    after: [2]
+    checks:
+      - command-succeeds: verifier-renovate --strict renovate.json
+      - output-contains: ['verifier-renovate renovate.json', 'alertes de vulnérabilité : labels .*Priority::Critical']
     solution:
-      - ecrire:
+      - write:
           renovate.json: |
             {
               "extends": ["config:recommended"],
@@ -121,14 +121,14 @@ etapes:
                 "labels": ["Priority::Critical"]
               }
             }
-  - texte: 'Les mises à jour **majeures** sont risquées : ajoute une règle dans `packageRules` qui, pour `matchUpdateTypes` valant `["major"]`, exige une approbation (`dependencyDashboardApproval` à `true`) et ajoute l''étiquette `Major`'
-    indice: 'Une liste `"packageRules": [ { … } ]` ; l''objet contient `"matchUpdateTypes": ["major"]` (le critère), puis `"dependencyDashboardApproval": true` et `"labels": ["Major"]` (les effets).'
-    apres: [3]
-    verif:
-      - commande-reussit: verifier-renovate --strict renovate.json
-      - sortie-contient: ['verifier-renovate renovate.json', 'règle \d+ : major -> .*dependencyDashboardApproval']
+  - text: 'Les mises à jour **majeures** sont risquées : ajoute une règle dans `packageRules` qui, pour `matchUpdateTypes` valant `["major"]`, exige une approbation (`dependencyDashboardApproval` à `true`) et ajoute l''étiquette `Major`'
+    hint: 'Une liste `"packageRules": [ { … } ]` ; l''objet contient `"matchUpdateTypes": ["major"]` (le critère), puis `"dependencyDashboardApproval": true` et `"labels": ["Major"]` (les effets).'
+    after: [3]
+    checks:
+      - command-succeeds: verifier-renovate --strict renovate.json
+      - output-contains: ['verifier-renovate renovate.json', 'règle \d+ : major -> .*dependencyDashboardApproval']
     solution:
-      - ecrire:
+      - write:
           renovate.json: |
             {
               "extends": ["config:recommended"],
@@ -144,15 +144,15 @@ etapes:
                 }
               ]
             }
-  - texte: '`renovate-fuite.json` contient un jeton GitLab (faux) écrit en clair. `verifier-renovate renovate-fuite.json` le refuse. Retire-le du fichier : la bonne pratique est de donner le jeton au robot par sa propre configuration, jamais dans le dépôt'
-    indice: 'Supprime tout le bloc `hostRules` (et la virgule qui le précède), en gardant `extends`.'
-    verif:
-      - commande-reussit: verifier-renovate renovate-fuite.json
-      - commande-echoue: grep -q 'glpat-' renovate-fuite.json
-      - sortie-contient: ['verifier-renovate renovate-fuite.json', 'extends : .*config:recommended']
+  - text: '`renovate-fuite.json` contient un jeton GitLab (faux) écrit en clair. `verifier-renovate renovate-fuite.json` le refuse. Retire-le du fichier : la bonne pratique est de donner le jeton au robot par sa propre configuration, jamais dans le dépôt'
+    hint: 'Supprime tout le bloc `hostRules` (et la virgule qui le précède), en gardant `extends`.'
+    checks:
+      - command-succeeds: verifier-renovate renovate-fuite.json
+      - command-fails: grep -q 'glpat-' renovate-fuite.json
+      - output-contains: ['verifier-renovate renovate-fuite.json', 'extends : .*config:recommended']
     solution:
-      - ecrire:
-          renovate-fuite.json: |
+      - write:
+          renovate-fuite.json: |-
             {
               "extends": ["config:recommended"]
             }

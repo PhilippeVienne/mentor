@@ -1,9 +1,9 @@
 ---
 id: composants-props
-titre: "Composants, JSX et props"
-resume: "Découper une page en petites briques réutilisables, qui reçoivent leurs données par des props."
-duree: 30
-objectifs:
+title: "Composants, JSX et props"
+summary: "Découper une page en petites briques réutilisables, qui reçoivent leurs données par des props."
+minutes: 30
+objectives:
   - Expliquer à quoi sert React et ce qu'est un composant
   - Écrire un composant TypeScript qui reçoit des props typées
   - Afficher une liste avec `map` et une `key`, et afficher un contenu selon une condition
@@ -151,8 +151,8 @@ Avec une liste vide, on obtient `<p>Aucun goodie pour le moment.</p>`.
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Ton dossier de travail contient une petite boutique de goodies (les objets aux couleurs de l'association). Dans le dossier `src`, les fichiers `GoodieCard.tsx`, `GoodieList.tsx`, `Panneau.tsx` et `App.tsx` sont à écrire ou à corriger avec `nano` (un éditeur de texte qui s'ouvre dans le terminal : `Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte).
 
@@ -161,20 +161,20 @@ intro: |
   - `npx vitest run GoodieCard` lance les tests dont le nom de fichier contient `GoodieCard` (`npx` lance un outil déjà installé, `vitest` est l'outil de test) ;
   - `npx tsc --noEmit` demande à TypeScript de vérifier les types de tout le projet, sans rien produire ;
   - `npx tsx src/afficher.tsx` affiche le HTML de la page, tel que le serveur l'enverrait.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/01-composants-props/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Ouvre `src/GoodieCard.tsx` et écris le composant `GoodieCard` : il reçoit les props `nom`, `prixCents` et `stock`, et renvoie un `<article>` avec le nom dans un `<h3>`, le prix mis en forme par `formatEur` dans un `<p>`, puis « Épuisé » si le stock est nul ou « N en stock » sinon. Vérifie avec `npx vitest run GoodieCard`.
-    indice: >-
+    hint: >-
       Copie le composant de la leçon. Il faut importer `formatEur` et le type `Goodie` depuis `./goodies`, et écrire `{stock === 0 ? <p>Épuisé</p> : <p>{stock} en stock</p>}`.
-    verif:
-      - commande-reussit: controler tests 01-composants-props GoodieCard
-      - commande-reussit: contient src/GoodieCard.tsx '<article'
+    checks:
+      - command-succeeds: controler tests 01-composants-props GoodieCard
+      - command-succeeds: contient src/GoodieCard.tsx '<article'
     solution:
-      - ecrire:
+      - write:
           'src/GoodieCard.tsx': |
             import { formatEur, type Goodie } from "./goodies";
 
@@ -187,17 +187,17 @@ etapes:
                 </article>
               );
             }
-  - texte: >-
+  - text: >-
       Écris `GoodieList` dans `src/GoodieList.tsx` : une `<section>` qui affiche une `GoodieCard` par goodie de la prop `goodies`, avec une `key`, ou le paragraphe « Aucun goodie pour le moment. » quand le tableau est vide. Vérifie avec `npx vitest run GoodieList` : un des tests contrôle que React ne se plaint pas d'une `key` manquante.
-    indice: >-
+    hint: >-
       Utilise `goodies.map((g) => (<GoodieCard key={g.id} … />))`. Pour la liste vide, un `if (goodies.length === 0) { return <p>…</p>; }` avant le `return` principal.
-    verif:
-      - commande-reussit: controler tests 01-composants-props GoodieList
-      - commande-reussit: contient src/GoodieList.tsx '\.map\s*\('
-      - commande-reussit: contient src/GoodieList.tsx '\bkey\s*='
-    apres: [1]
+    checks:
+      - command-succeeds: controler tests 01-composants-props GoodieList
+      - command-succeeds: contient src/GoodieList.tsx '\.map\s*\('
+      - command-succeeds: contient src/GoodieList.tsx '\bkey\s*='
+    after: [1]
     solution:
-      - ecrire:
+      - write:
           'src/GoodieList.tsx': |
             import { GoodieCard } from "./GoodieCard";
             import type { Goodie } from "./goodies";
@@ -214,15 +214,15 @@ etapes:
                 </section>
               );
             }
-  - texte: >-
+  - text: >-
       Écris `Panneau` dans `src/Panneau.tsx` : un `<div>` avec la prop `titre` dans un `<h2>`, suivie des enfants (`children`, de type `ReactNode`). Vérifie avec `npx vitest run Panneau`.
-    indice: >-
+    hint: >-
       `import type { ReactNode } from "react";` puis des props `Readonly<{ titre: string; children: ReactNode }>` ; affiche `{children}` sous le `<h2>`.
-    verif:
-      - commande-reussit: controler tests 01-composants-props Panneau
-      - commande-reussit: contient src/Panneau.tsx '\bchildren\b'
+    checks:
+      - command-succeeds: controler tests 01-composants-props Panneau
+      - command-succeeds: contient src/Panneau.tsx '\bchildren\b'
     solution:
-      - ecrire:
+      - write:
           'src/Panneau.tsx': |
             import type { ReactNode } from "react";
 
@@ -234,18 +234,18 @@ etapes:
                 </div>
               );
             }
-  - texte: >-
+  - text: >-
       Lance `npx tsc --noEmit` : TypeScript signale une erreur dans `src/App.tsx` (le prix est un texte au lieu d'un nombre). Corrige-la, de façon que `tsc` ne signale plus rien et que `npx tsx src/afficher.tsx` affiche le prix `12,50`.
-    indice: >-
+    hint: >-
       Une prop numérique s'écrit avec des accolades : `prixCents={goodies[0].prixCents}`, pas avec des guillemets.
-    verif:
-      - commande-reussit: controler types 01-composants-props
-      - sortie-contient:
+    checks:
+      - command-succeeds: controler types 01-composants-props
+      - output-contains:
           - controler executer 01-composants-props npx tsx src/afficher.tsx
           - 12,50
-    apres: [1, 2, 3]
+    after: [1, 2, 3]
     solution:
-      - ecrire:
+      - write:
           'src/App.tsx': |
             import { GoodieCard } from "./GoodieCard";
             import { goodies } from "./goodies";
@@ -253,21 +253,21 @@ etapes:
             export function App() {
               return <GoodieCard nom={goodies[0].nom} prixCents={goodies[0].prixCents} stock={goodies[0].stock} />;
             }
-  - texte: >-
+  - text: >-
       Dernière étape : fais afficher à `App` tous les goodies. Remplace la carte seule par un `Panneau` de titre « Nos goodies » qui contient une `GoodieList` alimentée par `goodies`. `npx tsx src/afficher.tsx` doit montrer le titre, la gourde et le tote bag épuisé.
-    indice: >-
+    hint: >-
       `<Panneau titre="Nos goodies"><GoodieList goodies={goodies} /></Panneau>` ; n'oublie pas d'importer `GoodieList` et `Panneau`.
-    verif:
-      - commande-reussit: controler types 01-composants-props
-      - commande-reussit: contient src/App.tsx '<Panneau[^>]*>'
-      - commande-reussit: contient src/App.tsx '<GoodieList'
-      - sortie-contient:
+    checks:
+      - command-succeeds: controler types 01-composants-props
+      - command-succeeds: contient src/App.tsx '<Panneau[^>]*>'
+      - command-succeeds: contient src/App.tsx '<GoodieList'
+      - output-contains:
           - controler executer 01-composants-props npx tsx src/afficher.tsx
           - <h2>Nos goodies</h2><section>.*Gourde Éco.*Tote bag.*Épuisé
-    apres: [4]
+    after: [4]
     solution:
-      - ecrire:
-          'src/App.tsx': |
+      - write:
+          'src/App.tsx': |-
             import { GoodieList } from "./GoodieList";
             import { Panneau } from "./Panneau";
             import { goodies } from "./goodies";

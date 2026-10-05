@@ -1,9 +1,9 @@
 ---
 id: monter-django
-titre: "Monter de version Django pas à pas"
-resume: "Faire passer un projet Django de palier en palier, en suivant les avertissements et en corrigeant les API retirées."
-duree: 40
-objectifs:
+title: "Monter de version Django pas à pas"
+summary: "Faire passer un projet Django de palier en palier, en suivant les avertissements et en corrigeant les API retirées."
+minutes: 40
+objectives:
   - Afficher les avertissements de dépréciation d'un projet Django
   - Reconnaître et corriger les API retirées les plus courantes
   - Dérouler la procédure d'un palier de montée de version, de la branche à la fusion
@@ -129,30 +129,30 @@ Une migration lancée sur la base de production (le serveur réel, utilisé par 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet `adherents` est dans ton dossier de travail, avec un petit jeu de tests de référence (`adherents/tests.py`) qui passe sous Django 3.1. Il contient les pièges de la leçon. Quatre versions de Django sont installées dans `/opt/venvs/` : tu lances chaque palier avec le Python de l'environnement voulu, par exemple `/opt/venvs/django32/bin/python manage.py test`. Les commandes fonctionnent hors ligne.
-commandes:
+commands:
   - cp -R /opt/exercices/projet-legacy/. .
   - cp /opt/exercices/tests-de-reference.py adherents/tests.py
-etapes:
-  - texte: 'Supprime l''avertissement `models.W042` : ajoute le réglage `DEFAULT_AUTO_FIELD` à `config/settings.py`'
-    indice: 'Ajoute la ligne `DEFAULT_AUTO_FIELD = "django.db.models.AutoField"` à la fin de `config/settings.py`. Contrôle avec `/opt/venvs/django32/bin/python manage.py check --fail-level WARNING`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy code auto-field'
-      - commande-reussit: /opt/venvs/django32/bin/python manage.py check --fail-level WARNING
-      - commande-reussit: /opt/venvs/django32/bin/python manage.py check --fail-level WARNING
+steps:
+  - text: 'Supprime l''avertissement `models.W042` : ajoute le réglage `DEFAULT_AUTO_FIELD` à `config/settings.py`'
+    hint: 'Ajoute la ligne `DEFAULT_AUTO_FIELD = "django.db.models.AutoField"` à la fin de `config/settings.py`. Contrôle avec `/opt/venvs/django32/bin/python manage.py check --fail-level WARNING`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy code auto-field'
+      - command-succeeds: /opt/venvs/django32/bin/python manage.py check --fail-level WARNING
+      - command-succeeds: /opt/venvs/django32/bin/python manage.py check --fail-level WARNING
     solution:
       - echo 'DEFAULT_AUTO_FIELD = "django.db.models.AutoField"' >> config/settings.py
 
-  - texte: 'Dans `config/urls.py`, remplace `url` par `re_path`'
-    indice: 'Deux changements : `from django.urls import include, re_path` en haut, et `re_path(r"^adherents/", ...)` à la place de `url(...)`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy code urls'
-      - commande-reussit: '/opt/outils/verifier-legacy palier django32'
+  - text: 'Dans `config/urls.py`, remplace `url` par `re_path`'
+    hint: 'Deux changements : `from django.urls import include, re_path` en haut, et `re_path(r"^adherents/", ...)` à la place de `url(...)`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy code urls'
+      - command-succeeds: '/opt/outils/verifier-legacy palier django32'
     solution:
-      - ecrire:
+      - write:
           config/urls.py: |
             from django.urls import include, re_path
 
@@ -160,33 +160,33 @@ etapes:
                 re_path(r"^adherents/", include("adherents.urls")),
             ]
 
-  - texte: 'Remplace `force_text` par `force_str` et `ugettext_lazy` par `gettext_lazy` dans tout le projet'
-    indice: 'Deux fichiers sont concernés : `adherents/utils.py` (`force_text`) et `adherents/models.py` (`ugettext_lazy`). `sed -i` remplace un texte dans un fichier ; pour repérer les occurrences : `grep -rn "force_text\|ugettext" adherents config`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy code textes-depreces'
-      - commande-reussit: '/opt/outils/verifier-legacy palier django32'
+  - text: 'Remplace `force_text` par `force_str` et `ugettext_lazy` par `gettext_lazy` dans tout le projet'
+    hint: 'Deux fichiers sont concernés : `adherents/utils.py` (`force_text`) et `adherents/models.py` (`ugettext_lazy`). `sed -i` remplace un texte dans un fichier ; pour repérer les occurrences : `grep -rn "force_text\|ugettext" adherents config`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy code textes-depreces'
+      - command-succeeds: '/opt/outils/verifier-legacy palier django32'
     solution:
       - sed -i 's/force_text/force_str/g' adherents/utils.py
       - sed -i 's/ugettext_lazy/gettext_lazy/g' adherents/models.py
 
-  - texte: 'Franchis le palier 3.2 : passe `requirements.txt` à `Django==3.2.25`, et vérifie que les tests passent avec Django 3.2 même quand les avertissements de dépréciation sont transformés en erreurs'
-    indice: 'Écris `Django==3.2.25` dans `requirements.txt`, puis lance `/opt/venvs/django32/bin/python -W error::DeprecationWarning manage.py test`. S''il reste une erreur, lis le nom de la fonction dépréciée dans le message.'
-    apres: [1, 2, 3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy code requirements-32'
-      - commande-reussit: '/opt/outils/verifier-legacy palier django32 --erreurs-deprecation'
+  - text: 'Franchis le palier 3.2 : passe `requirements.txt` à `Django==3.2.25`, et vérifie que les tests passent avec Django 3.2 même quand les avertissements de dépréciation sont transformés en erreurs'
+    hint: 'Écris `Django==3.2.25` dans `requirements.txt`, puis lance `/opt/venvs/django32/bin/python -W error::DeprecationWarning manage.py test`. S''il reste une erreur, lis le nom de la fonction dépréciée dans le message.'
+    after: [1, 2, 3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy code requirements-32'
+      - command-succeeds: '/opt/outils/verifier-legacy palier django32 --erreurs-deprecation'
     solution:
       - echo 'Django==3.2.25' > requirements.txt
       - /opt/venvs/django32/bin/python -W error::DeprecationWarning manage.py test
 
-  - texte: 'Franchis le palier 4.2 : remplace `timezone.utc` de Django par `datetime.timezone.utc` dans `adherents/utils.py`, jusqu''à ce que les tests passent avec Django 4.2 sans avertissement'
-    indice: 'Dans `adherents/utils.py`, importe `from datetime import datetime, timezone`, supprime l''import de `django.utils.timezone` et écris `datetime.now(tz=timezone.utc)`. Contrôle avec `/opt/venvs/django42/bin/python -W error::DeprecationWarning manage.py test`.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy code utc'
-      - commande-reussit: '/opt/outils/verifier-legacy palier django42 --erreurs-deprecation'
+  - text: 'Franchis le palier 4.2 : remplace `timezone.utc` de Django par `datetime.timezone.utc` dans `adherents/utils.py`, jusqu''à ce que les tests passent avec Django 4.2 sans avertissement'
+    hint: 'Dans `adherents/utils.py`, importe `from datetime import datetime, timezone`, supprime l''import de `django.utils.timezone` et écris `datetime.now(tz=timezone.utc)`. Contrôle avec `/opt/venvs/django42/bin/python -W error::DeprecationWarning manage.py test`.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy code utc'
+      - command-succeeds: '/opt/outils/verifier-legacy palier django42 --erreurs-deprecation'
     solution:
-      - ecrire:
+      - write:
           adherents/utils.py: |
             from datetime import datetime, timezone
 
@@ -202,12 +202,12 @@ etapes:
                 """Texte affiché pour un adhérent dans les listes."""
                 return force_str(adherent.nom_complet())
 
-  - texte: 'Franchis le palier 5.2 : les tests passent avec Django 5.2, `makemigrations --check --dry-run` ne propose aucune migration, et `requirements.txt` demande Django 5.2'
-    indice: 'Lance `/opt/venvs/django52/bin/python manage.py test`, puis `/opt/venvs/django52/bin/python manage.py makemigrations --check --dry-run`. Pour `requirements.txt`, écris `Django==5.2.17`.'
-    apres: [5]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy palier django52 --migrations'
-      - commande-reussit: '/opt/outils/verifier-legacy code requirements-52'
+  - text: 'Franchis le palier 5.2 : les tests passent avec Django 5.2, `makemigrations --check --dry-run` ne propose aucune migration, et `requirements.txt` demande Django 5.2'
+    hint: 'Lance `/opt/venvs/django52/bin/python manage.py test`, puis `/opt/venvs/django52/bin/python manage.py makemigrations --check --dry-run`. Pour `requirements.txt`, écris `Django==5.2.17`.'
+    after: [5]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy palier django52 --migrations'
+      - command-succeeds: '/opt/outils/verifier-legacy code requirements-52'
     solution:
       - echo 'Django==5.2.17' > requirements.txt
       - /opt/venvs/django52/bin/python manage.py test

@@ -1,9 +1,9 @@
 ---
 id: cycle-de-vie
-titre: "Cycle de vie d'un conteneur"
-resume: 'Arrêter, redémarrer, supprimer : garder son environnement propre.'
-duree: 15
-objectifs:
+title: "Cycle de vie d'un conteneur"
+summary: 'Arrêter, redémarrer, supprimer : garder son environnement propre.'
+minutes: 15
+objectives:
   - "Décrire les états d'un conteneur (créé, en cours, arrêté, supprimé)"
   - "Arrêter, redémarrer et supprimer des conteneurs sans laisser de déchets"
   - "Utiliser `--rm` pour les conteneurs jetables et `docker rmi` pour les images"
@@ -70,50 +70,50 @@ Supprime l'ancien (`docker rm web`) ou choisis un autre nom.
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Un nginx tourne déjà (`web`) et un vieux conteneur `vieux` traîne. Fais le ménage.
-commandes:
+commands:
   - 'docker run -d --name web -p 8080:80 nginx'
   - docker run --name vieux alpine echo ancien
-etapes:
-  - texte: 'Liste *tous* les conteneurs avec `docker ps -a`'
-    indice: "Une seule lettre en plus de `docker ps` : `a` comme *all*."
-    verif:
-      - commande: ^docker ps -a
+steps:
+  - text: 'Liste *tous* les conteneurs avec `docker ps -a`'
+    hint: "Une seule lettre en plus de `docker ps` : `a` comme *all*."
+    checks:
+      - command: ^docker ps -a
     solution:
       - docker ps -a
-  - texte: 'Arrête `web`'
-    indice: "Le verbe est dans l'énoncé : « arrête »."
-    verif:
-      - conteneur-arrete: web
+  - text: 'Arrête `web`'
+    hint: "Le verbe est dans l'énoncé : « arrête »."
+    checks:
+      - container-stopped: web
     solution:
       - docker stop web
-  - texte: 'Redémarre `web`'
-    indice: "Le conteneur existe encore, il suffit de le démarrer : pas de `run` ici (il recréerait un conteneur)."
-    apres: [2]
-    verif:
-      - conteneur-actif: web
+  - text: 'Redémarre `web`'
+    hint: "Le conteneur existe encore, il suffit de le démarrer : pas de `run` ici (il recréerait un conteneur)."
+    after: [2]
+    checks:
+      - container-running: web
     solution:
       - docker start web
-  - texte: 'Supprime le conteneur `vieux`'
-    indice: "`rm` pour *remove* : il est déjà arrêté, aucune option n'est nécessaire."
-    verif:
-      - conteneur-absent: vieux
+  - text: 'Supprime le conteneur `vieux`'
+    hint: "`rm` pour *remove* : il est déjà arrêté, aucune option n'est nécessaire."
+    checks:
+      - container-absent: vieux
     solution:
       - docker rm vieux
-  - texte: 'Lance un conteneur jetable : `docker run --rm alpine echo ephemere`'
-    indice: "Une option qui commence par deux tirets et se lit « remove » (en abrégé) s'ajoute à `docker run`."
-    verif:
-      - commande: '^docker run .*--rm'
-      - aucun-conteneur-image: alpine
+  - text: 'Lance un conteneur jetable : `docker run --rm alpine echo ephemere`'
+    hint: "Une option qui commence par deux tirets et se lit « remove » (en abrégé) s'ajoute à `docker run`."
+    checks:
+      - command: '^docker run .*--rm'
+      - no-container-for-image: alpine
     solution:
       - docker run --rm alpine echo ephemere
-  - texte: "Supprime `web` d'un coup avec `docker rm -f web`"
-    indice: "`rm` avec l'option de force : elle arrête et supprime en une fois."
-    apres: [3]
-    verif:
-      - conteneur-absent: web
+  - text: "Supprime `web` d'un coup avec `docker rm -f web`"
+    hint: "`rm` avec l'option de force : elle arrête et supprime en une fois."
+    after: [3]
+    checks:
+      - container-absent: web
     solution:
       - docker rm -f web
 :::

@@ -1,9 +1,9 @@
 ---
 id: etat-et-backend
-titre: "L'état et le backend distant"
-resume: "Comprendre ce que contient l'état Terraform, pourquoi il est stocké à distance et comment ne jamais le perdre."
-duree: 40
-objectifs:
+title: "L'état et le backend distant"
+summary: "Comprendre ce que contient l'état Terraform, pourquoi il est stocké à distance et comment ne jamais le perdre."
+minutes: 40
+objectives:
   - Expliquer le rôle du fichier d'état
   - Lire le bloc backend de cluster-configuration
   - Citer les risques liés aux secrets stockés dans l'état
@@ -85,62 +85,62 @@ Dans la vraie vie, l'état de l'équipe est dans un backend distant. Ici, tu tra
 
 Quelques commandes Linux serviront : `cp source destination` copie un fichier ; `commande > fichier` envoie le résultat d'une commande dans un fichier ; `grep texte fichier` cherche un texte dans un fichier ; `cat fichier` affiche le contenu d'un fichier ; `test -s fichier` vérifie qu'un fichier n'est pas vide.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient un `main.tf` avec un nom aléatoire (`random_pet` fabrique un nom du genre `calm-otter`), un mot de passe aléatoire (`random_password`) et un fichier `rapport.txt`. Tu vas créer l'état, l'inspecter, constater qu'il contient un secret en clair, faire une sauvegarde, puis voir ce qui arrive quand une ressource est « oubliée » de l'état.
-commandes:
+commands:
   - cp -R /opt/exercices/03-etat/. .
-etapes:
-  - texte: 'Initialise puis applique : `terraform init` puis `terraform apply -auto-approve`. Le fichier `terraform.tfstate` apparaît'
-    indice: 'Deux commandes à la suite. À la fin, `ls` montre `terraform.tfstate` (l''état) et `rapport.txt`.'
-    verif:
-      - commande-reussit: 'terraform state list | grep -q "^local_file.rapport$" && terraform state list | grep -q "^random_password.admin$"'
-      - commande-reussit: 'grep -qx "Service : $(terraform output -raw nom)" rapport.txt'
+steps:
+  - text: 'Initialise puis applique : `terraform init` puis `terraform apply -auto-approve`. Le fichier `terraform.tfstate` apparaît'
+    hint: 'Deux commandes à la suite. À la fin, `ls` montre `terraform.tfstate` (l''état) et `rapport.txt`.'
+    checks:
+      - command-succeeds: 'terraform state list | grep -q "^local_file.rapport$" && terraform state list | grep -q "^random_password.admin$"'
+      - command-succeeds: 'grep -qx "Service : $(terraform output -raw nom)" rapport.txt'
     solution:
       - terraform init
       - terraform apply -auto-approve
-  - texte: 'Écris la liste des ressources suivies par Terraform dans `etat.txt` : `terraform state list > etat.txt` (`>` envoie la sortie dans un fichier)'
-    apres: [1]
-    indice: 'Le fichier doit contenir `local_file.rapport`, `random_password.admin` et `random_pet.nom`.'
-    verif:
-      - commande-reussit: 'terraform state list | cmp -s - etat.txt'
-      - fichier-contient-dans-env: [etat.txt, 'local_file\.rapport']
+  - text: 'Écris la liste des ressources suivies par Terraform dans `etat.txt` : `terraform state list > etat.txt` (`>` envoie la sortie dans un fichier)'
+    after: [1]
+    hint: 'Le fichier doit contenir `local_file.rapport`, `random_password.admin` et `random_pet.nom`.'
+    checks:
+      - command-succeeds: 'terraform state list | cmp -s - etat.txt'
+      - env-file-contains: [etat.txt, 'local_file\.rapport']
     solution:
       - terraform state list > etat.txt
-  - texte: 'La sortie `mot_de_passe` est marquée `sensitive`, donc masquée. Écris sa vraie valeur dans `fuite.txt` avec `terraform output -raw mot_de_passe > fuite.txt`, puis cherche cette valeur dans `terraform.tfstate` avec `grep`'
-    apres: [1]
-    indice: 'Compare `terraform output` (qui affiche `<sensitive>`) et `terraform output -raw mot_de_passe`. Puis `grep "$(cat fuite.txt)" terraform.tfstate` : le mot de passe est en clair dans l''état.'
-    verif:
-      - commande-reussit: 'test -s fuite.txt && test "$(cat fuite.txt)" = "$(terraform output -raw mot_de_passe)" && grep -q "$(cat fuite.txt)" terraform.tfstate'
+  - text: 'La sortie `mot_de_passe` est marquée `sensitive`, donc masquée. Écris sa vraie valeur dans `fuite.txt` avec `terraform output -raw mot_de_passe > fuite.txt`, puis cherche cette valeur dans `terraform.tfstate` avec `grep`'
+    after: [1]
+    hint: 'Compare `terraform output` (qui affiche `<sensitive>`) et `terraform output -raw mot_de_passe`. Puis `grep "$(cat fuite.txt)" terraform.tfstate` : le mot de passe est en clair dans l''état.'
+    checks:
+      - command-succeeds: 'test -s fuite.txt && test "$(cat fuite.txt)" = "$(terraform output -raw mot_de_passe)" && grep -q "$(cat fuite.txt)" terraform.tfstate'
     solution:
       - terraform output -raw mot_de_passe > fuite.txt
       - grep "$(cat fuite.txt)" terraform.tfstate
-  - texte: 'Fais une sauvegarde de l''état avant toute opération délicate : `cp terraform.tfstate sauvegarde.tfstate`'
-    apres: [1]
-    indice: '`cp source destination` copie un fichier. La sauvegarde doit contenir la ressource `rapport`.'
-    verif:
-      - fichier-contient-dans-env: [sauvegarde.tfstate, '"name": "rapport"']
-      - commande-reussit: 'cmp -s sauvegarde.tfstate terraform.tfstate'
+  - text: 'Fais une sauvegarde de l''état avant toute opération délicate : `cp terraform.tfstate sauvegarde.tfstate`'
+    after: [1]
+    hint: '`cp source destination` copie un fichier. La sauvegarde doit contenir la ressource `rapport`.'
+    checks:
+      - env-file-contains: [sauvegarde.tfstate, '"name": "rapport"']
+      - command-succeeds: 'cmp -s sauvegarde.tfstate terraform.tfstate'
     solution:
       - cp terraform.tfstate sauvegarde.tfstate
-  - texte: 'Fais « oublier » `local_file.rapport` à Terraform avec `terraform state rm local_file.rapport`. Le fichier `rapport.txt` reste sur le disque, mais n''est plus suivi : la ressource est devenue « orpheline »'
-    apres: [4]
-    indice: 'Contrôle avec `terraform state list` : `local_file.rapport` a disparu. Lance aussi `terraform plan` : Terraform veut le créer, puisqu''il ne le connaît plus.'
-    verif:
-      - commande-echoue: 'terraform state list | grep -q rapport'
-      - commande-reussit: 'terraform state list | grep -q "^random_pet.nom$"'
-      - fichier-existe-dans-env: rapport.txt
-      - commande-reussit: 'terraform plan -input=false -detailed-exitcode > /dev/null; test $? -eq 2'
+  - text: 'Fais « oublier » `local_file.rapport` à Terraform avec `terraform state rm local_file.rapport`. Le fichier `rapport.txt` reste sur le disque, mais n''est plus suivi : la ressource est devenue « orpheline »'
+    after: [4]
+    hint: 'Contrôle avec `terraform state list` : `local_file.rapport` a disparu. Lance aussi `terraform plan` : Terraform veut le créer, puisqu''il ne le connaît plus.'
+    checks:
+      - command-fails: 'terraform state list | grep -q rapport'
+      - command-succeeds: 'terraform state list | grep -q "^random_pet.nom$"'
+      - env-file-exists: rapport.txt
+      - command-succeeds: 'terraform plan -input=false -detailed-exitcode > /dev/null; test $? -eq 2'
     solution:
       - terraform state rm local_file.rapport
-  - texte: 'Répare avec ta sauvegarde : `cp sauvegarde.tfstate terraform.tfstate`. `terraform state list` doit de nouveau citer `local_file.rapport` et `terraform plan -detailed-exitcode` doit répondre « aucun changement »'
-    apres: [5]
-    indice: 'Une copie de l''état est ce qui te sauve ici. En production, c''est le backend distant qui garde l''historique des versions.'
-    verif:
-      - sortie-contient: ['terraform state list', 'local_file\.rapport']
-      - commande-reussit: 'terraform plan -input=false -detailed-exitcode'
-      - commande-reussit: 'cmp -s sauvegarde.tfstate terraform.tfstate'
+  - text: 'Répare avec ta sauvegarde : `cp sauvegarde.tfstate terraform.tfstate`. `terraform state list` doit de nouveau citer `local_file.rapport` et `terraform plan -detailed-exitcode` doit répondre « aucun changement »'
+    after: [5]
+    hint: 'Une copie de l''état est ce qui te sauve ici. En production, c''est le backend distant qui garde l''historique des versions.'
+    checks:
+      - output-contains: ['terraform state list', 'local_file\.rapport']
+      - command-succeeds: 'terraform plan -input=false -detailed-exitcode'
+      - command-succeeds: 'cmp -s sauvegarde.tfstate terraform.tfstate'
     solution:
       - cp sauvegarde.tfstate terraform.tfstate
 :::

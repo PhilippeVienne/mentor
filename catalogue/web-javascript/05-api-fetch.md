@@ -1,9 +1,9 @@
 ---
 id: api-fetch
-titre: "Appeler une API avec fetch"
-resume: "Récupérer des données JSON avec fetch et async/await, gérer les erreurs et les afficher dans la page."
-duree: 30
-objectifs:
+title: "Appeler une API avec fetch"
+summary: "Récupérer des données JSON avec fetch et async/await, gérer les erreurs et les afficher dans la page."
+minutes: 30
+objectives:
   - Expliquer ce qu'est une API HTTP renvoyant du JSON
   - Appeler une API avec `fetch` et `await`
   - Gérer une erreur réseau ou une réponse en erreur
@@ -153,19 +153,19 @@ Un navigateur n'autorise une page à appeler une API d'une **autre origine** (au
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient `index.html` (un paragraphe `#statut` qui dit « Chargement… », une liste `#evenements` et un formulaire `#inscription` avec son champ `#email`), un `app.js` vide, et un dossier `api-fictive/` avec le fichier `evenements.json` que le faux serveur renvoie. Écris ton code dans `app.js` avec `nano app.js`. Pour tester, `verifier-page index.html` exécute ta page avec le faux `fetch` ; ajoute `--erreur 500` pour que le faux serveur réponde par une erreur 500, ou `--panne` pour simuler un réseau coupé. Seul `app.js` compte : le portail remet `index.html` et `api-fictive/` à l'identique avant de contrôler, et essaie aussi ton code avec d'autres données.
-commandes:
+commands:
   - cp -R /opt/exercices/05-api-fetch/. .
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `app.js`, écris une fonction `async` qui appelle `fetch("https://example.org/api/evenements")`, lit le JSON et ajoute à `#evenements` un `<li>` par événement, de la forme `Sortie photo (20 places)`. Appelle la fonction à la fin du fichier.
-    indice: >-
+    hint: >-
       Reprends l'exemple de la leçon. Sans le dernier `afficher();`, la fonction n'est jamais appelée et la liste reste vide.
-    verif:
-      - commande-reussit: 'verifier-web 05 liste'
+    checks:
+      - command-succeeds: 'verifier-web 05 liste'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -184,13 +184,13 @@ etapes:
 
         afficher();
         EOF
-  - texte: >-
+  - text: >-
       Une fois la liste affichée, efface le message « Chargement… » : le paragraphe `#statut` doit devenir vide.
-    indice: >-
+    hint: >-
       `statut.textContent = "";` à la fin du bloc qui remplit la liste.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-web 05 statut'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-web 05 statut'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -210,13 +210,13 @@ etapes:
 
         afficher();
         EOF
-  - texte: >-
+  - text: >-
       Gère les erreurs : vérifie `reponse.ok` (et lance une erreur sinon), entoure le tout d'un `try … catch`, et dans le `catch` écris `Impossible de charger les événements.` dans `#statut`. Cela doit marcher avec `--erreur 500` (le serveur répond 500) comme avec `--panne` (réseau coupé), et la liste doit rester vide.
-    indice: >-
+    hint: >-
       Lance `verifier-page index.html --erreur 500` : tant que le statut affiche « Chargement… » ou qu'une ligne `[ERREUR dans la page]` apparaît, c'est que l'erreur n'est pas attrapée.
-    apres: [2]
-    verif:
-      - commande-reussit: 'verifier-web 05 erreurs'
+    after: [2]
+    checks:
+      - command-succeeds: 'verifier-web 05 erreurs'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -243,15 +243,15 @@ etapes:
 
         afficher();
         EOF
-  - texte: >-
+  - text: >-
       Fais fonctionner le formulaire `#inscription` : à l'envoi, empêche le rechargement, puis envoie avec `fetch` une requête `POST` vers `https://example.org/api/inscriptions`, avec l'en-tête `Content-Type: application/json` et un corps JSON `{ "email": … }` (`JSON.stringify`). Si la réponse est OK, écris `Inscription enregistrée.` dans `#statut`.
-    indice: >-
+    hint: >-
       Dans l'écouteur `submit`, la fonction doit être `async` pour utiliser `await fetch(…, { method: "POST", headers: …, body: JSON.stringify({ email: … }) })`. L'adresse se lit dans `document.querySelector("#email").value`.
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-web 05 envoi'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-web 05 envoi'
     solution:
-      - |
+      - |-
         cat > app.js <<'EOF'
         const statut = document.querySelector("#statut");
         const liste = document.querySelector("#evenements");

@@ -1,9 +1,9 @@
 ---
 id: authentification-permissions
-titre: "Authentification par jeton OIDC et permissions"
-resume: "Savoir qui appelle l'API (authentification) puis décider ce qu'elle a le droit de faire (permissions par rôle)."
-duree: 50
-objectifs:
+title: "Authentification par jeton OIDC et permissions"
+summary: "Savoir qui appelle l'API (authentification) puis décider ce qu'elle a le droit de faire (permissions par rôle)."
+minutes: 50
+objectives:
   - Distinguer authentification et permission, `401` et `403`
   - Expliquer ce qu'est un jeton JWT et le rôle de Keycloak (OIDC)
   - Écrire une permission par rôle et l'appliquer à un viewset
@@ -181,20 +181,20 @@ Dernier niveau, la permission **sur un objet** : `has_object_permission(request
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton API des événements est publique : n'importe qui peut tout faire. Dans ton dossier de travail, les fichiers `agenda/auth.py` et `agenda/permissions.py` sont vides, et `projet/settings.py` ne règle rien. Pour tester sans serveur Keycloak, les tests fabriquent eux-mêmes des jetons JWT signés (avec une paire de clés RSA créée à la volée, voir `helpers_jwt.py`) : tu peux lire ce fichier, mais tu n'as pas à le modifier. Lance `pytest -q test_securite.py` pour voir les sept tests échouer, puis corrige-les dans l'ordre.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/04-authentification-permissions/. .
-etapes:
-  - texte: 'Dans `agenda/auth.py`, écris la méthode `authenticate(self, request)` de `KeycloakJWTAuthentication` : elle lit l''en-tête `Authorization`, renvoie `None` s''il n''y a pas de jeton `Bearer`, vérifie le jeton avec `jwt.decode(...)` (clé `settings.OIDC_PUBLIC_KEY`, algorithme `RS256`, audience `settings.OIDC_CLIENT_ID`), lève `AuthenticationFailed` s''il est invalide, et retourne `(utilisateur, claims)`. Les trois tests `authentification` doivent passer'
-    indice: 'Reprends le code de la leçon. L''utilisateur se retrouve avec `get_user_model().objects.get_or_create(username=claims["email"])`. Puis `pytest -q test_securite.py -k authentification`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 04-authentification-permissions authentification 3'
+steps:
+  - text: 'Dans `agenda/auth.py`, écris la méthode `authenticate(self, request)` de `KeycloakJWTAuthentication` : elle lit l''en-tête `Authorization`, renvoie `None` s''il n''y a pas de jeton `Bearer`, vérifie le jeton avec `jwt.decode(...)` (clé `settings.OIDC_PUBLIC_KEY`, algorithme `RS256`, audience `settings.OIDC_CLIENT_ID`), lève `AuthenticationFailed` s''il est invalide, et retourne `(utilisateur, claims)`. Les trois tests `authentification` doivent passer'
+    hint: 'Reprends le code de la leçon. L''utilisateur se retrouve avec `get_user_model().objects.get_or_create(username=claims["email"])`. Puis `pytest -q test_securite.py -k authentification`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 04-authentification-permissions authentification 3'
     solution:
-      - ecrire:
+      - write:
           agenda/auth.py: |
             import jwt
             from django.conf import settings
@@ -221,13 +221,13 @@ etapes:
                         raise exceptions.AuthenticationFailed("Jeton invalide ou expiré.")
                     user, _ = get_user_model().objects.get_or_create(username=claims["email"])
                     return user, claims
-  - texte: 'Ajoute `authenticate_header(self, request)` à la classe : elle retourne `''Bearer realm="agenda"''`. Sans elle, DRF répondrait `403` au lieu de `401` à une personne non identifiée. `test_en_tete_bearer_annonce` doit passer'
-    indice: 'Une seule ligne dans la méthode : `return ''Bearer realm="agenda"''`.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 04-authentification-permissions en_tete_bearer'
+  - text: 'Ajoute `authenticate_header(self, request)` à la classe : elle retourne `''Bearer realm="agenda"''`. Sans elle, DRF répondrait `403` au lieu de `401` à une personne non identifiée. `test_en_tete_bearer_annonce` doit passer'
+    hint: 'Une seule ligne dans la méthode : `return ''Bearer realm="agenda"''`.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 04-authentification-permissions en_tete_bearer'
     solution:
-      - ecrire:
+      - write:
           agenda/auth.py: |
             import jwt
             from django.conf import settings
@@ -257,12 +257,12 @@ etapes:
 
                 def authenticate_header(self, request):
                     return 'Bearer realm="agenda"'
-  - texte: 'Dans `agenda/permissions.py`, écris `roles_du_jeton(request)` (les rôles de `request.auth["resource_access"][settings.OIDC_CLIENT_ID]["roles"]`, ou un ensemble vide), la classe `HasRole`, `HasRoleStaff` (rôle `staff`) et `HasRoleStaffOrReadOnly` (lecture libre, écriture réservée au rôle). `test_roles_et_permissions` doit passer'
-    indice: '`HasRole.has_permission` compare des ensembles : `set(self.required_roles) <= roles_du_jeton(request)`. Pour la lecture libre, teste `request.method in SAFE_METHODS`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 04-authentification-permissions roles_et_permissions'
+  - text: 'Dans `agenda/permissions.py`, écris `roles_du_jeton(request)` (les rôles de `request.auth["resource_access"][settings.OIDC_CLIENT_ID]["roles"]`, ou un ensemble vide), la classe `HasRole`, `HasRoleStaff` (rôle `staff`) et `HasRoleStaffOrReadOnly` (lecture libre, écriture réservée au rôle). `test_roles_et_permissions` doit passer'
+    hint: '`HasRole.has_permission` compare des ensembles : `set(self.required_roles) <= roles_du_jeton(request)`. Pour la lecture libre, teste `request.method in SAFE_METHODS`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 04-authentification-permissions roles_et_permissions'
     solution:
-      - ecrire:
+      - write:
           agenda/permissions.py: |
             from django.conf import settings
             from rest_framework.permissions import SAFE_METHODS, BasePermission
@@ -288,13 +288,13 @@ etapes:
             class HasRoleStaffOrReadOnly(HasRoleStaff):
                 def has_permission(self, request, view):
                     return request.method in SAFE_METHODS or super().has_permission(request, view)
-  - texte: 'Dans `projet/settings.py`, remplis `REST_FRAMEWORK` : `DEFAULT_AUTHENTICATION_CLASSES` avec `"agenda.auth.KeycloakJWTAuthentication"` et `DEFAULT_PERMISSION_CLASSES` avec `IsAuthenticated`. Sans jeton valide, l''API doit répondre `401` partout. `test_api_fermee_par_defaut` doit passer'
-    indice: 'Les deux réglages sont des listes de chemins en texte, par exemple `["rest_framework.permissions.IsAuthenticated"]`.'
-    apres: [1, 2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 04-authentification-permissions api_fermee'
+  - text: 'Dans `projet/settings.py`, remplis `REST_FRAMEWORK` : `DEFAULT_AUTHENTICATION_CLASSES` avec `"agenda.auth.KeycloakJWTAuthentication"` et `DEFAULT_PERMISSION_CLASSES` avec `IsAuthenticated`. Sans jeton valide, l''API doit répondre `401` partout. `test_api_fermee_par_defaut` doit passer'
+    hint: 'Les deux réglages sont des listes de chemins en texte, par exemple `["rest_framework.permissions.IsAuthenticated"]`.'
+    after: [1, 2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 04-authentification-permissions api_fermee'
     solution:
-      - ecrire:
+      - write:
           projet/settings.py: |
             """Réglages du projet « Agenda des associations » (domaine fictif de la formation)."""
             from pathlib import Path
@@ -344,14 +344,14 @@ etapes:
                 "DEFAULT_AUTHENTICATION_CLASSES": ["agenda.auth.KeycloakJWTAuthentication"],
                 "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
             }
-  - texte: 'Dans `EvenementViewSet` (`agenda/views.py`), ajoute `permission_classes = [IsAuthenticated, HasRoleStaffOrReadOnly]`, et réserve l''action `fermer` au rôle `staff` avec `permission_classes=[HasRoleStaff]`. Sans le rôle, un `POST` doit donner `403` et ne rien créer. `test_ecriture_reservee_au_role_staff` doit passer'
-    indice: 'Importe `IsAuthenticated` (depuis `rest_framework.permissions`) et tes classes (depuis `.permissions`). La liste de la vue remplace le réglage par défaut : garde `IsAuthenticated` dedans.'
-    apres: [3, 4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 04-authentification-permissions ecriture_reservee'
+  - text: 'Dans `EvenementViewSet` (`agenda/views.py`), ajoute `permission_classes = [IsAuthenticated, HasRoleStaffOrReadOnly]`, et réserve l''action `fermer` au rôle `staff` avec `permission_classes=[HasRoleStaff]`. Sans le rôle, un `POST` doit donner `403` et ne rien créer. `test_ecriture_reservee_au_role_staff` doit passer'
+    hint: 'Importe `IsAuthenticated` (depuis `rest_framework.permissions`) et tes classes (depuis `.permissions`). La liste de la vue remplace le réglage par défaut : garde `IsAuthenticated` dedans.'
+    after: [3, 4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 04-authentification-permissions ecriture_reservee'
     solution:
-      - ecrire:
-          agenda/views.py: |
+      - write:
+          agenda/views.py: |-
             from django.utils import timezone
             from rest_framework import viewsets
             from rest_framework.decorators import action

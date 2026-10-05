@@ -1,0 +1,250 @@
+# Vérifications utilisables dans les étapes d'un labo (`verif:`) et effets (`effet:`).
+# Source unique : le validateur Python (formation/training/content.py) et le moteur JavaScript
+# (static/js/checks.js) s'y réfèrent ; un test Jest s'assure qu'ils restent synchronisés.
+#
+# Une étape est validée dès que TOUTES ses vérifications sont vraies (au moment où l'apprenant
+# tape une commande ou enregistre un fichier). Une fois validée, une étape le reste.
+
+checks:
+  # ── Communes ──────────────────────────────────────────────────────────────
+  command:
+    arguments: [regex]
+    doc: "Une commande tapée correspond à l'expression régulière (testée sur chaque commande, début de ligne = `^`)."
+  command-count:
+    arguments: [regex, minimum]
+    doc: "Au moins `minimum` commandes tapées correspondent à l'expression régulière."
+  file-exists:
+    arguments: [file]
+    doc: "Le fichier existe dans le dossier de travail."
+  file-absent:
+    arguments: [file]
+    doc: "Le fichier n'existe pas dans le dossier de travail."
+  file-contains:
+    arguments: [file, regex]
+    doc: "Le contenu du fichier correspond à l'expression régulière (mode multiligne)."
+  file-lacks:
+    arguments: [file, regex]
+    doc: "Le contenu du fichier ne correspond pas à l'expression régulière."
+  file-modified:
+    arguments: [file]
+    doc: "Le contenu du fichier diffère de celui du début du labo."
+  session-closed:
+    doc: "L'apprenant n'est plus dans une session interactive de conteneur (il a tapé `exit`)."
+    engines: [docker]
+
+  # ── Git ───────────────────────────────────────────────────────────────────
+  repo-initialized:
+    doc: "`git init` a été exécuté."
+    engines: [git]
+  staged:
+    arguments: [file]
+    doc: "Le fichier est dans l'index (staging)."
+    engines: [git]
+  commits-at-least:
+    arguments: [count]
+    doc: "L'historique de la branche courante contient au moins ce nombre de commits."
+    engines: [git]
+  commits-exactly:
+    arguments: [count]
+    doc: "L'historique de la branche courante contient exactement ce nombre de commits."
+    engines: [git]
+  file-in-head:
+    arguments: [file]
+    doc: "Le fichier est dans le dernier commit."
+    engines: [git]
+  file-clean:
+    arguments: [file]
+    doc: "Le fichier du dossier de travail est identique à celui du dernier commit."
+    engines: [git]
+  on-branch:
+    arguments: [branch]
+    doc: "La branche courante est celle-ci."
+    engines: [git]
+  branch-exists:
+    arguments: [branch]
+    doc: "La branche existe."
+    engines: [git]
+  branch-absent:
+    arguments: [branch]
+    doc: "La branche n'existe pas (ou plus)."
+    engines: [git]
+  branch-ahead:
+    arguments: [branch, base]
+    doc: "La branche a des commits que la base n'a pas."
+    engines: [git]
+  branch-equal:
+    arguments: [branch, other]
+    doc: "Les deux branches pointent sur le même commit."
+    engines: [git]
+  file-in-branch:
+    arguments: [branch, file]
+    optional: [regex]
+    doc: "Le dernier commit de la branche contient le fichier (dont le contenu correspond à `regex` si précisé)."
+    engines: [git]
+  merged:
+    arguments: [source, target]
+    doc: "Tous les commits de `source` sont dans `cible`."
+    engines: [git]
+  conflict-in-progress:
+    doc: "Une fusion est en conflit (fichiers non fusionnés)."
+    engines: [git]
+  no-conflict:
+    doc: "Plus aucun fichier en conflit."
+    engines: [git]
+  merge-in-progress:
+    doc: "Une fusion est commencée mais pas encore validée."
+    engines: [git]
+  file-without-markers:
+    arguments: [file]
+    doc: "Le fichier ne contient plus de marqueurs de conflit (`<<<<<<<`, `=======`, `>>>>>>>`)."
+    engines: [git]
+  merge-commit:
+    doc: "Le dernier commit est un commit de fusion terminé (deux parents)."
+    engines: [git]
+  remote-set:
+    arguments: [name]
+    doc: "Le dépôt distant est déclaré (`git remote add`)."
+    engines: [git]
+  upstream-set:
+    arguments: [branch, upstream]
+    doc: "La branche suit cette branche distante (ex. `origin/main`)."
+    engines: [git]
+  server-up-to-date:
+    arguments: [branch]
+    doc: "La branche du serveur distant est au même commit que la branche locale."
+    engines: [git]
+  behind-origin:
+    arguments: [branch]
+    doc: "Le serveur est connu (fetch) et a des commits que la branche locale n'a pas."
+    engines: [git]
+  last-author:
+    arguments: [branch, author]
+    doc: "Le dernier commit de la branche a été écrit par cette personne."
+    engines: [git]
+
+  # ── Docker ────────────────────────────────────────────────────────────────
+  image-present:
+    arguments: [image]
+    doc: "L'image (`nom` ou `nom:tag`) existe en local."
+    engines: [docker]
+  container-exists:
+    arguments: [name]
+    doc: "Le conteneur existe (quel que soit son état)."
+    engines: [docker]
+  container-running:
+    arguments: [name]
+    doc: "Le conteneur est en cours d'exécution."
+    engines: [docker]
+  container-stopped:
+    arguments: [name]
+    doc: "Le conteneur est arrêté."
+    engines: [docker]
+  container-absent:
+    arguments: [name]
+    doc: "Le conteneur n'existe pas (ou plus)."
+    engines: [docker]
+  container-image:
+    arguments: [image]
+    doc: "Au moins un conteneur a été créé à partir de cette image."
+    engines: [docker]
+  no-container-for-image:
+    arguments: [image]
+    doc: "Aucun conteneur ne vient de cette image."
+    engines: [docker]
+  container-exit-code:
+    arguments: [name, code]
+    doc: "Le conteneur s'est arrêté avec ce code de sortie."
+    engines: [docker]
+  container-port:
+    arguments: [name, ports]
+    doc: "Le conteneur publie ces ports (`hote:conteneur`, ex. `8080:80`)."
+    engines: [docker]
+  container-network:
+    arguments: [name, network]
+    doc: "Le conteneur est rattaché à ce réseau."
+    engines: [docker]
+  container-bind:
+    arguments: [name]
+    doc: "Le conteneur monte un dossier de ta machine (bind mount)."
+    engines: [docker]
+  volume-exists:
+    arguments: [name]
+    doc: "Le volume existe."
+    engines: [docker]
+  volume-absent:
+    arguments: [name]
+    doc: "Le volume n'existe pas (ou plus)."
+    engines: [docker]
+  volume-contains:
+    arguments: [volume, file]
+    doc: "Le volume contient ce fichier."
+    engines: [docker]
+  network-exists:
+    arguments: [name]
+    doc: "Le réseau existe."
+    engines: [docker]
+  compose-containers:
+    arguments: [count]
+    doc: "Au moins ce nombre de conteneurs Compose existent (quel que soit leur état)."
+    engines: [docker]
+  compose-running:
+    arguments: [count]
+    doc: "Au moins ce nombre de conteneurs Compose sont en cours d'exécution."
+    engines: [docker]
+  compose-empty:
+    doc: "Plus aucun conteneur Compose n'existe."
+    engines: [docker]
+  compose-variable:
+    arguments: [service, variable]
+    doc: "Le service du `compose.yml` définit cette variable d'environnement."
+    engines: [docker]
+  registry-logged-in:
+    arguments: [registry]
+    doc: "Un `docker login` a été fait vers ce registry."
+    engines: [docker]
+  image-pushed:
+    arguments: [image]
+    doc: "L'image a été publiée avec `docker push`."
+    engines: [docker]
+
+  # ── Environnement réel (moteur `reel`) ───────────────────────────────────
+  # Évaluées PAR LE SERVEUR dans le conteneur de l'apprenant·e (formation/environments/verifications.py), jamais
+  # par le navigateur : static/js/checks.js les déclare dans `ServerChecks`. Commandes exécutées en non-root, avec
+  # un délai maximal, dans le dossier de travail (`workspaceFolder`). Les regex suivent la syntaxe Python.
+  command-succeeds:
+    arguments: [command]
+    doc: "La commande (lancée par `sh -c` dans l'environnement) se termine avec le code 0."
+    engines: [real]
+  command-fails:
+    arguments: [command]
+    doc: "La commande (lancée par `sh -c` dans l'environnement) se termine avec un code différent de 0."
+    engines: [real]
+  output-contains:
+    arguments: [command, regex]
+    doc: "La sortie standard de la commande (64 Kio au plus) correspond à l'expression régulière."
+    engines: [real]
+  env-file-exists:
+    arguments: [path]
+    doc: "Le fichier ou dossier existe dans l'environnement (chemin relatif au dossier de travail)."
+    engines: [real]
+  env-file-absent:
+    arguments: [path]
+    doc: "Le fichier ou dossier n'existe pas (ou plus) dans l'environnement."
+    engines: [real]
+  env-file-contains:
+    arguments: [path, regex]
+    doc: "Le contenu du fichier (64 premiers Kio) correspond à l'expression régulière."
+    engines: [real]
+
+# Effets déclenchés quand une étape est validée (`effet:`).
+effects:
+  server-commit:
+    doc: |
+      Un·e coéquipier·ère pousse un commit sur le serveur distant simulé. Arguments (dictionnaire) :
+      `branche`, `message`, `fichiers` (dictionnaire fichier → contenu), `auteur` (facultatif).
+    engines: [git]
+  server-advance:
+    doc: |
+      Simule l'acceptation d'une merge request : la branche `branche` du serveur avance (fast-forward)
+      jusqu'au commit de la branche `vers`.
+    engines: [git]

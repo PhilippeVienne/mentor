@@ -19,10 +19,11 @@ use crate::yaml::{is_falsy, text, to_json};
 
 static LESSON_FILE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+)-(.+)\.md$").unwrap());
 
-const CHECKS_FILE: &str = "_verifications.yml";
-const EXAM_FILE: &str = "examen.md";
-/// `/parcours/<slug>/examen/` is the URL of the validation exam.
-const RESERVED_LESSON_IDS: [&str; 1] = ["examen"];
+const CHECKS_FILE: &str = "_checks.yml";
+const COURSE_FILE: &str = "course.md";
+const EXAM_FILE: &str = "exam.md";
+/// `exam` is the URL segment of a course's validation exam.
+const RESERVED_LESSON_IDS: [&str; 1] = ["exam"];
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Catalogue {
@@ -69,19 +70,14 @@ pub struct Lesson {
 /// Validation exam of a course: a pool of questions, `draw` of which are picked at random.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Exam {
-    #[serde(rename = "titre")]
     pub title: String,
     /// Number of questions drawn from the pool.
-    #[serde(rename = "tirage")]
     pub draw: u32,
     /// Required percentage of correct answers.
-    #[serde(rename = "seuil")]
     pub pass_mark: u32,
     /// Duration in minutes.
-    #[serde(rename = "duree")]
     pub minutes: u32,
     /// Whether questions and answers are shuffled.
-    #[serde(rename = "melange")]
     pub shuffle: bool,
     pub intro_html: String,
     pub questions: Vec<ExamQuestion>,
@@ -94,17 +90,16 @@ pub struct ExamQuestion {
     pub id: String,
     pub question: String,
     pub options: Vec<QuizOption>,
-    #[serde(rename = "explication")]
     pub explanation: String,
 }
 
 fn read(path: &Path) -> Result<String> {
-    fs::read_to_string(path).map_err(|err| ContentError::new(path, format!("lecture impossible : {err}")))
+    fs::read_to_string(path).map_err(|err| ContentError::new(path, format!("cannot be read: {err}")))
 }
 
 /// Separates the YAML front matter (between two `---` lines) from the Markdown body.
 fn split_front_matter(source: &str, path: &Path) -> Result<(Mapping, String)> {
-    let missing = || ContentError::new(path, "front matter YAML manquant (bloc `---` en tête de fichier)");
+    let missing = || ContentError::new(path, "missing YAML front matter (a `---` block at the top of the file)");
     let rest = source.strip_prefix("---\n").ok_or_else(missing)?;
     // The front matter may be empty: the closing line then immediately follows the opening one.
     let (raw, after) = match rest.strip_prefix("---") {
@@ -112,11 +107,11 @@ fn split_front_matter(source: &str, path: &Path) -> Result<(Mapping, String)> {
         None => rest.split_once("\n---").ok_or_else(missing)?,
     };
     let body = after.strip_prefix('\n').unwrap_or(after);
-    let meta: Yaml = serde_yaml::from_str(raw).map_err(|err| ContentError::new(path, format!("front matter YAML invalide : {err}")))?;
+    let meta: Yaml = serde_yaml::from_str(raw).map_err(|err| ContentError::new(path, format!("invalid YAML front matter: {err}")))?;
     match meta {
         Yaml::Mapping(map) => Ok((map, body.to_string())),
         Yaml::Null => Ok((Mapping::new(), body.to_string())),
-        _ => Err(ContentError::new(path, "le front matter doit être un dictionnaire YAML")),
+        _ => Err(ContentError::new(path, "the front matter must be a YAML mapping")),
     }
 }
 
@@ -129,7 +124,7 @@ fn require(meta: &Mapping, keys: &[&str], path: &Path) -> Result<()> {
     if missing.is_empty() {
         Ok(())
     } else {
-        Err(ContentError::new(path, format!("champ(s) obligatoire(s) manquant(s) dans le front matter : {}", missing.join(", "))))
+        Err(ContentError::new(path, format!("required field(s) missing from the front matter: {}", missing.join(", "))))
     }
 }
 
@@ -146,15 +141,12 @@ struct Environments<'a> {
 impl Environments<'_> {
     fn resolve(&mut self, name: &Yaml) -> Result<()> {
         let Some(name) = name.as_str() else {
-            return Err(ContentError::new(
-                &self.directory.join("parcours.md"),
-                "`environnement` doit être le nom d'un dossier du parcours",
-            ));
+            return Err(ContentError::new(&self.directory.join(COURSE_FILE), "`environment` must be the name of a folder of the course"));
         };
         if !self.seen.contains_key(name) {
             let folder = self.directory.join(name);
             if !folder.join("devcontainer.json").is_file() {
-                return Err(ContentError::new(&folder, "environnement réel introuvable : `devcontainer.json` manquant"));
+                return Err(ContentError::new(&folder, "real environment not found: `devcontainer.json` is missing"));
             }
             self.seen.insert(name.to_string(), Json::Object(Default::default()));
         }
@@ -171,9 +163,9 @@ fn load_lesson(
     environments: &mut Environments,
 ) -> Result<Lesson> {
     let (meta, body) = split_front_matter(&read(path)?, path)?;
-    require(&meta, &["id", "titre", "resume", "duree"], path)?;
+    require(&meta, &["id", "title", "summary", "minutes"], path)?;
     let mut environment = inherited.to_string();
-    if let Some(value) = meta.get("environnement") {
+    if let Some(value) = meta.get("environment") {
         environment = if is_falsy(value) { String::new() } else { text(value) };
         if !environment.is_empty() {
             environments.resolve(value)?;
@@ -184,23 +176,23 @@ fn load_lesson(
     let mut lab_ctx = LabContext { engine, checks, environment: environment.clone(), resolver: Some(&mut resolve) };
     let (body_html, mut collected) = render_document(&body, &mut ctx, Some(&mut lab_ctx))?;
     if collected.labs.len() > 1 {
-        return ctx.fail("une leçon ne peut contenir qu'un seul bloc `:::labo`");
+        return ctx.fail("a lesson can contain only one `:::lab` block");
     }
-    let objectives = match meta.get("objectifs") {
+    let objectives = match meta.get("objectives") {
         None | Some(Yaml::Null) => Vec::new(),
         Some(Yaml::Sequence(items)) => items.iter().map(|o| md_inline(&text(o))).collect(),
-        Some(_) => return ctx.fail("`objectifs` doit être une liste"),
+        Some(_) => return ctx.fail("`objectives` must be a list"),
     };
     let lab = collected.labs.pop();
     let effective = lab.as_ref().map(|l| l.environment.as_str()).filter(|e| !e.is_empty()).unwrap_or(&environment);
-    let minutes = field(&meta, "duree").trim().parse().or_else(|_| ctx.fail("`duree` doit être un nombre entier de minutes"))?;
+    let minutes = field(&meta, "minutes").trim().parse().or_else(|_| ctx.fail("`minutes` must be a whole number of minutes"))?;
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
     Ok(Lesson {
         slug: field(&meta, "id"),
         environment: if effective.is_empty() { String::new() } else { format!("{course}--{effective}") },
         order: LESSON_FILE_RE.captures(name).and_then(|caps| caps[1].parse().ok()).unwrap_or(0),
-        title: field(&meta, "titre"),
-        summary: field(&meta, "resume"),
+        title: field(&meta, "title"),
+        summary: field(&meta, "summary"),
         minutes,
         objectives,
         body_html,
@@ -217,32 +209,30 @@ fn question_id(question_html: &str) -> String {
 
 fn load_exam(path: &Path, course: &str) -> Result<Exam> {
     let (meta, body) = split_front_matter(&read(path)?, path)?;
-    require(&meta, &["titre", "tirage", "seuil", "duree"], path)?;
+    require(&meta, &["title", "draw", "pass_mark", "minutes"], path)?;
     let bounded = |key: &str, low: u32, high: u32| -> Result<u32> {
         match meta.get(key).and_then(Yaml::as_u64) {
             Some(value) if (low as u64..=high as u64).contains(&value) => Ok(value as u32),
-            _ => Err(ContentError::new(path, format!("`{key}` doit être un entier entre {low} et {high} (reçu : {})", field(&meta, key)))),
+            _ => Err(ContentError::new(path, format!("`{key}` must be an integer between {low} and {high} (got: {})", field(&meta, key)))),
         }
     };
-    let (draw, pass_mark, minutes) = (bounded("tirage", 1, 100)?, bounded("seuil", 1, 100)?, bounded("duree", 1, 240)?);
-    let shuffle = match meta.get("melange") {
+    let (draw, pass_mark, minutes) = (bounded("draw", 1, 100)?, bounded("pass_mark", 1, 100)?, bounded("minutes", 1, 240)?);
+    let shuffle = match meta.get("shuffle") {
         None => true,
         Some(Yaml::Bool(value)) => *value,
-        Some(_) => return Err(ContentError::new(path, "`melange` doit valoir true ou false")),
+        Some(_) => return Err(ContentError::new(path, "`shuffle` must be true or false")),
     };
     let mut ctx = Render::new(path, course);
     let (intro_html, collected) = render_document(&body, &mut ctx, None)?;
     let pool = collected.quizzes;
     if pool.len() < draw as usize {
-        return ctx.fail(format!(
-            "le pool contient {} question(s) mais `tirage` en demande {draw} : ajoute des blocs `:::quiz` ou baisse `tirage`",
-            pool.len()
-        ));
+        return ctx
+            .fail(format!("the pool holds {} question(s) but `draw` asks for {draw}: add `:::quiz` blocks or lower `draw`", pool.len()));
     }
     let mut warnings = Vec::new();
     if pool.len() < 2 * draw as usize {
         warnings.push(format!(
-            "pool de {} questions pour un tirage de {draw} : prévois idéalement 3 fois plus de questions que le tirage (au moins 2 fois).",
+            "pool of {} questions for a draw of {draw}: ideally provide 3 times as many questions as the draw (at least twice).",
             pool.len()
         ));
     }
@@ -252,29 +242,29 @@ fn load_exam(path: &Path, course: &str) -> Result<Exam> {
         let id = question_id(&entry.question);
         if !seen.insert(id.clone()) {
             let excerpt: String = entry.question.chars().take(70).collect();
-            return ctx.fail(format!("question en double dans le pool : « {excerpt} »"));
+            return ctx.fail(format!("duplicate question in the pool: \"{excerpt}\""));
         }
         questions.push(ExamQuestion { id, question: entry.question, options: entry.options, explanation: entry.explanation });
     }
-    Ok(Exam { title: field(&meta, "titre"), draw, pass_mark, minutes, shuffle, intro_html, questions, warnings })
+    Ok(Exam { title: field(&meta, "title"), draw, pass_mark, minutes, shuffle, intro_html, questions, warnings })
 }
 
 fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
-    let path = directory.join("parcours.md");
+    let path = directory.join(COURSE_FILE);
     if !path.exists() {
-        return Err(ContentError::new(directory, "fichier `parcours.md` manquant"));
+        return Err(ContentError::new(directory, "`course.md` is missing"));
     }
     let (meta, body) = split_front_matter(&read(&path)?, &path)?;
-    require(&meta, &["titre", "icone", "resume"], &path)?;
+    require(&meta, &["title", "icon", "summary"], &path)?;
     let slug = directory.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
-    let engine = match meta.get("moteur") {
+    let engine = match meta.get("engine") {
         None | Some(Yaml::Null) => None,
         Some(Yaml::String(name)) if ENGINES.contains(&name.as_str()) => Some(name.clone()),
-        Some(other) => return Err(ContentError::new(&path, format!("`moteur` doit valoir git ou docker (reçu : {})", text(other)))),
+        Some(other) => return Err(ContentError::new(&path, format!("`engine` must be git or docker (got: {})", text(other)))),
     };
     let engine = engine.as_deref();
     let mut environments = Environments { directory, seen: BTreeMap::new() };
-    let course_environment = match meta.get("environnement").filter(|v| !is_falsy(v)) {
+    let course_environment = match meta.get("environment").filter(|v| !is_falsy(v)) {
         Some(value) => {
             environments.resolve(value)?;
             text(value)
@@ -287,20 +277,20 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
         Ok(render_document(source, &mut Render::new(file, &slug), Some(&mut lab_ctx))?.0)
     };
     let description_html = render_page(&path, &body)?;
-    let cheat_path = directory.join("antiseche.md");
+    let cheat_path = directory.join("cheatsheet.md");
     let cheatsheet_html = if cheat_path.exists() { render_page(&cheat_path, &read(&cheat_path)?)? } else { String::new() };
 
-    let sandbox_path = directory.join("bac-a-sable.yml");
+    let sandbox_path = directory.join("sandbox.yml");
     let scenarios = if sandbox_path.exists() {
-        let parsed: Yaml = serde_yaml::from_str(&read(&sandbox_path)?)
-            .map_err(|err| ContentError::new(&sandbox_path, format!("YAML invalide : {err}")))?;
+        let parsed: Yaml =
+            serde_yaml::from_str(&read(&sandbox_path)?).map_err(|err| ContentError::new(&sandbox_path, format!("invalid YAML: {err}")))?;
         parsed.get("scenarios").map(to_json).unwrap_or_else(|| Json::Object(Default::default()))
     } else {
         Json::Object(Default::default())
     };
 
     let mut files: Vec<PathBuf> = fs::read_dir(directory)
-        .map_err(|err| ContentError::new(directory, format!("lecture impossible : {err}")))?
+        .map_err(|err| ContentError::new(directory, format!("cannot be read: {err}")))?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .filter(|p| p.file_name().and_then(|n| n.to_str()).is_some_and(|n| LESSON_FILE_RE.is_match(n)))
         .collect();
@@ -310,32 +300,29 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
     for file in &files {
         let lesson = load_lesson(file, &slug, engine, checks, &course_environment, &mut environments)?;
         if RESERVED_LESSON_IDS.contains(&lesson.slug.as_str()) {
-            return Err(ContentError::new(
-                directory,
-                format!("l'identifiant de leçon `{}` est réservé (URL de l'examen de validation)", lesson.slug),
-            ));
+            return Err(ContentError::new(directory, format!("the lesson id `{}` is reserved (URL of the validation exam)", lesson.slug)));
         }
         if !seen.insert(lesson.slug.clone()) {
-            return Err(ContentError::new(directory, format!("identifiant de leçon en double : {}", lesson.slug)));
+            return Err(ContentError::new(directory, format!("duplicate lesson id: {}", lesson.slug)));
         }
         lessons.push(lesson);
     }
 
     let exam_path = directory.join(EXAM_FILE);
     let exam = if exam_path.exists() { Some(load_exam(&exam_path, &slug)?) } else { None };
-    let published = meta.get("publie").is_none_or(|v| !is_falsy(v));
+    let published = meta.get("published").is_none_or(|v| !is_falsy(v));
     if published && lessons.is_empty() {
-        return Err(ContentError::new(directory, "un parcours publié doit contenir au moins une leçon `NN-nom.md`"));
+        return Err(ContentError::new(directory, "a published course must contain at least one `NN-name.md` lesson"));
     }
     Ok(Course {
-        title: field(&meta, "titre"),
-        icon: field(&meta, "icone"),
-        summary: field(&meta, "resume"),
+        title: field(&meta, "title"),
+        icon: field(&meta, "icon"),
+        summary: field(&meta, "summary"),
         engine: engine.unwrap_or_default().to_string(),
-        requires: meta.get("prerequis").and_then(Yaml::as_sequence).map(|items| items.iter().map(text).collect()).unwrap_or_default(),
+        requires: meta.get("requires").and_then(Yaml::as_sequence).map(|items| items.iter().map(text).collect()).unwrap_or_default(),
         published,
-        accent: field(&meta, "couleur"),
-        banner: field(&meta, "banniere"),
+        accent: field(&meta, "color"),
+        banner: field(&meta, "banner"),
         description_html,
         cheatsheet_html,
         scenarios,
@@ -349,26 +336,26 @@ fn load_course(directory: &Path, checks: &Checks) -> Result<Course> {
 /// Compiles the whole catalogue in `directory` (`catalogue.yml` index, one sub-folder per course).
 pub fn load_catalogue(directory: &Path) -> Result<Catalogue> {
     let index_path = directory.join("catalogue.yml");
-    let unreadable = |err: String| ContentError::new(&index_path, format!("impossible de lire l'index du catalogue : {err}"));
+    let unreadable = |err: String| ContentError::new(&index_path, format!("cannot read the catalogue index: {err}"));
     let index: Yaml = serde_yaml::from_str(&fs::read_to_string(&index_path).map_err(|e| unreadable(e.to_string()))?)
         .map_err(|e| unreadable(e.to_string()))?;
     let slugs: Vec<String> =
-        index.get("parcours").and_then(Yaml::as_sequence).map(|items| items.iter().map(text).collect()).unwrap_or_default();
+        index.get("courses").and_then(Yaml::as_sequence).map(|items| items.iter().map(text).collect()).unwrap_or_default();
 
     let checks_path = directory.join(CHECKS_FILE);
-    let unreadable = |err: String| ContentError::new(&checks_path, format!("impossible de lire les vérifications : {err}"));
+    let unreadable = |err: String| ContentError::new(&checks_path, format!("cannot read the checks: {err}"));
     #[derive(serde::Deserialize)]
     struct ChecksFile {
-        verifications: Checks,
+        checks: Checks,
     }
     let checks = serde_yaml::from_str::<ChecksFile>(&fs::read_to_string(&checks_path).map_err(|e| unreadable(e.to_string()))?)
         .map_err(|e| unreadable(e.to_string()))?
-        .verifications;
+        .checks;
 
     let courses = slugs.iter().map(|slug| load_course(&directory.join(slug), &checks)).collect::<Result<Vec<_>>>()?;
     for course in &courses {
         if let Some(unknown) = course.requires.iter().find(|required| !slugs.contains(required)) {
-            return Err(ContentError::new(&directory.join(&course.slug).join("parcours.md"), format!("prérequis inconnu : {unknown}")));
+            return Err(ContentError::new(&directory.join(&course.slug).join(COURSE_FILE), format!("unknown prerequisite: {unknown}")));
         }
     }
     Ok(Catalogue { courses })
@@ -380,23 +367,23 @@ mod tests {
 
     #[test]
     fn front_matter_and_body() {
-        let (meta, body) = split_front_matter("---\ntitre: \"A : b\"\nduree: 5\n---\nCorps\n---\nfin", Path::new("l.md")).unwrap();
-        assert_eq!(field(&meta, "titre"), "A : b");
-        assert_eq!(field(&meta, "duree"), "5");
+        let (meta, body) = split_front_matter("---\ntitle: \"A : b\"\nminutes: 5\n---\nCorps\n---\nfin", Path::new("l.md")).unwrap();
+        assert_eq!(field(&meta, "title"), "A : b");
+        assert_eq!(field(&meta, "minutes"), "5");
         assert_eq!(body, "Corps\n---\nfin");
     }
 
     #[test]
     fn missing_front_matter() {
         let err = split_front_matter("# Titre\n", Path::new("l.md")).unwrap_err();
-        assert_eq!(err.to_string(), "l.md : front matter YAML manquant (bloc `---` en tête de fichier)");
+        assert_eq!(err.to_string(), "l.md: missing YAML front matter (a `---` block at the top of the file)");
     }
 
     #[test]
     fn required_fields() {
-        let (meta, _) = split_front_matter("---\ntitre: T\nresume: ''\n---\n", Path::new("l.md")).unwrap();
-        let err = require(&meta, &["titre", "resume", "duree"], Path::new("l.md")).unwrap_err();
-        assert!(err.message.ends_with(": resume, duree"));
+        let (meta, _) = split_front_matter("---\ntitle: T\nsummary: ''\n---\n", Path::new("l.md")).unwrap();
+        let err = require(&meta, &["title", "summary", "minutes"], Path::new("l.md")).unwrap_err();
+        assert!(err.message.ends_with(": summary, minutes"));
     }
 
     #[test]

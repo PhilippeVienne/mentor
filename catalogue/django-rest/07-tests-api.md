@@ -1,9 +1,9 @@
 ---
 id: tests-api
-titre: "Tester son API"
-resume: "Écrire des tests qui appellent l'API comme un vrai client : succès, refus d'accès et données invalides."
-duree: 45
-objectifs:
+title: "Tester son API"
+summary: "Écrire des tests qui appellent l'API comme un vrai client : succès, refus d'accès et données invalides."
+minutes: 45
+objectives:
   - Expliquer pourquoi tester une API et ce qu'il faut tester
   - Écrire un test avec `APITestCase` et `self.client`
   - Simuler une personne identifiée avec `force_authenticate`
@@ -128,20 +128,20 @@ Le fichier `tests.py` d'Adhésion contient un test `test_api_add_card` qui utili
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   L'API des événements est terminée, protégée et paginée. Il lui manque ses tests : le fichier `test_agenda_api.py` contient le début de la classe `EvenementApiTests`, avec cinq tests qui échouent exprès (`self.fail(...)`). Écris-les un par un. Pour chacun, le portail vérifie deux choses : ton test **passe** sur l'API telle qu'elle est, et il **échoue** quand on la casse volontairement (on supprime la protection, une validation, etc.). Un test qui ne détecte rien n'est pas validé. Lance-les avec `pytest -q test_agenda_api.py`.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/07-tests-api/. .
-etapes:
-  - texte: 'Écris `test_sans_identification_401` : un `GET` sur `/v1/evenements/` sans identification doit répondre `401`'
-    indice: '`reponse = self.client.get("/v1/evenements/")` puis `self.assertEqual(reponse.status_code, 401)`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation sans-authentification sans_identification'
+steps:
+  - text: 'Écris `test_sans_identification_401` : un `GET` sur `/v1/evenements/` sans identification doit répondre `401`'
+    hint: '`reponse = self.client.get("/v1/evenements/")` puis `self.assertEqual(reponse.status_code, 401)`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation sans-authentification sans_identification'
     solution:
-      - ecrire:
+      - write:
           test_agenda_api.py: |
             """Tests d'API de la leçon 7 : à écrire par toi, un par scénario. Lance-les avec `pytest -q`."""
             from datetime import datetime, timezone
@@ -187,13 +187,13 @@ etapes:
                 @override_settings(OIDC_PUBLIC_KEY=helpers_jwt.CLE_PUBLIQUE)
                 def test_jeton_signe_par_une_autre_cle_401(self):
                     self.fail("À écrire : un jeton fabriqué avec helpers_jwt.AUTRE_CLE_PRIVEE doit donner 401")
-  - texte: 'Écris `test_creation_interdite_sans_role_403` : identifié·e **sans rôle** (`self.client.force_authenticate(user=self.alice, token={})`), un `POST` doit répondre `403` **et** ne rien créer (`Evenement.objects.count()` reste à `1`)'
-    indice: 'Le corps à envoyer est la constante `CORPS`, avec `format="json"`. Après la réponse, compare `Evenement.objects.count()` à `1`.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation sans-controle-du-role creation_interdite --compte'
+  - text: 'Écris `test_creation_interdite_sans_role_403` : identifié·e **sans rôle** (`self.client.force_authenticate(user=self.alice, token={})`), un `POST` doit répondre `403` **et** ne rien créer (`Evenement.objects.count()` reste à `1`)'
+    hint: 'Le corps à envoyer est la constante `CORPS`, avec `format="json"`. Après la réponse, compare `Evenement.objects.count()` à `1`.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation sans-controle-du-role creation_interdite --compte'
     solution:
-      - ecrire:
+      - write:
           test_agenda_api.py: |
             """Tests d'API de la leçon 7 : à écrire par toi, un par scénario. Lance-les avec `pytest -q`."""
             from datetime import datetime, timezone
@@ -242,13 +242,13 @@ etapes:
                 @override_settings(OIDC_PUBLIC_KEY=helpers_jwt.CLE_PUBLIQUE)
                 def test_jeton_signe_par_une_autre_cle_401(self):
                     self.fail("À écrire : un jeton fabriqué avec helpers_jwt.AUTRE_CLE_PRIVEE doit donner 401")
-  - texte: 'Écris `test_creation_avec_role_staff_201` : identifié·e avec le rôle `staff` (`token=jeton_staff()`), un `POST` valide doit répondre `201`, et la réponse doit annoncer `places_restantes` égal à `40`'
-    indice: '`reponse.json()["places_restantes"]` donne la valeur dans le corps de la réponse.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation staff-refuse role_staff places_restantes 40'
+  - text: 'Écris `test_creation_avec_role_staff_201` : identifié·e avec le rôle `staff` (`token=jeton_staff()`), un `POST` valide doit répondre `201`, et la réponse doit annoncer `places_restantes` égal à `40`'
+    hint: '`reponse.json()["places_restantes"]` donne la valeur dans le corps de la réponse.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation staff-refuse role_staff places_restantes 40'
     solution:
-      - ecrire:
+      - write:
           test_agenda_api.py: |
             """Tests d'API de la leçon 7 : à écrire par toi, un par scénario. Lance-les avec `pytest -q`."""
             from datetime import datetime, timezone
@@ -300,13 +300,13 @@ etapes:
                 @override_settings(OIDC_PUBLIC_KEY=helpers_jwt.CLE_PUBLIQUE)
                 def test_jeton_signe_par_une_autre_cle_401(self):
                     self.fail("À écrire : un jeton fabriqué avec helpers_jwt.AUTRE_CLE_PRIVEE doit donner 401")
-  - texte: 'Écris `test_donnees_invalides_400` : avec le rôle `staff`, un `POST` à `0` place doit répondre `400`, et `"places"` doit figurer dans les erreurs de la réponse'
-    indice: 'Fabrique un corps invalide à partir de `CORPS` : `{**CORPS, "titre": "x", "places": 0}`. Vérifie avec `self.assertIn("places", reponse.json())`.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation sans-validation donnees_invalides places'
+  - text: 'Écris `test_donnees_invalides_400` : avec le rôle `staff`, un `POST` à `0` place doit répondre `400`, et `"places"` doit figurer dans les erreurs de la réponse'
+    hint: 'Fabrique un corps invalide à partir de `CORPS` : `{**CORPS, "titre": "x", "places": 0}`. Vérifie avec `self.assertIn("places", reponse.json())`.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation sans-validation donnees_invalides places'
     solution:
-      - ecrire:
+      - write:
           test_agenda_api.py: |
             """Tests d'API de la leçon 7 : à écrire par toi, un par scénario. Lance-les avec `pytest -q`."""
             from datetime import datetime, timezone
@@ -362,13 +362,13 @@ etapes:
                 @override_settings(OIDC_PUBLIC_KEY=helpers_jwt.CLE_PUBLIQUE)
                 def test_jeton_signe_par_une_autre_cle_401(self):
                     self.fail("À écrire : un jeton fabriqué avec helpers_jwt.AUTRE_CLE_PRIVEE doit donner 401")
-  - texte: 'Écris `test_jeton_signe_par_une_autre_cle_401` avec un **vrai** jeton : `helpers_jwt.fabriquer_jeton(roles=["staff"], cle=helpers_jwt.AUTRE_CLE_PRIVEE)` est signé par une clé que l''API ne connaît pas. Envoyé dans l''en-tête `Authorization: Bearer ...`, il doit donner `401`'
-    indice: '`self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {jeton}")` ajoute l''en-tête à toutes les requêtes suivantes du test.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation sans-signature autre_cle'
+  - text: 'Écris `test_jeton_signe_par_une_autre_cle_401` avec un **vrai** jeton : `helpers_jwt.fabriquer_jeton(roles=["staff"], cle=helpers_jwt.AUTRE_CLE_PRIVEE)` est signé par une clé que l''API ne connaît pas. Envoyé dans l''en-tête `Authorization: Bearer ...`, il doit donner `401`'
+    hint: '`self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {jeton}")` ajoute l''en-tête à toutes les requêtes suivantes du test.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation sans-signature autre_cle'
     solution:
-      - ecrire:
+      - write:
           test_agenda_api.py: |
             """Tests d'API de la leçon 7 : à écrire par toi, un par scénario. Lance-les avec `pytest -q`."""
             from datetime import datetime, timezone
@@ -427,11 +427,11 @@ etapes:
                     self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {jeton}")
                     reponse = self.client.get("/v1/evenements/")
                     self.assertEqual(reponse.status_code, 401)
-  - texte: 'Lance toute la suite avec `pytest -q` : les cinq tests sont verts'
-    indice: 'Si un test échoue encore, lis le premier message d''erreur : il indique la ligne et les valeurs comparées.'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-mutation suite'
+  - text: 'Lance toute la suite avec `pytest -q` : les cinq tests sont verts'
+    hint: 'Si un test échoue encore, lis le premier message d''erreur : il indique la ligne et les valeurs comparées.'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-mutation suite'
     solution:
       - pytest -q
 :::

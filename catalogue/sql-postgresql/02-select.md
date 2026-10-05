@@ -1,9 +1,9 @@
 ---
 id: select
-titre: "SELECT : filtrer, trier, agréger"
-resume: "Interroger une table avec SELECT, WHERE, ORDER BY, LIMIT, puis résumer les données avec GROUP BY."
-duree: 30
-objectifs:
+title: "SELECT : filtrer, trier, agréger"
+summary: "Interroger une table avec SELECT, WHERE, ORDER BY, LIMIT, puis résumer les données avec GROUP BY."
+minutes: 30
+objectives:
   - Écrire un `SELECT` avec `WHERE`, `ORDER BY` et `LIMIT`
   - Raisonner correctement avec `NULL`
   - Compter et additionner avec `count`, `sum` et `GROUP BY`
@@ -183,42 +183,42 @@ echo "SELECT prenom FROM adherents;" > resultat.sql
 - Teste ta requête avec `psql -At -f resultat.sql` : `-f` exécute le fichier, `-A` supprime l'alignement en colonnes et `-t` supprime l'en-tête et le « (N rows) ». Il ne reste que les valeurs, séparées par `|`.
 - Le serveur relance ta requête sur les vraies tables : une réponse recopiée à la main ne passe pas.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le schéma et les données de la leçon 1 sont chargés dans la base `asso` (5 adhérent·e·s, 4 événements). Pour chaque étape, écris la **requête** dans le fichier `.sql` demandé (avec `nano` ou `echo "…" > fichier.sql`) et teste-la avec `psql -At -f fichier.sql`. Le serveur exécute lui-même ton fichier et compare son résultat : il vérifie aussi que ta requête lit bien les tables (une réponse recopiée à la main ne passe pas). L'ordre et les colonnes demandés comptent.
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
   - psql -q -v ON_ERROR_STOP=1 -f /opt/exercices/schema.sql -f /opt/exercices/donnees.sql
-etapes:
-  - texte: 'Écris dans `robotique.sql` une requête qui donne le prénom et le nom (dans cet ordre) des adhérent·e·s de l''association `2`, triés par prénom'
-    indice: 'Une requête, un fichier : `echo "SELECT prenom, nom FROM adherents WHERE asso_id = 2 ORDER BY prenom;" > robotique.sql` (ou `nano robotique.sql`). Teste-la avec `psql -At -f robotique.sql` : tu dois lire `Chloé|Durand` puis `David|Roux`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py robotique.sql 'Chloé|Durand\nDavid|Roux' 'CHLOÉ|DURAND\nDAVID|ROUX\nZOÉ|ZED'
+steps:
+  - text: 'Écris dans `robotique.sql` une requête qui donne le prénom et le nom (dans cet ordre) des adhérent·e·s de l''association `2`, triés par prénom'
+    hint: 'Une requête, un fichier : `echo "SELECT prenom, nom FROM adherents WHERE asso_id = 2 ORDER BY prenom;" > robotique.sql` (ou `nano robotique.sql`). Teste-la avec `psql -At -f robotique.sql` : tu dois lire `Chloé|Durand` puis `David|Roux`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py robotique.sql 'Chloé|Durand\nDavid|Roux' 'CHLOÉ|DURAND\nDAVID|ROUX\nZOÉ|ZED'
     solution:
       - printf '%s\n' "SELECT prenom, nom FROM adherents WHERE asso_id = 2 ORDER BY prenom;" > robotique.sql
-  - texte: 'Écris dans `sans-asso.sql` une requête qui donne le prénom des adhérent·e·s **sans association**'
-    indice: 'Une valeur absente se teste avec `IS NULL`, jamais avec `= NULL`. Teste avec `psql -At -f sans-asso.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py sans-asso.sql 'Emma' 'EMMA'
+  - text: 'Écris dans `sans-asso.sql` une requête qui donne le prénom des adhérent·e·s **sans association**'
+    hint: 'Une valeur absente se teste avec `IS NULL`, jamais avec `= NULL`. Teste avec `psql -At -f sans-asso.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py sans-asso.sql 'Emma' 'EMMA'
     solution:
       - printf '%s\n' "SELECT prenom FROM adherents WHERE asso_id IS NULL;" > sans-asso.sql
-  - texte: 'Écris dans `noms-d.sql` une requête qui donne les noms de famille (colonne `nom`) qui commencent par « d », majuscule ou minuscule'
-    indice: '`ILIKE ''d%''` ignore la casse ; pense à ne sélectionner que la colonne `nom`. Teste avec `psql -At -f noms-d.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py noms-d.sql 'Durand' 'DURAND'
+  - text: 'Écris dans `noms-d.sql` une requête qui donne les noms de famille (colonne `nom`) qui commencent par « d », majuscule ou minuscule'
+    hint: '`ILIKE ''d%''` ignore la casse ; pense à ne sélectionner que la colonne `nom`. Teste avec `psql -At -f noms-d.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py noms-d.sql 'Durand' 'DURAND'
     solution:
       - printf '%s\n' "SELECT nom FROM adherents WHERE nom ILIKE 'd%';" > noms-d.sql
-  - texte: 'Écris dans `compte.sql` une requête qui donne, sur une seule ligne, le nombre total d''adhérent·e·s, puis le nombre de ceux qui ont une association (dans cet ordre)'
-    indice: '`count(*)` compte toutes les lignes ; `count(asso_id)` ignore les `NULL`. Sépare les deux par une virgule dans le `SELECT`. Teste avec `psql -At -f compte.sql` : tu dois lire `5|4`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py compte.sql '5|4' '6|5'
+  - text: 'Écris dans `compte.sql` une requête qui donne, sur une seule ligne, le nombre total d''adhérent·e·s, puis le nombre de ceux qui ont une association (dans cet ordre)'
+    hint: '`count(*)` compte toutes les lignes ; `count(asso_id)` ignore les `NULL`. Sépare les deux par une virgule dans le `SELECT`. Teste avec `psql -At -f compte.sql` : tu dois lire `5|4`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py compte.sql '5|4' '6|5'
     solution:
       - printf '%s\n' "SELECT count(*), count(asso_id) FROM adherents;" > compte.sql
-  - texte: 'Écris dans `par-asso.sql` une requête qui donne, pour chaque association (colonne `asso_id` de `evenements`), son `asso_id`, le nombre d''événements et la somme de leurs `places_restantes`, triés par `asso_id`'
-    indice: 'Reprends l''exemple `GROUP BY` du cours en ajoutant `ORDER BY asso_id`, sans alias ni `HAVING`. Teste avec `psql -At -f par-asso.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py par-asso.sql '1|2|50\n2|2|18' '1|2|250\n2|2|218'
+  - text: 'Écris dans `par-asso.sql` une requête qui donne, pour chaque association (colonne `asso_id` de `evenements`), son `asso_id`, le nombre d''événements et la somme de leurs `places_restantes`, triés par `asso_id`'
+    hint: 'Reprends l''exemple `GROUP BY` du cours en ajoutant `ORDER BY asso_id`, sans alias ni `HAVING`. Teste avec `psql -At -f par-asso.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py par-asso.sql '1|2|50\n2|2|18' '1|2|250\n2|2|218'
     solution:
       - printf '%s\n' "SELECT asso_id, count(*), sum(places_restantes) FROM evenements GROUP BY asso_id ORDER BY asso_id;" > par-asso.sql
 :::

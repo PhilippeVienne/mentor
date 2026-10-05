@@ -1,9 +1,9 @@
 ---
 id: ressources-fournisseurs-variables
-titre: "Ressources, fournisseurs et variables"
-resume: "Lire un fichier .tf du dépôt cluster-configuration : ressources, variables, valeurs locales, sorties et modules."
-duree: 40
-objectifs:
+title: "Ressources, fournisseurs et variables"
+summary: "Lire un fichier .tf du dépôt cluster-configuration : ressources, variables, valeurs locales, sorties et modules."
+minutes: 40
+objectives:
   - Distinguer ressource, fournisseur (provider), variable, valeur locale et sortie
   - Lire un module et ses entrées dans cluster-configuration
   - Repérer la syntaxe d'époque (Terraform 0.12) face à la syntaxe actuelle
@@ -37,7 +37,7 @@ Ce parcours suppose acquises les bases de Kubernetes et de Helm (parcours *Kuber
 
 Les fichiers Terraform sont écrits en **HCL** (*HashiCorp Configuration Language*), un langage de configuration lisible (pas de programmation compliquée), et leur nom se termine par `.tf`. Un bloc s'écrit `type "étiquette" { attributs }` : un mot-clé, un ou deux noms entre guillemets, puis des lignes `nom = valeur` entre accolades. Il n'a que quelques notions. Chaque fichier `.tf` d'un dossier est lu, l'ordre des fichiers n'a aucune importance.
 
-:::cartes
+:::cards
 ### Fournisseur (provider)
 
 Une extension (*plugin*) qui sait parler à un service par son **API** (l'interface par laquelle un programme commande un autre programme) : `kubernetes`, `helm`, `random`, `tls`… Elle est téléchargée par `terraform init`.
@@ -171,36 +171,36 @@ Les commandes du labo, en bref :
 - `terraform apply -auto-approve` crée ce qui manque ; `-auto-approve` évite de taper `yes` (à réserver aux exercices). `-var nom=valeur` remplace une variable pour cette exécution.
 - `terraform output -raw nom` affiche la valeur d'une sortie sans guillemets ; `>` envoie un résultat dans un fichier au lieu de l'écran.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un fichier `main.tf` (le fichier de configuration Terraform, `tf` pour *terraform*). Il décrit une chaîne aléatoire (`random_string`), un fichier `bonjour.txt` à créer (`local_file`) et deux sorties. Il a deux défauts : il est mal mis en forme (pas d'indentation) et il utilise `var.domain` sans avoir déclaré la variable `domain`. Ouvre-le avec `cat main.tf` ou `nano main.tf`, lis les commentaires, puis corrige tout et applique.
-commandes:
+commands:
   - cp -R /opt/exercices/01-ressources/. .
-etapes:
-  - texte: 'Initialise le dossier avec `terraform init` : il prépare les fournisseurs `random` et `local` (ici depuis un miroir local, sans réseau)'
-    indice: 'Tape simplement `terraform init`. Il crée un dossier caché `.terraform` et un fichier `.terraform.lock.hcl` qui fige les versions des fournisseurs.'
-    verif:
-      - commande-reussit: 'find -L .terraform/providers -name "terraform-provider-random*" -type f | grep -q . && find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
+steps:
+  - text: 'Initialise le dossier avec `terraform init` : il prépare les fournisseurs `random` et `local` (ici depuis un miroir local, sans réseau)'
+    hint: 'Tape simplement `terraform init`. Il crée un dossier caché `.terraform` et un fichier `.terraform.lock.hcl` qui fige les versions des fournisseurs.'
+    checks:
+      - command-succeeds: 'find -L .terraform/providers -name "terraform-provider-random*" -type f | grep -q . && find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
     solution:
       - terraform init
-  - texte: 'Mets `main.tf` en forme avec `terraform fmt` (il réindente les fichiers du dossier)'
-    indice: 'Contrôle d''abord avec `terraform fmt -check` : il répond par un code d''erreur tant que le fichier n''est pas bien formaté. Puis lance `terraform fmt`.'
-    verif:
-      - commande-reussit: terraform fmt -check
-      - commande-reussit: 'grep -q "random_string" main.tf && grep -q "local_file" main.tf && ! cmp -s main.tf /opt/exercices/01-ressources/main.tf'
+  - text: 'Mets `main.tf` en forme avec `terraform fmt` (il réindente les fichiers du dossier)'
+    hint: 'Contrôle d''abord avec `terraform fmt -check` : il répond par un code d''erreur tant que le fichier n''est pas bien formaté. Puis lance `terraform fmt`.'
+    checks:
+      - command-succeeds: terraform fmt -check
+      - command-succeeds: 'grep -q "random_string" main.tf && grep -q "local_file" main.tf && ! cmp -s main.tf /opt/exercices/01-ressources/main.tf'
     solution:
       - terraform fmt
-  - texte: 'Corrige l''erreur : déclare la variable `domain` (texte, valeur par défaut `s3.exemple.test`) dans `main.tf`, jusqu''à ce que `terraform validate` réponde « Success »'
-    apres: [1]
-    indice: |
+  - text: 'Corrige l''erreur : déclare la variable `domain` (texte, valeur par défaut `s3.exemple.test`) dans `main.tf`, jusqu''à ce que `terraform validate` réponde « Success »'
+    after: [1]
+    hint: |
       Ajoute dans `main.tf` un bloc `variable "domain"` qui contient deux lignes : `type = string` et `default = "s3.exemple.test"`. Puis lance `terraform validate` et relis le message d'erreur s'il y en a un.
-    verif:
-      - commande-reussit: terraform validate
-      - sortie-contient: ['echo var.domain | terraform console', '^"s3\.exemple\.test"$']
-      - commande-reussit: 'grep -q "random_string" main.tf && grep -q "local_file" main.tf'
+    checks:
+      - command-succeeds: terraform validate
+      - output-contains: ['echo var.domain | terraform console', '^"s3\.exemple\.test"$']
+      - command-succeeds: 'grep -q "random_string" main.tf && grep -q "local_file" main.tf'
     solution:
-      - ecrire:
+      - write:
           main.tf: |
             terraform {
               required_providers {
@@ -236,28 +236,28 @@ etapes:
             output "minio_url" {
               value = "https://${var.domain}"
             }
-  - texte: 'Applique la configuration avec `terraform apply -auto-approve` : Terraform crée la chaîne aléatoire et le fichier `bonjour.txt`'
-    apres: [3]
-    indice: '`-auto-approve` répond « yes » à ta place (réservé aux exercices !). Puis regarde `cat bonjour.txt` : il contient la valeur par défaut du domaine.'
-    verif:
-      - fichier-contient-dans-env: [bonjour.txt, 'Domaine : s3\.exemple\.test']
-      - commande-reussit: 'terraform state list | grep -q "^local_file.bonjour$" && terraform state list | grep -q "^random_string.access_key$"'
-      - commande-reussit: terraform plan -input=false -detailed-exitcode
+  - text: 'Applique la configuration avec `terraform apply -auto-approve` : Terraform crée la chaîne aléatoire et le fichier `bonjour.txt`'
+    after: [3]
+    hint: '`-auto-approve` répond « yes » à ta place (réservé aux exercices !). Puis regarde `cat bonjour.txt` : il contient la valeur par défaut du domaine.'
+    checks:
+      - env-file-contains: [bonjour.txt, 'Domaine : s3\.exemple\.test']
+      - command-succeeds: 'terraform state list | grep -q "^local_file.bonjour$" && terraform state list | grep -q "^random_string.access_key$"'
+      - command-succeeds: terraform plan -input=false -detailed-exitcode
     solution:
       - terraform apply -auto-approve
-  - texte: 'Relance l''application en changeant la variable en ligne de commande : `terraform apply -auto-approve -var domain=s3.prod.test`. Le fichier `bonjour.txt` doit être mis à jour'
-    apres: [4]
-    indice: '`-var nom=valeur` remplace la valeur par défaut, pour cette exécution seulement. Le plan montre `bonjour.txt` remplacé car son contenu change.'
-    verif:
-      - fichier-contient-dans-env: [bonjour.txt, 'Domaine : s3\.prod\.test']
-      - commande-reussit: terraform plan -input=false -detailed-exitcode -var domain=s3.prod.test
+  - text: 'Relance l''application en changeant la variable en ligne de commande : `terraform apply -auto-approve -var domain=s3.prod.test`. Le fichier `bonjour.txt` doit être mis à jour'
+    after: [4]
+    hint: '`-var nom=valeur` remplace la valeur par défaut, pour cette exécution seulement. Le plan montre `bonjour.txt` remplacé car son contenu change.'
+    checks:
+      - env-file-contains: [bonjour.txt, 'Domaine : s3\.prod\.test']
+      - command-succeeds: terraform plan -input=false -detailed-exitcode -var domain=s3.prod.test
     solution:
       - terraform apply -auto-approve -var domain=s3.prod.test
-  - texte: 'Écris dans `url.txt` la valeur de la sortie `minio_url` (sans guillemets) avec `terraform output -raw minio_url > url.txt`'
-    apres: [5]
-    indice: 'Compare avec `terraform output` seul : la sortie `minio_access_key` y apparaît comme `<sensitive>`, c''est l''effet de `sensitive = true`.'
-    verif:
-      - commande-reussit: 'test "$(cat url.txt)" = "https://s3.prod.test" && test "$(cat url.txt)" = "$(terraform output -raw minio_url)"'
+  - text: 'Écris dans `url.txt` la valeur de la sortie `minio_url` (sans guillemets) avec `terraform output -raw minio_url > url.txt`'
+    after: [5]
+    hint: 'Compare avec `terraform output` seul : la sortie `minio_access_key` y apparaît comme `<sensitive>`, c''est l''effet de `sensitive = true`.'
+    checks:
+      - command-succeeds: 'test "$(cat url.txt)" = "https://s3.prod.test" && test "$(cat url.txt)" = "$(terraform output -raw minio_url)"'
     solution:
       - terraform output -raw minio_url > url.txt
 :::

@@ -1,9 +1,9 @@
 ---
 id: migrations-et-sauvegardes
-titre: "Migrations de schéma et sauvegardes"
-resume: "Faire évoluer le schéma de façon versionnée, puis sauvegarder et restaurer avec pg_dump."
-duree: 35
-objectifs:
+title: "Migrations de schéma et sauvegardes"
+summary: "Faire évoluer le schéma de façon versionnée, puis sauvegarder et restaurer avec pg_dump."
+minutes: 35
+objectives:
   - Expliquer ce qu'est une migration et pourquoi on ne modifie jamais une base à la main
   - Écrire une migration `ALTER TABLE` sûre sur une table déjà remplie
   - Sauvegarder et restaurer une base avec `pg_dump` et `pg_restore`
@@ -17,7 +17,7 @@ Une **migration** est un fichier, rangé dans Git avec le code, qui décrit **un
 
 Tu les croiseras sous deux formes dans les projets de l'équipe :
 
-:::cartes
+:::cards
 ### Django
 
 Les migrations sont générées à partir des modèles Python. `python manage.py makemigrations` crée le fichier, `python manage.py migrate` l'applique, et `python manage.py sqlmigrate app 0002` affiche le SQL correspondant.
@@ -124,53 +124,53 @@ Le groupe `dev` de l'équipe sur GitLab contient un dépôt `docker-postgres-bac
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Les quatre tables sont chargées dans la base `asso` (5 adhérent·e·s). Tu vas ajouter une colonne `telephone` obligatoire sans casser les lignes existantes, puis sauvegarder et restaurer la base. Dans le labo, `psql`, `pg_dump`, `pg_restore` et `createdb` sont déjà connectés au serveur : inutile de donner `-h` ni `-U`. Les étapes sont vérifiées sur l'état de la base et sur les fichiers produits.
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
   - psql -q -v ON_ERROR_STOP=1 -f /opt/exercices/schema.sql -f /opt/exercices/donnees.sql
-etapes:
-  - texte: 'Ajoute à `adherents` une colonne `telephone` de type `text`, **facultative** pour l''instant'
-    indice: 'psql -c "ALTER TABLE adherents ADD COLUMN telephone text;"'
-    verif:
-      - sortie-contient:
+steps:
+  - text: 'Ajoute à `adherents` une colonne `telephone` de type `text`, **facultative** pour l''instant'
+    hint: 'psql -c "ALTER TABLE adherents ADD COLUMN telephone text;"'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM information_schema.columns WHERE table_name = 'adherents' AND column_name = 'telephone'"
           - '^1$'
     solution:
       - psql -c "ALTER TABLE adherents ADD COLUMN telephone text;"
-  - texte: 'Remplis les lignes existantes : mets `inconnu` dans `telephone` partout où il vaut `NULL`'
-    indice: 'Commande : `psql -c "UPDATE adherents SET telephone = ''inconnu'' WHERE telephone IS NULL;"`. Le compteur doit annoncer `UPDATE 5`.'
-    apres: [1]
-    verif:
-      - sortie-contient:
+  - text: 'Remplis les lignes existantes : mets `inconnu` dans `telephone` partout où il vaut `NULL`'
+    hint: 'Commande : `psql -c "UPDATE adherents SET telephone = ''inconnu'' WHERE telephone IS NULL;"`. Le compteur doit annoncer `UPDATE 5`.'
+    after: [1]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM adherents WHERE telephone = 'inconnu'"
           - '^5$'
     solution:
       - psql -c "UPDATE adherents SET telephone = 'inconnu' WHERE telephone IS NULL;"
-  - texte: 'Rends la colonne `telephone` obligatoire avec `SET NOT NULL`'
-    indice: 'psql -c "ALTER TABLE adherents ALTER COLUMN telephone SET NOT NULL;"'
-    apres: [2]
-    verif:
-      - sortie-contient:
+  - text: 'Rends la colonne `telephone` obligatoire avec `SET NOT NULL`'
+    hint: 'psql -c "ALTER TABLE adherents ALTER COLUMN telephone SET NOT NULL;"'
+    after: [2]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT is_nullable FROM information_schema.columns WHERE table_name = 'adherents' AND column_name = 'telephone'"
           - '^NO$'
     solution:
       - psql -c "ALTER TABLE adherents ALTER COLUMN telephone SET NOT NULL;"
-  - texte: 'Sauvegarde la base `asso` au format personnalisé dans le fichier `asso.dump`'
-    indice: 'pg_dump -Fc -f asso.dump — fais-le après la migration, pour que la sauvegarde contienne la colonne `telephone`.'
-    apres: [3]
-    verif:
-      - fichier-existe-dans-env: asso.dump
-      - commande-reussit: pg_restore -f - asso.dump | grep -q telephone
+  - text: 'Sauvegarde la base `asso` au format personnalisé dans le fichier `asso.dump`'
+    hint: 'pg_dump -Fc -f asso.dump — fais-le après la migration, pour que la sauvegarde contienne la colonne `telephone`.'
+    after: [3]
+    checks:
+      - env-file-exists: asso.dump
+      - command-succeeds: pg_restore -f - asso.dump | grep -q telephone
     solution:
       - pg_dump -Fc -f asso.dump
-  - texte: 'Teste la sauvegarde : crée une base vide `asso_restauration` puis restaure-y `asso.dump`'
-    indice: 'createdb asso_restauration, puis pg_restore -d asso_restauration asso.dump. Vérifie avec psql -d asso_restauration -c "SELECT count(*) FROM adherents;".'
-    apres: [4]
-    verif:
-      - sortie-contient:
+  - text: 'Teste la sauvegarde : crée une base vide `asso_restauration` puis restaure-y `asso.dump`'
+    hint: 'createdb asso_restauration, puis pg_restore -d asso_restauration asso.dump. Vérifie avec psql -d asso_restauration -c "SELECT count(*) FROM adherents;".'
+    after: [4]
+    checks:
+      - output-contains:
           - psql -d asso_restauration -Atc "SELECT count(*) FROM adherents WHERE telephone = 'inconnu'"
           - '^5$'
     solution:

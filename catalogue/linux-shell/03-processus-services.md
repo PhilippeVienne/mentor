@@ -1,9 +1,9 @@
 ---
 id: processus-services
-titre: "Processus, services et journaux"
-resume: "Voir ce qui tourne, piloter un service avec systemd et lire ses journaux avec journalctl."
-duree: 30
-objectifs:
+title: "Processus, services et journaux"
+summary: "Voir ce qui tourne, piloter un service avec systemd et lire ses journaux avec journalctl."
+minutes: 30
+objectives:
   - Lister et arrêter des processus avec `ps`, `top` et `kill`
   - Démarrer, arrêter et inspecter un service avec `systemctl`
   - Lire et filtrer les journaux d'un service avec `journalctl`
@@ -89,51 +89,51 @@ Le terminal du labo est un conteneur : il n'a **pas** `systemd` ni `journalctl`
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, deux petits scripts jouent le rôle de services : `demo.sh`, un service sage qui écrit une ligne dans son journal toutes les 5 secondes, et `tetu.sh`, un service têtu. Pour lancer un script en arrière-plan (ton terminal reste libre), ajoute `&` à la fin de la ligne : `bash demo.sh service.log &` (`bash` lance le script, `service.log` est le nom du journal dans lequel il écrit).
-commandes:
+commands:
   - cp -R /opt/exercices/03-processus/. .
-etapes:
-  - texte: 'Démarre `demo.sh` en arrière-plan, avec `service.log` comme journal : `bash demo.sh service.log &`'
-    indice: 'N''oublie pas le `&` final : sans lui, le script garde ton terminal occupé. Contrôle avec `ps aux | grep demo`.'
-    verif:
-      - commande-reussit: 'sleep 1; pgrep -f "[d]emo\.sh service\.log"'
-      - fichier-contient-dans-env: [service.log, 'le service demo répond']
+steps:
+  - text: 'Démarre `demo.sh` en arrière-plan, avec `service.log` comme journal : `bash demo.sh service.log &`'
+    hint: 'N''oublie pas le `&` final : sans lui, le script garde ton terminal occupé. Contrôle avec `ps aux | grep demo`.'
+    checks:
+      - command-succeeds: 'sleep 1; pgrep -f "[d]emo\.sh service\.log"'
+      - env-file-contains: [service.log, 'le service demo répond']
     solution:
       - bash demo.sh service.log > /dev/null 2>&1 &
-  - texte: 'Lis son journal avec `cat service.log`, trouve le PID du service avec `ps aux` (ou `pgrep -f demo`), puis arrête-le **proprement**, sans l''option `-9`'
-    indice: '`kill PID` envoie SIGTERM. Ce service sait alors noter « arrêt propre » dans son journal : relis `service.log` après.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'tail -n 1 service.log | grep -q "arrêt propre du service demo"'
-      - commande-reussit: 'grep -q "le service demo répond" service.log'
-      - commande-echoue: 'pgrep -f "[d]emo"'
+  - text: 'Lis son journal avec `cat service.log`, trouve le PID du service avec `ps aux` (ou `pgrep -f demo`), puis arrête-le **proprement**, sans l''option `-9`'
+    hint: '`kill PID` envoie SIGTERM. Ce service sait alors noter « arrêt propre » dans son journal : relis `service.log` après.'
+    after: [1]
+    checks:
+      - command-succeeds: 'tail -n 1 service.log | grep -q "arrêt propre du service demo"'
+      - command-succeeds: 'grep -q "le service demo répond" service.log'
+      - command-fails: 'pgrep -f "[d]emo"'
     solution:
       - cat service.log
       - kill $(pgrep -f "[d]emo")
-  - texte: 'Redémarre le service, mais avec un nouveau journal `service2.log`'
-    indice: 'Même commande que pour l''étape 1, avec un autre nom de journal.'
-    apres: [2]
-    verif:
-      - fichier-contient-dans-env: [service2.log, 'le service demo répond']
-      - commande-reussit: 'pgrep -f "[d]emo\.sh service2\.log"'
+  - text: 'Redémarre le service, mais avec un nouveau journal `service2.log`'
+    hint: 'Même commande que pour l''étape 1, avec un autre nom de journal.'
+    after: [2]
+    checks:
+      - env-file-contains: [service2.log, 'le service demo répond']
+      - command-succeeds: 'pgrep -f "[d]emo\.sh service2\.log"'
     solution:
       - bash demo.sh service2.log > /dev/null 2>&1 &
-  - texte: 'Démarre maintenant le service têtu en arrière-plan : `bash tetu.sh &`. Quand il démarre, il crée le fichier `tetu-demarre.txt`'
-    indice: 'Pour le retrouver : `ps aux | grep tetu`.'
-    verif:
-      - fichier-contient-dans-env: [tetu-demarre.txt, '^tetu est démarré']
-      - commande-reussit: 'sleep 1; pgrep -f "[t]etu\.sh"'
+  - text: 'Démarre maintenant le service têtu en arrière-plan : `bash tetu.sh &`. Quand il démarre, il crée le fichier `tetu-demarre.txt`'
+    hint: 'Pour le retrouver : `ps aux | grep tetu`.'
+    checks:
+      - env-file-contains: [tetu-demarre.txt, '^tetu est démarré']
+      - command-succeeds: 'sleep 1; pgrep -f "[t]etu\.sh"'
     solution:
       - bash tetu.sh > /dev/null 2>&1 &
-  - texte: 'Arrête `tetu.sh`. Essaie d''abord `kill PID` : il l''ignore. Il ne reste plus qu''à le forcer, en dernier recours'
-    indice: '`kill -9 PID` envoie SIGKILL, que le processus ne peut pas ignorer. Vérifie avec `ps aux | grep tetu` qu''il a disparu.'
-    apres: [4]
-    verif:
-      - fichier-contient-dans-env: [tetu-demarre.txt, 'SIGTERM reçu et ignoré']
-      - commande-echoue: 'pgrep -f "[t]etu"'
+  - text: 'Arrête `tetu.sh`. Essaie d''abord `kill PID` : il l''ignore. Il ne reste plus qu''à le forcer, en dernier recours'
+    hint: '`kill -9 PID` envoie SIGKILL, que le processus ne peut pas ignorer. Vérifie avec `ps aux | grep tetu` qu''il a disparu.'
+    after: [4]
+    checks:
+      - env-file-contains: [tetu-demarre.txt, 'SIGTERM reçu et ignoré']
+      - command-fails: 'pgrep -f "[t]etu"'
     solution:
       - kill $(pgrep -f "[t]etu")
       - sleep 1

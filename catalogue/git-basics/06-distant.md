@@ -1,9 +1,9 @@
 ---
 id: distant
-titre: Collaborer avec GitLab
-resume: 'Clone, push, fetch, pull : synchroniser son dépôt avec celui des autres.'
-duree: 15
-objectifs:
+title: Collaborer avec GitLab
+summary: 'Clone, push, fetch, pull : synchroniser son dépôt avec celui des autres.'
+minutes: 15
+objectives:
   - "Expliquer ce qu'est un dépôt distant et le rôle d'`origin`"
   - Cloner un projet et relier un dépôt local à GitLab
   - "Distinguer `fetch`, `pull` et `push`"
@@ -68,52 +68,52 @@ Si ton `push` est **rejeté** (*non-fast-forward*), c'est que quelqu'un a pouss�
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dépôt local a 2 commits. Un « GitLab » vide t'attend (un dépôt local qui répond à l'adresse `git@gitlab.example.org:equipe/formation-git.git`). Une coéquipière, Camille, va bientôt pousser du code…
-commandes:
+commands:
   - 'rm -rf ~/.gitlab-sim && git init -q --bare ~/.gitlab-sim/formation-git.git'
   - git init -q
   - 'echo "# Formation Git" > README.md'
   - 'git add . && git commit -q -m "Initialise le dépôt"'
   - 'echo "<h1>Accueil</h1>" > index.html'
   - "git add . && git commit -q -m \"Ajoute l'accueil\""
-etapes:
-  - texte: 'Déclare le serveur : `git remote add origin <url>`'
-    indice: 'git remote add origin git@gitlab.example.org:equipe/formation-git.git'
-    verif:
-      - commande-reussit: 'git remote get-url origin'
+steps:
+  - text: 'Déclare le serveur : `git remote add origin <url>`'
+    hint: 'git remote add origin git@gitlab.example.org:equipe/formation-git.git'
+    checks:
+      - command-succeeds: 'git remote get-url origin'
     solution:
       - 'git remote add origin git@gitlab.example.org:equipe/formation-git.git'
-  - texte: "Publie `main` et mémorise l'amont : `git push -u origin main`"
-    indice: git push -u origin main
-    verif:
-      - commande-reussit: 'test "$(git rev-parse main)" = "$(git rev-parse origin/main)" && test "$(git rev-parse --abbrev-ref main@{upstream})" = origin/main'
+  - text: "Publie `main` et mémorise l'amont : `git push -u origin main`"
+    hint: git push -u origin main
+    checks:
+      - command-succeeds: 'test "$(git rev-parse main)" = "$(git rev-parse origin/main)" && test "$(git rev-parse --abbrev-ref main@{upstream})" = origin/main'
     solution:
       - git push -u origin main
-  - texte: 'Camille vient de pousser ! Lance `camille` pour simuler son travail, puis télécharge sans fusionner : `git fetch`, puis `git status`'
-    indice: 'camille, puis git fetch, puis git status : tu es « en retard » de 1 commit'
-    apres: [2]
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count main..origin/main)" -ge 1'
+  - text: 'Camille vient de pousser ! Lance `camille` pour simuler son travail, puis télécharge sans fusionner : `git fetch`, puis `git status`'
+    hint: 'camille, puis git fetch, puis git status : tu es « en retard » de 1 commit'
+    after: [2]
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count main..origin/main)" -ge 1'
     solution:
       - camille
       - git fetch
       - git status
-  - texte: 'Intègre son travail avec `git pull`'
-    indice: git pull — contact.html apparaît dans ton dossier
-    apres: [3]
-    verif:
-      - fichier-existe-dans-env: contact.html
-      - commande-reussit: 'test "$(git rev-parse main)" = "$(git rev-parse origin/main)"'
+  - text: 'Intègre son travail avec `git pull`'
+    hint: git pull — contact.html apparaît dans ton dossier
+    after: [3]
+    checks:
+      - env-file-exists: contact.html
+      - command-succeeds: 'test "$(git rev-parse main)" = "$(git rev-parse origin/main)"'
     solution:
       - git pull
-  - texte: 'Fais un nouveau commit puis `git push`'
-    indice: 'echo "<p>Salut</p>" >> index.html puis git commit -am "Dit salut" puis git push'
-    apres: [4]
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count origin/main)" -ge 4 && test "$(git rev-parse main)" = "$(git rev-parse origin/main)" && test "$(git log -1 --format=%an main)" != Camille'
+  - text: 'Fais un nouveau commit puis `git push`'
+    hint: 'echo "<p>Salut</p>" >> index.html puis git commit -am "Dit salut" puis git push'
+    after: [4]
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count origin/main)" -ge 4 && test "$(git rev-parse main)" = "$(git rev-parse origin/main)" && test "$(git log -1 --format=%an main)" != Camille'
     solution:
       - 'echo "<p>Salut</p>" >> index.html'
       - 'git commit -am "Dit salut"'

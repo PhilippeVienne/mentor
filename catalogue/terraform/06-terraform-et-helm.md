@@ -1,9 +1,9 @@
 ---
 id: terraform-et-helm
-titre: "Déployer des charts Helm avec Terraform"
-resume: "Lire une ressource helm_release du dépôt, comprendre ses valeurs, ses dépendances et ce qui est probablement dépassé."
-duree: 45
-objectifs:
+title: "Déployer des charts Helm avec Terraform"
+summary: "Lire une ressource helm_release du dépôt, comprendre ses valeurs, ses dépendances et ce qui est probablement dépassé."
+minutes: 45
+objectives:
   - Lire une ressource helm_release et ses values
   - Expliquer l'ordre entre dossiers (ingress, kubedb, minio, keycloak)
   - Repérer les éléments d'époque à faire confirmer (Tiller, dépôt stable, secrets)
@@ -123,68 +123,68 @@ Le fournisseur `helm` et un cluster ne sont **pas** disponibles ici. À la place
 
 Commandes du labo : `printf 'texte\n' > fichier` écrit un texte dans un fichier (`\n` = retour à la ligne) ; `-var-file=fichier` demande à Terraform de lire les variables d'un fichier de ton choix ; `grep` cherche un texte dans un fichier.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient un `main.tf` inspiré de `ingress/` : trois variables (`domain`, et deux sans valeur par défaut, `cloudflare_email` et `cloudflare_apiKey`, la seconde étant sensible) ; un fichier `values.yaml` ; un fichier `dns.env` qui reçoit les identifiants. Les valeurs que tu saisis sont **factices** : ne tape jamais un vrai secret dans un exercice.
-commandes:
+commands:
   - cp -R /opt/exercices/06-variables/. .
-etapes:
-  - texte: 'Initialise le dossier avec `terraform init`'
-    indice: 'La commande est `terraform init`.'
-    verif:
-      - commande-reussit: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
+steps:
+  - text: 'Initialise le dossier avec `terraform init`'
+    hint: 'La commande est `terraform init`.'
+    checks:
+      - command-succeeds: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
     solution:
       - terraform init
-  - texte: 'Lance `terraform plan -input=false` : il échoue car deux variables n''ont pas de valeur. Crée un fichier `terraform.tfvars` avec `cloudflare_email = "admin@exemple.test"` et `cloudflare_apiKey = "cle-factice-pour-le-labo"` (une ligne chacune) jusqu''à ce que le plan réussisse'
-    apres: [1]
-    indice: 'Un fichier `terraform.tfvars` est lu automatiquement. Chaque ligne a la forme `nom = "valeur"`.'
-    verif:
-      - fichier-contient-dans-env: [terraform.tfvars, 'cloudflare_email']
-      - fichier-contient-dans-env: [terraform.tfvars, 'cloudflare_apiKey']
-      - commande-reussit: 'terraform plan -input=false'
+  - text: 'Lance `terraform plan -input=false` : il échoue car deux variables n''ont pas de valeur. Crée un fichier `terraform.tfvars` avec `cloudflare_email = "admin@exemple.test"` et `cloudflare_apiKey = "cle-factice-pour-le-labo"` (une ligne chacune) jusqu''à ce que le plan réussisse'
+    after: [1]
+    hint: 'Un fichier `terraform.tfvars` est lu automatiquement. Chaque ligne a la forme `nom = "valeur"`.'
+    checks:
+      - env-file-contains: [terraform.tfvars, 'cloudflare_email']
+      - env-file-contains: [terraform.tfvars, 'cloudflare_apiKey']
+      - command-succeeds: 'terraform plan -input=false'
     solution:
-      - ecrire:
+      - write:
           terraform.tfvars: |
             cloudflare_email  = "admin@exemple.test"
             cloudflare_apiKey = "cle-factice-pour-le-labo"
-  - texte: 'Applique avec `terraform apply -auto-approve` : les fichiers `values.yaml` et `dns.env` sont créés'
-    apres: [2]
-    indice: 'Regarde `cat values.yaml` : le domaine par défaut y figure.'
-    verif:
-      - fichier-contient-dans-env: [values.yaml, 's3\.exemple\.test']
-      - fichier-contient-dans-env: [dns.env, 'CF_API_EMAIL=admin@exemple\.test']
-      - commande-reussit: 'terraform state list | grep -q "^local_file.values$" && terraform state list | grep -q "^local_sensitive_file.dns$"'
+  - text: 'Applique avec `terraform apply -auto-approve` : les fichiers `values.yaml` et `dns.env` sont créés'
+    after: [2]
+    hint: 'Regarde `cat values.yaml` : le domaine par défaut y figure.'
+    checks:
+      - env-file-contains: [values.yaml, 's3\.exemple\.test']
+      - env-file-contains: [dns.env, 'CF_API_EMAIL=admin@exemple\.test']
+      - command-succeeds: 'terraform state list | grep -q "^local_file.values$" && terraform state list | grep -q "^local_sensitive_file.dns$"'
     solution:
       - terraform apply -auto-approve
-  - texte: 'Protège les secrets : crée un fichier `.gitignore` qui liste `terraform.tfvars` et `*.tfstate` (une ligne chacun), comme `ingress/.gitignore` dans le dépôt réel'
-    apres: [2]
-    indice: 'Git ne suit pas les fichiers listés dans `.gitignore`. Ici : `printf ''terraform.tfvars\n*.tfstate\n'' > .gitignore`.'
-    verif:
-      - fichier-contient-dans-env: [.gitignore, '(?m)^terraform\.tfvars\s*$']
-      - fichier-contient-dans-env: [.gitignore, '(?m)^\*\.tfstate\s*$']
+  - text: 'Protège les secrets : crée un fichier `.gitignore` qui liste `terraform.tfvars` et `*.tfstate` (une ligne chacun), comme `ingress/.gitignore` dans le dépôt réel'
+    after: [2]
+    hint: 'Git ne suit pas les fichiers listés dans `.gitignore`. Ici : `printf ''terraform.tfvars\n*.tfstate\n'' > .gitignore`.'
+    checks:
+      - env-file-contains: [.gitignore, '(?m)^terraform\.tfvars\s*$']
+      - env-file-contains: [.gitignore, '(?m)^\*\.tfstate\s*$']
     solution:
       - printf 'terraform.tfvars\n*.tfstate\n' > .gitignore
-  - texte: 'Change le domaine avec un second fichier de variables : crée `production.tfvars` contenant `domain = "s3.prod.test"` et applique avec `terraform apply -auto-approve -var-file=production.tfvars`. `values.yaml` doit citer ce domaine'
-    apres: [3]
-    indice: 'Un fichier nommé autrement que `terraform.tfvars` n''est pas lu seul : on le désigne avec `-var-file=…`. C''est ainsi qu''on garde une valeur par environnement.'
-    verif:
-      - fichier-contient-dans-env: [production.tfvars, 'domain']
-      - fichier-contient-dans-env: [values.yaml, 's3\.prod\.test']
-      - commande-reussit: terraform plan -input=false -detailed-exitcode -var-file=production.tfvars
+  - text: 'Change le domaine avec un second fichier de variables : crée `production.tfvars` contenant `domain = "s3.prod.test"` et applique avec `terraform apply -auto-approve -var-file=production.tfvars`. `values.yaml` doit citer ce domaine'
+    after: [3]
+    hint: 'Un fichier nommé autrement que `terraform.tfvars` n''est pas lu seul : on le désigne avec `-var-file=…`. C''est ainsi qu''on garde une valeur par environnement.'
+    checks:
+      - env-file-contains: [production.tfvars, 'domain']
+      - env-file-contains: [values.yaml, 's3\.prod\.test']
+      - command-succeeds: terraform plan -input=false -detailed-exitcode -var-file=production.tfvars
     solution:
-      - ecrire:
+      - write:
           production.tfvars: |
             domain = "s3.prod.test"
       - terraform apply -auto-approve -var-file=production.tfvars
-  - texte: 'Change l''e-mail dans `terraform.tfvars` (par exemple `autre@exemple.test`), puis enregistre le plan dans `plan.txt` avec `terraform plan -no-color -var-file=production.tfvars > plan.txt`. Vérifie avec `grep` : la clé `cle-factice-pour-le-labo` n''apparaît pas dans le plan, car la variable est sensible'
-    apres: [5]
-    indice: 'Cherche `sensitive` dans `plan.txt` : Terraform y écrit `(sensitive value)` à la place du contenu. Mais la valeur reste dans l''état (`grep cle-factice terraform.tfstate`).'
-    verif:
-      - fichier-contient-dans-env: [terraform.tfvars, 'autre@exemple\.test']
-      - fichier-contient-dans-env: [plan.txt, 'sensitive']
-      - commande-reussit: 'terraform plan -no-color -var-file=production.tfvars | cmp -s - plan.txt'
-      - commande-reussit: '! grep -q cle-factice-pour-le-labo plan.txt'
+  - text: 'Change l''e-mail dans `terraform.tfvars` (par exemple `autre@exemple.test`), puis enregistre le plan dans `plan.txt` avec `terraform plan -no-color -var-file=production.tfvars > plan.txt`. Vérifie avec `grep` : la clé `cle-factice-pour-le-labo` n''apparaît pas dans le plan, car la variable est sensible'
+    after: [5]
+    hint: 'Cherche `sensitive` dans `plan.txt` : Terraform y écrit `(sensitive value)` à la place du contenu. Mais la valeur reste dans l''état (`grep cle-factice terraform.tfstate`).'
+    checks:
+      - env-file-contains: [terraform.tfvars, 'autre@exemple\.test']
+      - env-file-contains: [plan.txt, 'sensitive']
+      - command-succeeds: 'terraform plan -no-color -var-file=production.tfvars | cmp -s - plan.txt'
+      - command-succeeds: '! grep -q cle-factice-pour-le-labo plan.txt'
     solution:
       - sed -i 's/admin@exemple.test/autre@exemple.test/' terraform.tfvars
       - terraform plan -no-color -var-file=production.tfvars > plan.txt

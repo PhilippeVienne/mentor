@@ -1,9 +1,9 @@
 ---
 id: conflits
-titre: Résoudre un conflit
-resume: 'Pas de panique : un conflit est juste Git qui te demande de trancher.'
-duree: 15
-objectifs:
+title: Résoudre un conflit
+summary: 'Pas de panique : un conflit est juste Git qui te demande de trancher.'
+minutes: 15
+objectives:
   - Comprendre pourquoi et quand un conflit survient
   - "Lire les marqueurs `<<<<<<<`, `=======`, `>>>>>>>`"
   - Résoudre un conflit en 4 étapes
@@ -54,7 +54,7 @@ Dans un vrai éditeur (VS Code, IntelliJ…), des boutons « Accepter la modifi
 
 ## Comment éviter les conflits ?
 
-:::cartes
+:::cards
 ### Branches courtes
 
 Plus une branche vit longtemps, plus elle s'éloigne de `main`. Fusionne souvent.
@@ -70,11 +70,11 @@ Deux personnes sur le même fichier au même endroit ? Un message suffit pour 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Deux personnes ont modifié le titre de `index.html` : l'une dans `main`, l'autre dans `titre-demo`. Fusionne et tranche !
-commandes:
+commands:
   - git init -q
   - 'echo "<h1>Bienvenue</h1>" > index.html'
   - 'echo "<p>Formation Git</p>" >> index.html'
@@ -87,33 +87,33 @@ commandes:
   - "echo \"<h1>Bienvenue sur le campus</h1>\" > index.html"
   - 'echo "<p>Formation Git</p>" >> index.html'
   - 'git commit -q -am "Titre version Campus"'
-etapes:
-  - texte: 'Lance `git merge titre-demo` et constate le conflit'
-    indice: git merge titre-demo
-    verif:
-      - commande-reussit: 'test -f .git/MERGE_HEAD && test -n "$(git ls-files -u)"'
+steps:
+  - text: 'Lance `git merge titre-demo` et constate le conflit'
+    hint: git merge titre-demo
+    checks:
+      - command-succeeds: 'test -f .git/MERGE_HEAD && test -n "$(git ls-files -u)"'
     solution:
       - git merge titre-demo
-  - texte: 'Édite `index.html` (avec `nano index.html`) : garde un seul titre, supprime tous les marqueurs'
-    indice: "Avec nano index.html, ou : echo \"<h1>Bienvenue chez Mentor sur le campus</h1>\" > index.html puis echo \"<p>Formation Git</p>\" >> index.html"
-    apres: [1]
-    verif:
-      - commande-reussit: 'test -f .git/MERGE_HEAD && ! grep -qE "^(<<<<<<<|=======|>>>>>>>)" index.html'
+  - text: 'Édite `index.html` (avec `nano index.html`) : garde un seul titre, supprime tous les marqueurs'
+    hint: "Avec nano index.html, ou : echo \"<h1>Bienvenue chez Mentor sur le campus</h1>\" > index.html puis echo \"<p>Formation Git</p>\" >> index.html"
+    after: [1]
+    checks:
+      - command-succeeds: 'test -f .git/MERGE_HEAD && ! grep -qE "^(<<<<<<<|=======|>>>>>>>)" index.html'
     solution:
       - "echo \"<h1>Bienvenue chez Mentor sur le campus</h1>\" > index.html"
       - 'echo "<p>Formation Git</p>" >> index.html'
-  - texte: 'Marque le conflit comme résolu avec `git add index.html`'
-    indice: git add index.html
-    apres: [2]
-    verif:
-      - commande-reussit: 'test -f .git/MERGE_HEAD && test -z "$(git ls-files -u)"'
+  - text: 'Marque le conflit comme résolu avec `git add index.html`'
+    hint: git add index.html
+    after: [2]
+    checks:
+      - command-succeeds: 'test -f .git/MERGE_HEAD && test -z "$(git ls-files -u)"'
     solution:
       - git add index.html
-  - texte: 'Termine la fusion avec `git commit -m "…"`'
-    indice: 'git commit -m "Fusionne titre-demo"'
-    apres: [3]
-    verif:
-      - commande-reussit: 'git rev-parse --verify -q HEAD^2 && test ! -f .git/MERGE_HEAD'
+  - text: 'Termine la fusion avec `git commit -m "…"`'
+    hint: 'git commit -m "Fusionne titre-demo"'
+    after: [3]
+    checks:
+      - command-succeeds: 'git rev-parse --verify -q HEAD^2 && test ! -f .git/MERGE_HEAD'
     solution:
       - 'git commit -m "Fusionne titre-demo"'
 :::

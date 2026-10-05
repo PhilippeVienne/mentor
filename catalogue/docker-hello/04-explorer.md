@@ -1,9 +1,9 @@
 ---
 id: explorer
-titre: Entrer dans un conteneur
-resume: "Variables d'environnement, logs, exec et shell interactif pour comprendre ce qui se passe."
-duree: 15
-objectifs:
+title: Entrer dans un conteneur
+summary: "Variables d'environnement, logs, exec et shell interactif pour comprendre ce qui se passe."
+minutes: 15
+objectives:
   - "Configurer un conteneur avec des variables d'environnement (`-e`)"
   - "Diagnostiquer un conteneur qui s'arrête avec `docker ps -a` et `docker logs`"
   - "Exécuter des commandes dans un conteneur (`docker exec`) et ouvrir un shell interactif (`-it`)"
@@ -85,44 +85,44 @@ docker run -it --rm alpine sh
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Fais démarrer PostgreSQL (en échouant d'abord, comme tout le monde), puis explore un conteneur de l'intérieur.
-etapes:
-  - texte: "Lance `postgres` *sans* mot de passe et observe l'échec avec `docker logs`"
-    indice: "Lance `postgres` sans aucune variable, avec le nom `pg-rate` ; puis relis ses logs avec ce nom."
-    verif:
-      - conteneur-sorti-code: [pg-rate, 1]
-      - commande: ^docker logs pg-rate
+steps:
+  - text: "Lance `postgres` *sans* mot de passe et observe l'échec avec `docker logs`"
+    hint: "Lance `postgres` sans aucune variable, avec le nom `pg-rate` ; puis relis ses logs avec ce nom."
+    checks:
+      - container-exit-code: [pg-rate, 1]
+      - command: ^docker logs pg-rate
     solution:
       - docker run --name pg-rate postgres
       - docker logs pg-rate
-  - texte: 'Relance-le détaché sous le nom `db`, avec `-e POSTGRES_PASSWORD=…`'
-    indice: "L'option `-e` prend `NOM=valeur` ; le nom attendu est affiché dans l'erreur de l'étape précédente."
-    verif:
-      - conteneur-actif: db
+  - text: 'Relance-le détaché sous le nom `db`, avec `-e POSTGRES_PASSWORD=…`'
+    hint: "L'option `-e` prend `NOM=valeur` ; le nom attendu est affiché dans l'erreur de l'étape précédente."
+    checks:
+      - container-running: db
     solution:
       - docker run -d --name db -e POSTGRES_PASSWORD=secret postgres
-  - texte: 'Vérifie ses logs : « ready to accept connections »'
-    indice: "Même commande qu'à l'étape 1, avec le nom du nouveau conteneur."
-    apres: [2]
-    verif:
-      - commande: ^docker logs db
+  - text: 'Vérifie ses logs : « ready to accept connections »'
+    hint: "Même commande qu'à l'étape 1, avec le nom du nouveau conteneur."
+    after: [2]
+    checks:
+      - command: ^docker logs db
     solution:
       - docker logs db
-  - texte: 'Exécute `docker exec db printenv` pour voir ses variables'
-    indice: "`docker exec NOM commande` : la commande qui affiche les variables d'environnement s'appelle `printenv`."
-    apres: [2]
-    verif:
-      - commande: '^docker exec .*db'
+  - text: 'Exécute `docker exec db printenv` pour voir ses variables'
+    hint: "`docker exec NOM commande` : la commande qui affiche les variables d'environnement s'appelle `printenv`."
+    after: [2]
+    checks:
+      - command: '^docker exec .*db'
     solution:
       - docker exec db printenv
-  - texte: 'Ouvre un shell : `docker run -it --rm alpine sh`, lance `cat /etc/os-release`, puis `exit`'
-    indice: "Trois temps : lance un `alpine` avec `-it`, tape la commande de lecture du fichier indiqué (le prompt change), puis `exit`."
-    verif:
-      - commande: '^docker run .*-it.* alpine'
-      - commande: ^cat /etc/os-release
-      - session-fermee: true
+  - text: 'Ouvre un shell : `docker run -it --rm alpine sh`, lance `cat /etc/os-release`, puis `exit`'
+    hint: "Trois temps : lance un `alpine` avec `-it`, tape la commande de lecture du fichier indiqué (le prompt change), puis `exit`."
+    checks:
+      - command: '^docker run .*-it.* alpine'
+      - command: ^cat /etc/os-release
+      - session-closed: true
     solution:
       - docker run -it --rm alpine sh
       - cat /etc/os-release

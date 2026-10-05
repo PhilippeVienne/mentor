@@ -1,9 +1,9 @@
 ---
 id: reseaux
-titre: Réseaux entre conteneurs
-resume: 'Faire parler une application avec sa base de données, par leur nom.'
-duree: 15
-objectifs:
+title: Réseaux entre conteneurs
+summary: 'Faire parler une application avec sa base de données, par leur nom.'
+minutes: 15
+objectives:
   - "Créer un réseau Docker et y rattacher des conteneurs"
   - "Faire communiquer deux conteneurs par leur nom (DNS interne)"
   - "Distinguer ports publiés (vers l'hôte) et communication interne entre conteneurs"
@@ -65,42 +65,42 @@ Un conteneur lancé sans `--network` est sur le réseau `bridge` : `ping seul` 
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Crée un réseau, y connecte une base et un serveur web, puis vérifie qu'ils se voient — et que les autres non.
-etapes:
-  - texte: 'Crée le réseau `demo-net`'
-    indice: "Le sous-ensemble `network` de la CLI a une action `create`, suivie du nom du réseau."
-    verif:
-      - reseau-existe: demo-net
+steps:
+  - text: 'Crée le réseau `demo-net`'
+    hint: "Le sous-ensemble `network` de la CLI a une action `create`, suivie du nom du réseau."
+    checks:
+      - network-exists: demo-net
     solution:
       - docker network create demo-net
-  - texte: 'Lance `db` (postgres:16-alpine, mot de passe) sur ce réseau'
-    indice: "Combine ce que tu connais : `-d`, `--name`, `-e`… et la nouvelle option `--network` suivie du nom du réseau."
-    verif:
-      - conteneur-actif: db
-      - conteneur-reseau: [db, demo-net]
+  - text: 'Lance `db` (postgres:16-alpine, mot de passe) sur ce réseau'
+    hint: "Combine ce que tu connais : `-d`, `--name`, `-e`… et la nouvelle option `--network` suivie du nom du réseau."
+    checks:
+      - container-running: db
+      - container-network: [db, demo-net]
     solution:
       - 'docker run -d --name db --network demo-net -e POSTGRES_PASSWORD=pw postgres:16-alpine'
-  - texte: 'Lance `web` (nginx, port 8080) sur le même réseau'
-    indice: "Comme `db`, sur le même réseau ; celui-ci publie en plus un port (`-p`)."
-    verif:
-      - conteneur-actif: web
-      - conteneur-reseau: [web, demo-net]
+  - text: 'Lance `web` (nginx, port 8080) sur le même réseau'
+    hint: "Comme `db`, sur le même réseau ; celui-ci publie en plus un port (`-p`)."
+    checks:
+      - container-running: web
+      - container-network: [web, demo-net]
     solution:
       - 'docker run -d --name web --network demo-net -p 8080:80 nginx'
-  - texte: 'Depuis `web`, joins `db` par son nom : `docker exec web ping db`'
-    indice: "Exécute `ping` *dans* `web`, avec pour cible le nom du conteneur `db`."
-    apres: [3]
-    verif:
-      - commande: ^docker exec web ping db
+  - text: 'Depuis `web`, joins `db` par son nom : `docker exec web ping db`'
+    hint: "Exécute `ping` *dans* `web`, avec pour cible le nom du conteneur `db`."
+    after: [3]
+    checks:
+      - command: ^docker exec web ping db
     solution:
       - docker exec web ping db
-  - texte: 'Lance un conteneur `seul` sur le réseau par défaut et constate que `web` ne le trouve pas'
-    indice: "Lance un conteneur sans `--network`, puis refais le `ping` depuis `web` vers ce nouveau nom."
-    verif:
-      - conteneur-existe: seul
-      - commande: ^docker exec web ping seul
+  - text: 'Lance un conteneur `seul` sur le réseau par défaut et constate que `web` ne le trouve pas'
+    hint: "Lance un conteneur sans `--network`, puis refais le `ping` depuis `web` vers ce nouveau nom."
+    checks:
+      - container-exists: seul
+      - command: ^docker exec web ping seul
     solution:
       - docker run -d --name seul nginx
       - docker exec web ping seul

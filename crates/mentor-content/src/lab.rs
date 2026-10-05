@@ -15,8 +15,8 @@ use crate::yaml::{is_falsy, text, to_json};
 /// Engines simulated in the browser.
 pub const ENGINES: [&str; 2] = ["git", "docker"];
 /// Engine of labs run in a real environment: checks are performed by the server.
-pub const REAL_ENGINE: &str = "reel";
-const EFFECTS: [&str; 2] = ["serveur-avance", "serveur-commit"];
+pub const REAL_ENGINE: &str = "real";
+const EFFECTS: [&str; 2] = ["server-advance", "server-commit"];
 
 static FILE_NAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9._-][A-Za-z0-9._/-]*$").unwrap());
 
@@ -25,10 +25,9 @@ static FILE_NAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9
 pub struct CheckSpec {
     #[serde(default)]
     pub arguments: Vec<String>,
-    #[serde(default, rename = "optionnels")]
+    #[serde(default)]
     pub optional: Vec<String>,
     /// Engines that know this check; `None` means every simulated engine.
-    #[serde(rename = "moteurs")]
     pub engines: Option<Vec<String>>,
 }
 
@@ -50,47 +49,34 @@ pub struct LabContext<'a> {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Lab {
-    #[serde(rename = "moteur")]
     pub engine: String,
-    #[serde(rename = "environnement")]
     pub environment: String,
     pub intro: String,
-    #[serde(rename = "fichiers")]
     pub files: Json,
-    #[serde(rename = "commandes")]
     pub commands: Json,
-    #[serde(rename = "serveur")]
     pub server: Json,
-    #[serde(rename = "etapes")]
     pub steps: Vec<Step>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Step {
-    #[serde(rename = "texte")]
     pub text: String,
-    #[serde(rename = "indice")]
     pub hint: String,
-    #[serde(rename = "verif")]
     pub checks: Vec<Check>,
     /// Zero-based indices of the steps to validate before this one.
-    #[serde(rename = "apres")]
     pub after: Vec<usize>,
-    #[serde(rename = "effet")]
     pub effect: Option<Effect>,
     pub solution: Vec<Json>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Check {
-    #[serde(rename = "nom")]
     pub name: String,
     pub args: Vec<Json>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Effect {
-    #[serde(rename = "nom")]
     pub name: String,
     pub args: Json,
 }
@@ -122,7 +108,7 @@ fn normalize_checks(raw: &Yaml, lab: &LabContext, engine: &str, place: &str, ctx
             _ => None,
         };
         let Some((name, value)) = entry else {
-            return ctx.fail(format!("{place} : une vérification s'écrit `- nom: argument` (un seul nom par ligne)"));
+            return ctx.fail(format!("{place}: a check is written `- name: argument` (a single name per item)"));
         };
         let name = text(name);
         let args: Vec<Yaml> = match value {
@@ -131,21 +117,21 @@ fn normalize_checks(raw: &Yaml, lab: &LabContext, engine: &str, place: &str, ctx
         };
         let Some(spec) = lab.checks.get(&name) else {
             let known: Vec<&str> = lab.checks.keys().map(String::as_str).collect();
-            return ctx.fail(format!("{place} : vérification inconnue `{name}`. Disponibles : {}", known.join(", ")));
+            return ctx.fail(format!("{place}: unknown check `{name}`. Available: {}", known.join(", ")));
         };
         let engines = spec.engines.as_deref().unwrap_or_default();
         if !engines.is_empty() && !engines.iter().any(|e| e == engine) {
-            return ctx.fail(format!("{place} : la vérification `{name}` n'existe pas pour le moteur `{engine}`"));
+            return ctx.fail(format!("{place}: the check `{name}` does not exist for the `{engine}` engine"));
         }
         if engine == REAL_ENGINE && !engines.iter().any(|e| e == REAL_ENGINE) {
             return ctx.fail(format!(
-                "{place} : la vérification `{name}` n'existe pas pour le moteur `reel` (utilise les vérifications « …-dans-env », `commande-reussit`, `sortie-contient`…)"
+                "{place}: the check `{name}` does not exist for the `real` engine (use the `env-…` checks, `command-succeeds`, `output-contains`…)"
             ));
         }
         let (required, optional) = (spec.arguments.len(), spec.optional.len());
         if args.len() < required || args.len() > required + optional {
             return ctx.fail(format!(
-                "{place} : `{name}` attend {required} argument(s) ({}), reçu {}",
+                "{place}: `{name}` expects {required} argument(s) ({}), got {}",
                 spec.arguments.join(", "),
                 args.len()
             ));
@@ -158,7 +144,7 @@ fn normalize_checks(raw: &Yaml, lab: &LabContext, engine: &str, place: &str, ctx
                     _ => false,
                 };
                 if !ok {
-                    return ctx.fail(format!("{place} : `{name}` : les arguments doivent être des textes (sans caractère nul)"));
+                    return ctx.fail(format!("{place}: `{name}`: arguments must be text (without a NUL character)"));
                 }
             }
         }
@@ -169,10 +155,10 @@ fn normalize_checks(raw: &Yaml, lab: &LabContext, engine: &str, place: &str, ctx
 
 /// Validates the setup files and commands of a real lab.
 fn check_real_setup(data: &serde_yaml::Mapping, place: &str, ctx: &Render) -> Result<()> {
-    if get(data, "serveur").is_some_and(|v| !is_falsy(v)) {
-        return ctx.fail(format!("{place} : `serveur` n'existe pas pour le moteur `reel`"));
+    if get(data, "server").is_some_and(|v| !is_falsy(v)) {
+        return ctx.fail(format!("{place}: `server` does not exist for the `real` engine"));
     }
-    match get(data, "fichiers").filter(|v| !is_falsy(v)) {
+    match get(data, "files").filter(|v| !is_falsy(v)) {
         None => {}
         Some(Yaml::Mapping(files)) => {
             for (name, content) in files {
@@ -181,58 +167,58 @@ fn check_real_setup(data: &serde_yaml::Mapping, place: &str, ctx: &Render) -> Re
                     _ => false,
                 };
                 if !valid {
-                    return ctx.fail(format!("{place} : fichier `{}` invalide (chemin relatif simple, contenu texte)", text(name)));
+                    return ctx.fail(format!("{place}: invalid file `{}` (plain relative path, text content)", text(name)));
                 }
             }
         }
-        Some(_) => return ctx.fail(format!("{place} : `fichiers` doit être un dictionnaire `nom: contenu`")),
+        Some(_) => return ctx.fail(format!("{place}: `files` must be a `name: content` mapping")),
     }
-    match get(data, "commandes").filter(|v| !is_falsy(v)) {
+    match get(data, "commands").filter(|v| !is_falsy(v)) {
         None => Ok(()),
         Some(Yaml::Sequence(commands)) if commands.iter().all(Yaml::is_string) => Ok(()),
-        Some(_) => ctx.fail(format!("{place} : `commandes` doit être une liste de commandes (texte)")),
+        Some(_) => ctx.fail(format!("{place}: `commands` must be a list of commands (text)")),
     }
 }
 
 fn parse_step(step: &Yaml, index: usize, engine: &str, place: &str, lab: &LabContext, ctx: &Render) -> Result<Step> {
-    let label = format!("{place}, étape {index}");
+    let label = format!("{place}, step {index}");
     let empty = serde_yaml::Mapping::new();
     let step = step.as_mapping().unwrap_or(&empty);
-    for key in ["texte", "verif", "solution"] {
+    for key in ["text", "checks", "solution"] {
         if get(step, key).is_none() {
-            return ctx.fail(format!("{label} : champ `{key}` obligatoire"));
+            return ctx.fail(format!("{label}: field `{key}` is required"));
         }
     }
     let solution = as_list(&step["solution"]);
     for action in &solution {
         let valid = match action {
             Yaml::String(_) => true,
-            Yaml::Mapping(map) => map.len() == 1 && map.contains_key("ecrire"),
+            Yaml::Mapping(map) => map.len() == 1 && map.contains_key("write"),
             _ => false,
         };
         if !valid {
-            return ctx.fail(format!("{label} : `solution` contient des commandes (texte) ou `{{ecrire: {{fichier: contenu}}}}`"));
+            return ctx.fail(format!("{label}: `solution` holds commands (text) or `{{write: {{file: content}}}}`"));
         }
     }
     let mut after = Vec::new();
-    for value in get(step, "apres").map(as_list).unwrap_or_default() {
+    for value in get(step, "after").map(as_list).unwrap_or_default() {
         match value.as_u64() {
             Some(n) if n >= 1 && (n as usize) < index => after.push(n as usize - 1),
-            _ => return ctx.fail(format!("{label} : `apres` doit citer des numéros d'étapes précédentes")),
+            _ => return ctx.fail(format!("{label}: `after` must reference earlier step numbers")),
         }
     }
-    let effect = match get(step, "effet") {
+    let effect = match get(step, "effect") {
         None | Some(Yaml::Null) => None,
-        Some(_) if engine == REAL_ENGINE => return ctx.fail(format!("{label} : `effet` n'existe pas pour le moteur `reel`")),
+        Some(_) if engine == REAL_ENGINE => return ctx.fail(format!("{label}: `effect` does not exist for the `real` engine")),
         Some(Yaml::Mapping(map)) if map.len() == 1 && map.keys().all(|k| k.as_str().is_some_and(|k| EFFECTS.contains(&k))) => {
             map.iter().next().map(|(name, args)| Effect { name: text(name), args: to_json(args) })
         }
-        Some(_) => return ctx.fail(format!("{label} : `effet` inconnu (disponibles : {})", EFFECTS.join(", "))),
+        Some(_) => return ctx.fail(format!("{label}: unknown `effect` (available: {})", EFFECTS.join(", "))),
     };
     Ok(Step {
-        text: md_inline(&text(&step["texte"])),
-        hint: get(step, "indice").filter(|v| !is_falsy(v)).map(|v| md_inline(&text(v))).unwrap_or_default(),
-        checks: normalize_checks(&step["verif"], lab, engine, &label, ctx)?,
+        text: md_inline(&text(&step["text"])),
+        hint: get(step, "hint").filter(|v| !is_falsy(v)).map(|v| md_inline(&text(v))).unwrap_or_default(),
+        checks: normalize_checks(&step["checks"], lab, engine, &label, ctx)?,
         after,
         effect,
         solution: solution.iter().map(to_json).collect(),
@@ -241,43 +227,44 @@ fn parse_step(step: &Yaml, index: usize, engine: &str, place: &str, lab: &LabCon
 
 /// Validates the YAML body of a `:::labo` block starting at `start_line`.
 pub fn parse_lab(body: &str, start_line: usize, lab: &mut LabContext, ctx: &Render) -> Result<Lab> {
-    let place = format!("ligne {start_line} : `:::labo`");
+    let place = format!("line {start_line}: `:::lab`");
     let parsed: Yaml = match serde_yaml::from_str(body) {
         Ok(value) => value,
-        Err(err) => return ctx.fail(format!("{place} : YAML invalide : {err}")),
+        Err(err) => return ctx.fail(format!("{place}: invalid YAML: {err}")),
     };
     let empty = serde_yaml::Mapping::new();
     let data = match &parsed {
         Yaml::Mapping(map) => map,
         other if is_falsy(other) => &empty,
-        _ => return ctx.fail(format!("{place} : le contenu doit être un dictionnaire YAML")),
+        _ => return ctx.fail(format!("{place}: the content must be a YAML mapping")),
     };
-    let engine = match get(data, "moteur") {
+    let engine = match get(data, "engine") {
         Some(value) => value.as_str().map(str::to_string),
         None => lab.engine.map(str::to_string),
     };
     let Some(engine) = engine.filter(|e| ENGINES.contains(&e.as_str()) || e == REAL_ENGINE) else {
-        return ctx.fail(format!("{place} : `moteur` doit valoir git, docker ou reel (parcours sans moteur ?)"));
+        return ctx.fail(format!("{place}: `engine` must be git, docker or real (does the course have no engine?)"));
     };
     let mut environment = lab.environment.clone();
-    if let Some(value) = get(data, "environnement") {
+    if let Some(value) = get(data, "environment") {
         environment = if is_falsy(value) { String::new() } else { text(value) };
         if !environment.is_empty() {
             match lab.resolver.as_mut() {
                 Some(resolve) => resolve(value)?,
-                None => return ctx.fail(format!("{place} : `environnement` n'est permis que dans une leçon")),
+                None => return ctx.fail(format!("{place}: `environment` is only allowed in a lesson")),
             }
         }
     }
     if engine == REAL_ENGINE {
         if environment.is_empty() {
-            return ctx.fail(format!("{place} : un labo `moteur: reel` exige un `environnement` (dans le labo, la leçon ou le parcours)"));
+            return ctx
+                .fail(format!("{place}: a lab with `engine: real` requires an `environment` (in the lab, the lesson or the course)"));
         }
         check_real_setup(data, &place, ctx)?;
     }
-    let steps = match get(data, "etapes") {
+    let steps = match get(data, "steps") {
         Some(Yaml::Sequence(steps)) if !steps.is_empty() => steps,
-        _ => return ctx.fail(format!("{place} : `etapes` doit être une liste non vide")),
+        _ => return ctx.fail(format!("{place}: `steps` must be a non-empty list")),
     };
     let mut parsed_steps = Vec::with_capacity(steps.len());
     for (i, step) in steps.iter().enumerate() {
@@ -287,9 +274,9 @@ pub fn parse_lab(body: &str, start_line: usize, lab: &mut LabContext, ctx: &Rend
         engine,
         environment,
         intro: get(data, "intro").filter(|v| !is_falsy(v)).map(|v| md(&text(v))).unwrap_or_default(),
-        files: or_default(get(data, "fichiers"), Json::Object(Default::default())),
-        commands: or_default(get(data, "commandes"), Json::Array(Vec::new())),
-        server: or_default(get(data, "serveur"), Json::Array(Vec::new())),
+        files: or_default(get(data, "files"), Json::Object(Default::default())),
+        commands: or_default(get(data, "commands"), Json::Array(Vec::new())),
+        server: or_default(get(data, "server"), Json::Array(Vec::new())),
         steps: parsed_steps,
     })
 }
@@ -302,7 +289,7 @@ mod tests {
 
     fn checks() -> Checks {
         serde_yaml::from_str(
-            "commande: {arguments: [regex]}\ndepot-initialise: {moteurs: [git]}\ncommande-reussit: {arguments: [commande], moteurs: [reel]}\n",
+            "command: {arguments: [regex]}\nrepo-initialized: {engines: [git]}\ncommand-succeeds: {arguments: [command], engines: [real]}\n",
         )
         .unwrap()
     }
@@ -313,61 +300,61 @@ mod tests {
         parse_lab(body, 12, &mut lab, &Render::new(Path::new("lecon.md"), "demo"))
     }
 
-    const STEP: &str = "etapes:\n  - texte: 'Lance `git init`'\n    verif:\n      - depot-initialise:\n    solution: git init\n";
+    const STEP: &str = "steps:\n  - text: 'Lance `git init`'\n    checks:\n      - repo-initialized:\n    solution: git init\n";
 
     #[test]
     fn minimal_simulated_lab() {
         let lab = parse(STEP, Some("git"), "").unwrap();
         assert_eq!(lab.engine, "git");
         assert_eq!(lab.steps[0].text, "Lance <code>git init</code>");
-        assert_eq!(lab.steps[0].checks, vec![Check { name: "depot-initialise".into(), args: vec![] }]);
+        assert_eq!(lab.steps[0].checks, vec![Check { name: "repo-initialized".into(), args: vec![] }]);
         assert_eq!(lab.steps[0].solution, vec![Json::from("git init")]);
         assert_eq!(lab.files, serde_json::json!({}));
     }
 
     #[test]
     fn after_is_converted_to_indices() {
-        let body = format!("{STEP}  - texte: suite\n    apres: 1\n    verif: [{{commande: '^git'}}]\n    solution: [git status]\n");
+        let body = format!("{STEP}  - text: suite\n    after: 1\n    checks: [{{command: '^git'}}]\n    solution: [git status]\n");
         assert_eq!(parse(&body, Some("git"), "").unwrap().steps[1].after, vec![0]);
     }
 
     #[test]
     fn after_cannot_reference_a_later_step() {
-        let body = STEP.replace("    solution", "    apres: [1]\n    solution");
+        let body = STEP.replace("    solution", "    after: [1]\n    solution");
         let err = parse(&body, Some("git"), "").unwrap_err();
-        assert!(err.message.ends_with("étape 1 : `apres` doit citer des numéros d'étapes précédentes"), "{err}");
+        assert!(err.message.ends_with("step 1: `after` must reference earlier step numbers"), "{err}");
     }
 
     #[test]
     fn unknown_check_lists_the_available_ones() {
-        let err = parse(&STEP.replace("depot-initialise", "inventee"), Some("git"), "").unwrap_err();
-        assert!(err.message.contains("vérification inconnue `inventee`. Disponibles : commande, commande-reussit, depot-initialise"));
+        let err = parse(&STEP.replace("repo-initialized", "made-up"), Some("git"), "").unwrap_err();
+        assert!(err.message.contains("unknown check `made-up`. Available: command, command-succeeds, repo-initialized"));
     }
 
     #[test]
     fn check_from_another_engine_is_rejected() {
         let err = parse(STEP, Some("docker"), "").unwrap_err();
-        assert!(err.message.contains("n'existe pas pour le moteur `docker`"));
+        assert!(err.message.contains("does not exist for the `docker` engine"));
     }
 
     #[test]
     fn real_lab_requires_an_environment_and_real_checks() {
-        let body = "moteur: reel\netapes:\n  - texte: t\n    verif: [{commande-reussit: 'true'}]\n    solution: ['true']\n";
-        assert!(parse(body, None, "").unwrap_err().message.contains("exige un `environnement`"));
+        let body = "engine: real\nsteps:\n  - text: t\n    checks: [{command-succeeds: 'true'}]\n    solution: ['true']\n";
+        assert!(parse(body, None, "").unwrap_err().message.contains("requires an `environment`"));
         assert_eq!(parse(body, None, "environnement").unwrap().environment, "environnement");
-        let simulated = body.replace("commande-reussit: 'true'", "commande: '^x'");
-        assert!(parse(&simulated, None, "environnement").unwrap_err().message.contains("n'existe pas pour le moteur `reel`"));
+        let simulated = body.replace("command-succeeds: 'true'", "command: '^x'");
+        assert!(parse(&simulated, None, "environnement").unwrap_err().message.contains("does not exist for the `real` engine"));
     }
 
     #[test]
     fn real_lab_file_outside_the_folder_is_rejected() {
         let body =
-            "moteur: reel\nfichiers: {'../secret': x}\netapes:\n  - {texte: t, verif: [{commande-reussit: 'true'}], solution: ['true']}\n";
-        assert!(parse(body, None, "environnement").unwrap_err().message.contains("fichier `../secret` invalide"));
+            "engine: real\nfiles: {'../secret': x}\nsteps:\n  - {text: t, checks: [{command-succeeds: 'true'}], solution: ['true']}\n";
+        assert!(parse(body, None, "environnement").unwrap_err().message.contains("invalid file `../secret`"));
     }
 
     #[test]
     fn lab_without_any_engine_is_rejected() {
-        assert!(parse(STEP, None, "").unwrap_err().message.contains("`moteur` doit valoir git, docker ou reel"));
+        assert!(parse(STEP, None, "").unwrap_err().message.contains("`engine` must be git, docker or real"));
     }
 }

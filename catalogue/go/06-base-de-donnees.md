@@ -1,9 +1,9 @@
 ---
 id: base-de-donnees
-titre: "Accéder à une base de données"
-resume: "Garder les données quand le programme s'arrête : cacher la base derrière une interface, utiliser le contexte et lire un schéma Ent."
-duree: 45
-objectifs:
+title: "Accéder à une base de données"
+summary: "Garder les données quand le programme s'arrête : cacher la base derrière une interface, utiliser le contexte et lire un schéma Ent."
+minutes: 45
+objectives:
   - Expliquer pourquoi un service a besoin d'une base de données et ce qu'est un ORM
   - Écrire une interface de dépôt (repository) avec un `context.Context`
   - Lire un schéma Ent et une requête générée dans `event-planner-api`
@@ -193,18 +193,18 @@ Dans `event-planner-api`, l'adresse de la base se compose à partir de variables
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu écris un dépôt de jeux en mémoire qui respecte l'interface `DepotJeux`. `depot.go` (l'interface, la structure et l'erreur `ErrIntrouvable`) est déjà écrit. Les morceaux à écrire sont chacun dans leur fichier : `creer.go`, `trouver.go`, `lister.go` et `config.go`. Remplace `panic("à écrire")`. Les tests sont dans `depot_test.go` ; lance-les avec `go test ./...`. Aucune vraie base n'est utilisée : c'est justement l'intérêt de l'interface. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/06-base-de-donnees/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Écris `Creer` dans `creer.go` : elle enregistre le jeu sous le prochain numéro (1, puis 2…) et le renvoie. `TestCreer` doit passer'
-    indice: 'Crée `j := &Jeu{ID: d.suivant, Titre: titre}`, range-le avec `d.jeux[j.ID] = j`, ajoute 1 avec `d.suivant++` et renvoie `j, nil`.'
-    verif:
-      - commande-reussit: "verifier-go tests 06-base-de-donnees . TestCreer"
+steps:
+  - text: 'Écris `Creer` dans `creer.go` : elle enregistre le jeu sous le prochain numéro (1, puis 2…) et le renvoie. `TestCreer` doit passer'
+    hint: 'Crée `j := &Jeu{ID: d.suivant, Titre: titre}`, range-le avec `d.jeux[j.ID] = j`, ajoute 1 avec `d.suivant++` et renvoie `j, nil`.'
+    checks:
+      - command-succeeds: "verifier-go tests 06-base-de-donnees . TestCreer"
     solution:
       - |
         cat > creer.go <<'EOF'
@@ -220,11 +220,11 @@ etapes:
         	return j, nil
         }
         EOF
-  - texte: 'Écris `Trouver` dans `trouver.go` : elle renvoie le jeu de ce numéro, ou une erreur qui **enveloppe** `ErrIntrouvable` et cite le numéro (« jeu 42 : jeu introuvable »). `TestTrouver` doit passer'
-    indice: 'Utilise `j, ok := d.jeux[id]` ; si `!ok`, renvoie `nil, fmt.Errorf("jeu %d : %w", id, ErrIntrouvable)`.'
-    apres: [1]
-    verif:
-      - commande-reussit: "verifier-go tests 06-base-de-donnees . TestTrouver"
+  - text: 'Écris `Trouver` dans `trouver.go` : elle renvoie le jeu de ce numéro, ou une erreur qui **enveloppe** `ErrIntrouvable` et cite le numéro (« jeu 42 : jeu introuvable »). `TestTrouver` doit passer'
+    hint: 'Utilise `j, ok := d.jeux[id]` ; si `!ok`, renvoie `nil, fmt.Errorf("jeu %d : %w", id, ErrIntrouvable)`.'
+    after: [1]
+    checks:
+      - command-succeeds: "verifier-go tests 06-base-de-donnees . TestTrouver"
     solution:
       - |
         cat > trouver.go <<'EOF'
@@ -244,11 +244,11 @@ etapes:
         	return j, nil
         }
         EOF
-  - texte: 'Respecte le **contexte** : au début de `Creer` et de `Trouver`, si `ctx.Err()` n''est pas `nil`, renvoie cette erreur sans rien faire. `TestContexte` doit passer'
-    indice: 'Première instruction de chaque méthode : `if err := ctx.Err(); err != nil { return nil, err }`.'
-    apres: [1, 2]
-    verif:
-      - commande-reussit: "verifier-go tests 06-base-de-donnees . TestContexte"
+  - text: 'Respecte le **contexte** : au début de `Creer` et de `Trouver`, si `ctx.Err()` n''est pas `nil`, renvoie cette erreur sans rien faire. `TestContexte` doit passer'
+    hint: 'Première instruction de chaque méthode : `if err := ctx.Err(); err != nil { return nil, err }`.'
+    after: [1, 2]
+    checks:
+      - command-succeeds: "verifier-go tests 06-base-de-donnees . TestContexte"
     solution:
       - |
         cat > creer.go <<'EOF'
@@ -287,11 +287,11 @@ etapes:
         	return j, nil
         }
         EOF
-  - texte: 'Écris `Lister` dans `lister.go` : tous les jeux, triés par numéro croissant. `TestLister` doit passer'
-    indice: 'Rassemble les jeux de `d.jeux` dans une slice (`append`), puis trie-la avec `sort.Slice(res, func(i, k int) bool { return res[i].ID < res[k].ID })` : la fonction anonyme dit si l''élément `i` doit passer avant l''élément `k`. L''ordre d''une map est aléatoire, c''est pour cela qu''il faut trier.'
-    apres: [1]
-    verif:
-      - commande-reussit: "verifier-go tests 06-base-de-donnees . TestLister"
+  - text: 'Écris `Lister` dans `lister.go` : tous les jeux, triés par numéro croissant. `TestLister` doit passer'
+    hint: 'Rassemble les jeux de `d.jeux` dans une slice (`append`), puis trie-la avec `sort.Slice(res, func(i, k int) bool { return res[i].ID < res[k].ID })` : la fonction anonyme dit si l''élément `i` doit passer avant l''élément `k`. L''ordre d''une map est aléatoire, c''est pour cela qu''il faut trier.'
+    after: [1]
+    checks:
+      - command-succeeds: "verifier-go tests 06-base-de-donnees . TestLister"
     solution:
       - |
         cat > lister.go <<'EOF'
@@ -312,10 +312,10 @@ etapes:
         	return res, nil
         }
         EOF
-  - texte: 'Écris `ConfigDepuisEnv` dans `config.go` : l''adresse de la base se compose avec `DB_HOST` (`localhost` par défaut), `DB_USER` et `DB_PASSWORD` (obligatoires, sinon une erreur). `TestConfigDepuisEnv` doit passer'
-    indice: 'Reprends la fonction de la leçon : `os.Getenv`, un `if` pour la valeur par défaut, un `if utilisateur == "" || motDePasse == ""` pour l''erreur, et `fmt.Sprintf("postgres://%s:%s@%s/ludotheque", …)`.'
-    verif:
-      - commande-reussit: "verifier-go tests 06-base-de-donnees . TestConfigDepuisEnv"
+  - text: 'Écris `ConfigDepuisEnv` dans `config.go` : l''adresse de la base se compose avec `DB_HOST` (`localhost` par défaut), `DB_USER` et `DB_PASSWORD` (obligatoires, sinon une erreur). `TestConfigDepuisEnv` doit passer'
+    hint: 'Reprends la fonction de la leçon : `os.Getenv`, un `if` pour la valeur par défaut, un `if utilisateur == "" || motDePasse == ""` pour l''erreur, et `fmt.Sprintf("postgres://%s:%s@%s/ludotheque", …)`.'
+    checks:
+      - command-succeeds: "verifier-go tests 06-base-de-donnees . TestConfigDepuisEnv"
     solution:
       - |
         cat > config.go <<'EOF'
@@ -341,13 +341,13 @@ etapes:
         	return fmt.Sprintf("postgres://%s:%s@%s/ludotheque", utilisateur, motDePasse, hote), nil
         }
         EOF
-  - texte: 'Compile le programme avec `go build -o depot .`, puis lance-le avec `./depot` : il doit lister « 1 Azul » et « 2 Catane », puis afficher l''erreur attendue. `go vet ./...` et `go test ./...` passent aussi'
-    indice: 'Lance `go build -o depot .` puis `./depot`, et enfin `go vet ./... && go test ./...`.'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: 'verifier-go binaire 06-base-de-donnees depot'
-      - commande-reussit: "verifier-go lancer 06-base-de-donnees '^2 Catane$'"
-      - commande-reussit: 'verifier-go tout 06-base-de-donnees'
+  - text: 'Compile le programme avec `go build -o depot .`, puis lance-le avec `./depot` : il doit lister « 1 Azul » et « 2 Catane », puis afficher l''erreur attendue. `go vet ./...` et `go test ./...` passent aussi'
+    hint: 'Lance `go build -o depot .` puis `./depot`, et enfin `go vet ./... && go test ./...`.'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: 'verifier-go binaire 06-base-de-donnees depot'
+      - command-succeeds: "verifier-go lancer 06-base-de-donnees '^2 Catane$'"
+      - command-succeeds: 'verifier-go tout 06-base-de-donnees'
     solution:
       - go build -o depot .
       - ./depot

@@ -1,9 +1,9 @@
 ---
 id: introduction
-titre: Pourquoi Git ?
-resume: Comprendre à quoi sert le versionnage et configurer Git pour la première fois.
-duree: 10
-objectifs:
+title: Pourquoi Git ?
+summary: Comprendre à quoi sert le versionnage et configurer Git pour la première fois.
+minutes: 10
+objectives:
   - Expliquer à quoi sert un système de gestion de versions
   - "Distinguer Git (l'outil), GitLab (le service) et un dépôt"
   - Configurer Git avec ton nom et ton adresse mail
@@ -18,7 +18,7 @@ Git est un logiciel de **gestion de versions** : il garde la mémoire de chaque
 
 ## Les 3 idées à retenir
 
-:::cartes
+:::cards
 ### Un historique complet
 
 Chaque **commit** est une photo de ton projet à un instant donné, avec un message qui explique *pourquoi* tu as changé quelque chose.
@@ -70,31 +70,31 @@ Pas de panique si tu ne retiens pas tout : le labo à droite te guide pas à pa
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton terminal est ouvert dans `/workspace`, qui contient déjà un fichier `README.md`. Lance toi-même les commandes vues ci-dessus : c'est un vrai Git.
-fichiers:
+files:
   README.md: |
     # Mon projet Mentor
-etapes:
-  - texte: 'Configure ton nom avec `git config --global user.name "…"`'
-    indice: 'Remplace … par ton prénom et nom, entre guillemets.'
-    verif:
-      - commande-reussit: 'test -n "$(git config --global user.name)"'
+steps:
+  - text: 'Configure ton nom avec `git config --global user.name "…"`'
+    hint: 'Remplace … par ton prénom et nom, entre guillemets.'
+    checks:
+      - command-succeeds: 'test -n "$(git config --global user.name)"'
     solution:
       - 'git config --global user.name "Prénom Nom"'
-  - texte: 'Initialise un dépôt avec `git init`'
-    indice: 'Tape simplement : git init'
-    verif:
-      - commande-reussit: 'git rev-parse --git-dir'
+  - text: 'Initialise un dépôt avec `git init`'
+    hint: 'Tape simplement : git init'
+    checks:
+      - command-succeeds: 'git rev-parse --git-dir'
     solution:
       - git init
-  - texte: "Vérifie l'état avec `git status` : le README est « non suivi ». Garde une trace avec `git status --short > etat.txt`"
-    indice: 'Lance git status pour lire le résultat, puis git status --short > etat.txt pour l''enregistrer.'
-    apres: [2]
-    verif:
-      - fichier-contient-dans-env: [etat.txt, '\?\? README\.md']
+  - text: "Vérifie l'état avec `git status` : le README est « non suivi ». Garde une trace avec `git status --short > etat.txt`"
+    hint: 'Lance git status pour lire le résultat, puis git status --short > etat.txt pour l''enregistrer.'
+    after: [2]
+    checks:
+      - env-file-contains: [etat.txt, '\?\? README\.md']
     solution:
       - git status
       - git status --short > etat.txt

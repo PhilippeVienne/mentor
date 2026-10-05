@@ -1,9 +1,9 @@
 ---
 id: pourquoi-typer
-titre: "Pourquoi typer son code ?"
-resume: "TypeScript, c'est du JavaScript auquel on ajoute des types : le compilateur trouve les fautes avant les utilisateur·rice·s."
-duree: 30
-objectifs:
+title: "Pourquoi typer son code ?"
+summary: "TypeScript, c'est du JavaScript auquel on ajoute des types : le compilateur trouve les fautes avant les utilisateur·rice·s."
+minutes: 30
+objectives:
   - Expliquer ce qu'ajoute TypeScript à JavaScript
   - Lire un message d'erreur de `tsc`
   - Savoir que les types disparaissent à l'exécution
@@ -113,43 +113,43 @@ Dans les longs messages, la dernière ligne est généralement la plus précise.
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, `evenements.ts` contient les trois fautes de la leçon, et TypeScript est déjà installé (il n'y a pas de réseau ici, donc pas de `npm install`). Tu vas lancer le vérificateur, lire ses messages, puis corriger le fichier faute par faute. Pour vérifier, lance `npx tsc --noEmit` dans le terminal. Tu peux éditer le fichier avec `nano evenements.ts`. Le portail contrôle ton travail sur une copie propre, avec ses propres contrôles : `@ts-ignore`, `@ts-nocheck` et `any` ne font que taire `tsc`, ils ne valident pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/01-pourquoi-typer/. .
   - lier-outils
-etapes:
-  - texte: 'Lance `npx tsc --noEmit`, repère l''erreur de la ligne 9 (l''appel de `reserver`) et écris son code, de la forme `TS1234`, dans un fichier `notes.txt`'
-    indice: 'Cherche la ligne qui commence par `evenements.ts(9,`. Le code est juste après `error`. Écris-le avec `echo TS1234 > notes.txt` (avec le vrai numéro).'
-    verif:
-      - fichier-contient-dans-env: [notes.txt, 'TS2345']
+steps:
+  - text: 'Lance `npx tsc --noEmit`, repère l''erreur de la ligne 9 (l''appel de `reserver`) et écris son code, de la forme `TS1234`, dans un fichier `notes.txt`'
+    hint: 'Cherche la ligne qui commence par `evenements.ts(9,`. Le code est juste après `error`. Écris-le avec `echo TS1234 > notes.txt` (avec le vrai numéro).'
+    checks:
+      - env-file-contains: [notes.txt, 'TS2345']
     solution:
       - echo TS2345 > notes.txt
-  - texte: 'Corrige la faute de frappe de la ligne 3 : `tsc` ne doit plus signaler de propriété inconnue'
-    indice: 'Le message propose la bonne propriété : `Did you mean ...`. Remplace `titer` par `titre`.'
-    verif:
-      - commande-reussit: 'verifier-ts 01 propriete'
+  - text: 'Corrige la faute de frappe de la ligne 3 : `tsc` ne doit plus signaler de propriété inconnue'
+    hint: 'Le message propose la bonne propriété : `Did you mean ...`. Remplace `titer` par `titre`.'
+    checks:
+      - command-succeeds: 'verifier-ts 01 propriete'
     solution:
       - sed -i 's/titer/titre/' evenements.ts
-  - texte: 'Corrige l''appel de `reserver` : passe un nombre, pas un texte'
-    indice: 'Enlève les guillemets autour du `4` : `reserver(120, 4)`.'
-    verif:
-      - commande-reussit: 'verifier-ts 01 appel'
+  - text: 'Corrige l''appel de `reserver` : passe un nombre, pas un texte'
+    hint: 'Enlève les guillemets autour du `4` : `reserver(120, 4)`.'
+    checks:
+      - command-succeeds: 'verifier-ts 01 appel'
     solution:
       - sed -i 's/reserver(120, "4")/reserver(120, 4)/' evenements.ts
-  - texte: 'Corrige la dernière erreur : `compteur` a été déduit comme un nombre et doit le rester'
-    indice: 'Donne un nombre à `compteur` (par exemple `4`) au lieu de `"trois"`.'
-    verif:
-      - commande-reussit: 'verifier-ts 01 compteur'
+  - text: 'Corrige la dernière erreur : `compteur` a été déduit comme un nombre et doit le rester'
+    hint: 'Donne un nombre à `compteur` (par exemple `4`) au lieu de `"trois"`.'
+    checks:
+      - command-succeeds: 'verifier-ts 01 compteur'
     solution:
       - sed -i 's/compteur = "trois"/compteur = 4/' evenements.ts
-  - texte: 'Quand `npx tsc --noEmit` ne signale plus rien, produis le JavaScript avec `npx tsc --noEmit false --outDir dist`, puis ouvre `dist/evenements.js` : les types ont disparu'
-    indice: 'La commande crée le dossier `dist`. Affiche le fichier avec `cat dist/evenements.js` et cherche `: number`.'
-    apres: [2, 3, 4]
-    verif:
-      - commande-reussit: 'verifier-ts 01 dist'
+  - text: 'Quand `npx tsc --noEmit` ne signale plus rien, produis le JavaScript avec `npx tsc --noEmit false --outDir dist`, puis ouvre `dist/evenements.js` : les types ont disparu'
+    hint: 'La commande crée le dossier `dist`. Affiche le fichier avec `cat dist/evenements.js` et cherche `: number`.'
+    after: [2, 3, 4]
+    checks:
+      - command-succeeds: 'verifier-ts 01 dist'
     solution:
       - npx tsc --noEmit false --outDir dist
 :::

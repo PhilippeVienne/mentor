@@ -1,9 +1,9 @@
 ---
 id: donnees-deploiement
-titre: "Base de données, migrations et déploiement"
-resume: "Lire une base avec Kysely, la faire évoluer par migrations, accélérer avec Redis et livrer l'application en conteneur."
-duree: 50
-objectifs:
+title: "Base de données, migrations et déploiement"
+summary: "Lire une base avec Kysely, la faire évoluer par migrations, accélérer avec Redis et livrer l'application en conteneur."
+minutes: 50
+objectives:
   - Écrire une requête typée avec Kysely et comprendre à quoi sert le fichier de types généré
   - Créer une migration réversible (`up` et `down`) et expliquer quand elle s'exécute
   - Expliquer le principe d'un cache et de son invalidation avec Redis
@@ -194,25 +194,25 @@ D'après les fichiers lus, MiniShop **n'a pas de suite de tests automatisés** 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Il n'y a pas de base de données PostgreSQL dans l'environnement, ni de Redis, ni de Docker : tu travailles quand même avec de vrais outils. **Kysely** écrit le SQL (le langage de la base) comme d'habitude, et une « fausse » connexion (`src/faux-db.ts`) note chaque requête au lieu de l'envoyer : les **tests** (de petits programmes qui vérifient ton travail) lisent ce SQL. `npx vitest run requete` lance les tests dont le nom de fichier contient `requete`.
 
   Tu écriras dans `src` une requête (`stocks.ts`), une migration (`migrations/015_seuil_alerte.ts`) et un cache (`cache.ts`), puis deux fichiers de livraison : `next.config.ts` et un `Dockerfile`. Utilise `nano` pour éditer (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte). Le `Dockerfile` n'est pas construit ici (pas de Docker dans l'environnement) : le serveur vérifie qu'il contient ce qu'il faut.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/07-donnees-deploiement/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/stocks.ts`, la fonction `stocksActifs` lit toute la table `product`. Réécris-la pour qu'elle renvoie le **nom** et le **stock** des produits **actifs** : pars de `product_version`, joins `product` (`product.id` égale `product_version.product_id`), filtre sur `product.enabled`, choisis ces deux colonnes seulement et trie par `product.id` croissant. Vérifie avec `npx vitest run requete`.
-    indice: >-
+    hint: >-
       `db.selectFrom("product_version").innerJoin("product", "product.id", "product_version.product_id").where("product.enabled", "=", true).select(["product.name", "product_version.stock"]).orderBy("product.id", "asc").execute()`.
-    verif:
-      - commande-reussit: controler tests 07-donnees-deploiement requete
+    checks:
+      - command-succeeds: controler tests 07-donnees-deploiement requete
     solution:
-      - ecrire:
+      - write:
           'src/stocks.ts': |
             import type { Kysely } from "kysely";
             import type { DB } from "./types";
@@ -226,14 +226,14 @@ etapes:
                 .orderBy("product.id", "asc")
                 .execute();
             }
-  - texte: >-
+  - text: >-
       Dans `src/migrations/015_seuil_alerte.ts`, écris la fonction `up` : elle modifie la table `product` pour y ajouter la colonne entière `seuil_alerte`, obligatoire (`notNull()`) et valant `0` par défaut (`defaultTo(0)`). Vérifie avec `npx vitest run migration-up`.
-    indice: >-
+    hint: >-
       `await db.schema.alterTable("product").addColumn("seuil_alerte", "integer", (col) => col.notNull().defaultTo(0)).execute();`.
-    verif:
-      - commande-reussit: controler tests 07-donnees-deploiement migration-up
+    checks:
+      - command-succeeds: controler tests 07-donnees-deploiement migration-up
     solution:
-      - ecrire:
+      - write:
           'src/migrations/015_seuil_alerte.ts': |
             import type { Kysely } from "kysely";
             import type { DB } from "../types";
@@ -246,15 +246,15 @@ etapes:
             }
 
             export async function down(db: Kysely<DB>): Promise<void> {}
-  - texte: >-
+  - text: >-
       Une migration doit pouvoir être annulée. Écris la fonction `down` du même fichier : elle supprime la colonne `seuil_alerte` de `product`. Vérifie avec `npx vitest run migration-down`.
-    indice: >-
+    hint: >-
       `await db.schema.alterTable("product").dropColumn("seuil_alerte").execute();`.
-    verif:
-      - commande-reussit: controler tests 07-donnees-deploiement migration-down
-    apres: [2]
+    checks:
+      - command-succeeds: controler tests 07-donnees-deploiement migration-down
+    after: [2]
     solution:
-      - ecrire:
+      - write:
           'src/migrations/015_seuil_alerte.ts': |
             import type { Kysely } from "kysely";
             import type { DB } from "../types";
@@ -269,14 +269,14 @@ etapes:
             export async function down(db: Kysely<DB>): Promise<void> {
               await db.schema.alterTable("product").dropColumn("seuil_alerte").execute();
             }
-  - texte: >-
+  - text: >-
       Dans `src/cache.ts`, écris `lireOuCalculer(cle, charger)` selon le motif *cache-aside*. Cherche la clé dans un `Map`. Si l'entrée existe et n'a pas expiré (`expireA > Date.now()`), renvoie sa valeur sans appeler `charger`. Sinon appelle `charger()`, mémorise le résultat avec une date d'expiration dans `TTL_SECONDES` (300) secondes, puis renvoie-le. Vérifie avec `npx vitest run cache-lecture`.
-    indice: >-
+    hint: >-
       Déclare `const cache = new Map<string, { valeur: unknown; expireA: number }>();`. Une durée en secondes se convertit en millisecondes (`Date.now()` compte en millisecondes) avec `TTL_SECONDES * 1000`.
-    verif:
-      - commande-reussit: controler tests 07-donnees-deploiement cache-lecture
+    checks:
+      - command-succeeds: controler tests 07-donnees-deploiement cache-lecture
     solution:
-      - ecrire:
+      - write:
           'src/cache.ts': |
             type Entree<T> = { valeur: T; expireA: number };
             const cache = new Map<string, Entree<unknown>>();
@@ -293,15 +293,15 @@ etapes:
             }
 
             export function invalider(cle: string): void {}
-  - texte: >-
+  - text: >-
       Un cache qui ne s'efface jamais sert de vieilles données. Écris `invalider(cle)` : elle supprime l'entrée de cette clé, sans toucher aux autres. Vérifie avec `npx vitest run cache-invalidation`.
-    indice: >-
+    hint: >-
       `cache.delete(cle);` supprime une entrée d'un `Map`.
-    verif:
-      - commande-reussit: controler tests 07-donnees-deploiement cache-invalidation
-    apres: [4]
+    checks:
+      - command-succeeds: controler tests 07-donnees-deploiement cache-invalidation
+    after: [4]
     solution:
-      - ecrire:
+      - write:
           'src/cache.ts': |
             type Entree<T> = { valeur: T; expireA: number };
             const cache = new Map<string, Entree<unknown>>();
@@ -320,22 +320,22 @@ etapes:
             export function invalider(cle: string): void {
               cache.delete(cle);
             }
-  - texte: >-
+  - text: >-
       Prépare la livraison. Dans `next.config.ts`, ajoute `output: "standalone"` à la configuration (Next.js produira un dossier autonome, d'où une image plus légère). Puis crée un `Dockerfile` à plusieurs étapes : une étape `builder` qui copie le code et lance `npm ci && npm run build`, et une étape finale qui copie `.next/standalone`, **passe à un utilisateur qui n'est pas root** avec `USER`, déclare `EXPOSE 3000` et lance `node server.js`.
-    indice: >-
+    hint: >-
       Crée l'utilisateur avec `RUN useradd --create-home --uid 1001 nextjs`, puis `USER nextjs` avant `EXPOSE 3000` et `CMD ["node", "server.js"]`. Chaque étape commence par `FROM … AS nom`.
-    verif:
-      - commande-reussit: contient next.config.ts 'output\s*:\s*[\x27\"]standalone[\x27\"]'
-      - commande-reussit: contient Dockerfile '^USER\s+(?!root\b)\S+'
-      - commande-reussit: contient -v Dockerfile '^USER\s+root\b'
-      - commande-reussit: contient Dockerfile '^EXPOSE\s+3000'
-      - commande-reussit: contient Dockerfile '^FROM\s[^\n]*\n[\s\S]*^FROM\s'
-      - commande-reussit: contient Dockerfile '^FROM\s[^\n]*\s+AS\s+builder\b'
-      - commande-reussit: contient Dockerfile 'npm\s+ci\b[\s\S]*npm\s+run\s+build'
-      - commande-reussit: contient Dockerfile '\.next/standalone'
-      - commande-reussit: contient Dockerfile 'node[\s\x27\",\[]+server\.js'
+    checks:
+      - command-succeeds: contient next.config.ts 'output\s*:\s*[\x27\"]standalone[\x27\"]'
+      - command-succeeds: contient Dockerfile '^USER\s+(?!root\b)\S+'
+      - command-succeeds: contient -v Dockerfile '^USER\s+root\b'
+      - command-succeeds: contient Dockerfile '^EXPOSE\s+3000'
+      - command-succeeds: contient Dockerfile '^FROM\s[^\n]*\n[\s\S]*^FROM\s'
+      - command-succeeds: contient Dockerfile '^FROM\s[^\n]*\s+AS\s+builder\b'
+      - command-succeeds: contient Dockerfile 'npm\s+ci\b[\s\S]*npm\s+run\s+build'
+      - command-succeeds: contient Dockerfile '\.next/standalone'
+      - command-succeeds: contient Dockerfile 'node[\s\x27\",\[]+server\.js'
     solution:
-      - ecrire:
+      - write:
           'next.config.ts': |
             import type { NextConfig } from "next";
 
@@ -344,7 +344,7 @@ etapes:
             };
 
             export default config;
-          'Dockerfile': |
+          'Dockerfile': |-
             FROM node:24-bookworm-slim AS builder
             WORKDIR /app
             COPY . .

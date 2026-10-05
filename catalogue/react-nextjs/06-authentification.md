@@ -1,9 +1,9 @@
 ---
 id: authentification
-titre: "Authentification : better-auth et SSO"
-resume: "Savoir qui est la personne et ce qu'elle a le droit de faire, avec better-auth (MiniShop) et Keycloak (Adhésion)."
-duree: 40
-objectifs:
+title: "Authentification : better-auth et SSO"
+summary: "Savoir qui est la personne et ce qu'elle a le droit de faire, avec better-auth (MiniShop) et Keycloak (Adhésion)."
+minutes: 40
+objectives:
   - Distinguer authentification et autorisation, et expliquer le rôle d'une session
   - Lire la configuration de `better-auth` et ses deux côtés (serveur et client)
   - Protéger une page, une action serveur et une zone d'URL
@@ -157,25 +157,25 @@ Dans MiniShop, l'application **possède** les comptes (better-auth). Dans Adhés
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Tu vas écrire, dans `src`, les quatre barrières d'une petite application : un filtre d'URL (`proxy.ts`), un garde de rôle (`guardian.ts`), une action serveur protégée (`actions.ts`) et la lecture d'un secret (`config.ts`), puis l'en-tête d'un jeton Keycloak (`keycloak.ts`). Utilise `nano` pour éditer (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte).
 
   L'environnement ne contient ni better-auth ni Keycloak : `src/auth.ts` est une **fausse** bibliothèque, et les **tests** (de petits programmes qui vérifient ton travail) la remplacent par des sessions de leur choix (aucune, simple utilisateur, admin). `npx vitest run proxy` lance les tests dont le nom de fichier contient `proxy`. Aucun vrai secret n'est jamais utilisé : les tests inventent des valeurs.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/06-authentification/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/proxy.ts`, corrige `estProtege(pathname)` : une adresse est protégée si elle est exactement `/admin` ou commence par `/admin/`, **sauf** si elle commence par une des adresses publiques de la liste `PUBLIC`, qui doit contenir `/admin/login` (la page de connexion) et `/api/auth` (les adresses de better-auth). Attention à `/administration` : elle n'est pas dans la zone admin. Vérifie avec `npx vitest run proxy`.
-    indice: >-
+    hint: >-
       `const zoneAdmin = pathname === "/admin" || pathname.startsWith("/admin/");` puis `return zoneAdmin && !PUBLIC.some((p) => pathname.startsWith(p));`.
-    verif:
-      - commande-reussit: controler tests 06-authentification proxy
+    checks:
+      - command-succeeds: controler tests 06-authentification proxy
     solution:
-      - ecrire:
+      - write:
           'src/proxy.ts': |
             // Le filtre d'URL du site : quelles adresses exigent une session ?
             const PUBLIC = ["/admin/login", "/api/auth"];
@@ -184,15 +184,15 @@ etapes:
               const zoneAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
               return zoneAdmin && !PUBLIC.some((p) => pathname.startsWith(p));
             }
-  - texte: >-
+  - text: >-
       Dans `src/guardian.ts`, écris `exigerRole(roles)` : elle retrouve la session avec `auth.api.getSession({ headers: await headers() })`. Sans session, elle redirige vers `/admin/login` avec `redirect`. Si le rôle de la personne (`session.user.role`) n'est pas dans `roles`, elle redirige vers `/acces-refuse`. Sinon elle renvoie la session. Vérifie avec `npx vitest run guardian`.
-    indice: >-
+    hint: >-
       `redirect(…)` interrompt tout (il lance une exception spéciale), donc après `if (!session) redirect(…);` TypeScript sait que `session` existe. Teste le rôle avec `roles.includes(session.user.role)`.
-    verif:
-      - commande-reussit: controler tests 06-authentification guardian
-      - commande-reussit: contient src/guardian.ts '\bredirect\s*\('
+    checks:
+      - command-succeeds: controler tests 06-authentification guardian
+      - command-succeeds: contient src/guardian.ts '\bredirect\s*\('
     solution:
-      - ecrire:
+      - write:
           'src/guardian.ts': |
             import { headers } from "next/headers";
             import { redirect } from "next/navigation";
@@ -204,16 +204,16 @@ etapes:
               if (!roles.includes(session.user.role)) redirect("/acces-refuse");
               return session;
             }
-  - texte: >-
+  - text: >-
       `modifierStock` dans `src/actions.ts` est une action serveur : n'importe qui peut l'appeler, même sans passer par ton interface. Ajoute `await exigerRole(["admin"]);` **en première ligne** de la fonction, avant `ecrireStock`. Vérifie avec `npx vitest run actions` : les tests contrôlent que la base n'est pas touchée sans les droits.
-    indice: >-
+    hint: >-
       La fonction devient : `await exigerRole(["admin"]); await ecrireStock(id, stock);`. Si le garde lance une exception, la ligne suivante ne s'exécute jamais.
-    verif:
-      - commande-reussit: controler tests 06-authentification actions
-      - commande-reussit: contient src/actions.ts 'modifierStock[^{]*\{\s*await\s+exigerRole\s*\(\s*\[\s*[\x27\"]admin[\x27\"]\s*\]\s*\)'
-    apres: [2]
+    checks:
+      - command-succeeds: controler tests 06-authentification actions
+      - command-succeeds: contient src/actions.ts 'modifierStock[^{]*\{\s*await\s+exigerRole\s*\(\s*\[\s*[\x27\"]admin[\x27\"]\s*\]\s*\)'
+    after: [2]
     solution:
-      - ecrire:
+      - write:
           'src/actions.ts': |
             "use server";
 
@@ -224,16 +224,16 @@ etapes:
               await exigerRole(["admin"]);
               await ecrireStock(id, stock);
             }
-  - texte: >-
+  - text: >-
       Dans `src/config.ts`, écris `lireSecret()` : elle renvoie la variable d'environnement `BETTER_AUTH_SECRET` (`process.env.BETTER_AUTH_SECRET`) et lance une erreur « BETTER_AUTH_SECRET manquant » si elle est absente ou vide. Le secret ne doit jamais être écrit dans le code, ni dans une variable `NEXT_PUBLIC_…` (envoyée à tout le monde). Vérifie avec `npx vitest run config`.
-    indice: >-
+    hint: >-
       `const secret = process.env.BETTER_AUTH_SECRET; if (!secret) { throw new Error("BETTER_AUTH_SECRET manquant"); } return secret;` : une chaîne vide est « fausse » en JavaScript, elle est donc refusée aussi.
-    verif:
-      - commande-reussit: controler tests 06-authentification config
-      - commande-echoue: grep -rEq 'NEXT_PUBLIC_[A-Z_]*SECRET' src --exclude=*.test.ts
-      - commande-reussit: contient src/config.ts 'process\.env\.BETTER_AUTH_SECRET'
+    checks:
+      - command-succeeds: controler tests 06-authentification config
+      - command-fails: grep -rEq 'NEXT_PUBLIC_[A-Z_]*SECRET' src --exclude=*.test.ts
+      - command-succeeds: contient src/config.ts 'process\.env\.BETTER_AUTH_SECRET'
     solution:
-      - ecrire:
+      - write:
           'src/config.ts': |
             export function lireSecret(): string {
               const secret = process.env.BETTER_AUTH_SECRET;
@@ -242,18 +242,18 @@ etapes:
               }
               return secret;
             }
-  - texte: >-
+  - text: >-
       Pour l'API d'Adhésion, le jeton remis par Keycloak voyage dans l'en-tête `Authorization`. Dans `src/keycloak.ts`, écris `entetesAuthorization(token)` : elle renvoie `{ Authorization: "Bearer <jeton>" }`, ou un objet vide quand il n'y a pas de jeton (`null`). Vérifie avec `npx vitest run keycloak`, puis lance toute la suite avec `npx vitest run` et `npx tsc --noEmit`.
-    indice: >-
+    hint: >-
       Un opérateur ternaire suffit : `` token ? { Authorization: `Bearer ${token}` } : {} ``.
-    verif:
-      - commande-reussit: controler tests 06-authentification keycloak
-      - commande-reussit: controler tests 06-authentification
-      - commande-reussit: controler types 06-authentification
-    apres: [1, 2, 3, 4]
+    checks:
+      - command-succeeds: controler tests 06-authentification keycloak
+      - command-succeeds: controler tests 06-authentification
+      - command-succeeds: controler types 06-authentification
+    after: [1, 2, 3, 4]
     solution:
-      - ecrire:
-          'src/keycloak.ts': |
+      - write:
+          'src/keycloak.ts': |-
             export function entetesAuthorization(token: string | null): Record<string, string> {
               return token ? { Authorization: `Bearer ${token}` } : {};
             }

@@ -1,9 +1,9 @@
 ---
 id: keycloak
-titre: "Authentification avec keycloak-angular"
-resume: "Comprendre comment l'application te connecte via Keycloak, protège ses pages et signe ses appels d'API."
-duree: 35
-objectifs:
+title: "Authentification avec keycloak-angular"
+summary: "Comprendre comment l'application te connecte via Keycloak, protège ses pages et signe ses appels d'API."
+minutes: 35
+objectives:
   - Expliquer le rôle de Keycloak, d'un jeton et d'un rôle
   - Lire la configuration `provideKeycloak` d'Adhésion
   - Protéger une route avec une garde (*guard*) fondée sur les rôles
@@ -157,23 +157,23 @@ L'intercepteur du dépôt ajoute le jeton à **toutes** les requêtes, quelle qu
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Il n'y a pas de serveur Keycloak dans ce conteneur (pas de réseau) : tu travailles sur le code **autour** de Keycloak, avec des tests qui utilisent un faux Keycloak. Le projet de `/workspace` contient l'intercepteur de jeton **tel qu'il est dans Adhésion, défauts compris**, une fonction de contrôle des rôles à écrire, les routes à protéger et la configuration `provideKeycloak`. Ne modifie pas les fichiers `*.spec.ts` (`tester` remet de toute façon les tests d'origine dans une copie : les modifier ne servirait à rien).
-commandes:
+commands:
   - cp -R /opt/exercices/06-keycloak/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Lance `tester jeton.interceptor` : le test `journaux` échoue, parce que `src/app/jeton.interceptor.ts` écrit le jeton dans la console avec `console.log`. Supprime cette ligne : un jeton est un mot de passe temporaire, il ne doit apparaître dans aucun journal. Vérifie avec `tester jeton.interceptor -t journaux`.
-    indice: >-
+    hint: >-
       Supprime la ligne `console.log('Request at', …)` ; garde la ligne `req.clone` qui ajoute l'en-tête `Authorization`.
-    verif:
-      - commande-reussit: tester jeton.interceptor -t journaux
-      - commande-reussit: contient -v src/app/jeton.interceptor.ts 'console\.log'
+    checks:
+      - command-succeeds: tester jeton.interceptor -t journaux
+      - command-succeeds: contient -v src/app/jeton.interceptor.ts 'console\.log'
     solution:
-      - ecrire:
+      - write:
           src/app/jeton.interceptor.ts: |
             import { HttpInterceptorFn } from '@angular/common/http';
             import { inject } from '@angular/core';
@@ -184,16 +184,16 @@ etapes:
               const requeteSignee = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
               return next(requeteSignee);
             };
-  - texte: >-
+  - text: >-
       Dans le même fichier, n'envoie le jeton qu'à l'API d'Adhésion : au début de l'intercepteur, si `req.url` ne commence pas par `environment.adhesion_api_url`, renvoie `next(req)` sans rien ajouter. Importe `environment` depuis `./environment`. Vérifie avec `tester jeton.interceptor`.
-    indice: >-
+    hint: >-
       `if (!req.url.startsWith(environment.adhesion_api_url)) { return next(req); }` : la requête repart telle quelle, sans en-tête.
-    apres: [1]
-    verif:
-      - commande-reussit: tester jeton.interceptor
-      - commande-reussit: contient src/app/jeton.interceptor.ts 'environment\.adhesion_api_url'
+    after: [1]
+    checks:
+      - command-succeeds: tester jeton.interceptor
+      - command-succeeds: contient src/app/jeton.interceptor.ts 'environment\.adhesion_api_url'
     solution:
-      - ecrire:
+      - write:
           src/app/jeton.interceptor.ts: |
             import { HttpInterceptorFn } from '@angular/common/http';
             import { inject } from '@angular/core';
@@ -208,16 +208,16 @@ etapes:
               const requeteSignee = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
               return next(requeteSignee);
             };
-  - texte: >-
+  - text: >-
       Dans `src/app/acces.ts`, écris `accesAutorise(rolesExiges, rolesAccordes)` : si `rolesExiges` n'est pas un tableau (`instanceof Array`) ou s'il est vide, l'accès est libre (`true`) ; sinon la personne doit avoir **tous** les rôles exigés (`every` + `includes`). Vérifie avec `tester acces`.
-    indice: >-
+    hint: >-
       `if (!(rolesExiges instanceof Array) || rolesExiges.length === 0) { return true; }` puis `return rolesExiges.every((role) => rolesAccordes.includes(role));`
-    apres: [2]
-    verif:
-      - commande-reussit: tester acces
-      - commande-reussit: contient src/app/acces.ts '\.every\s*\('
+    after: [2]
+    checks:
+      - command-succeeds: tester acces
+      - command-succeeds: contient src/app/acces.ts '\.every\s*\('
     solution:
-      - ecrire:
+      - write:
           src/app/acces.ts: |
             export function accesAutorise(rolesExiges: unknown, rolesAccordes: string[]): boolean {
               if (!(rolesExiges instanceof Array) || rolesExiges.length === 0) {
@@ -225,16 +225,16 @@ etapes:
               }
               return rolesExiges.every((role) => rolesAccordes.includes(role));
             }
-  - texte: >-
+  - text: >-
       Dans `src/app/routes.ts`, protège la route racine (`path: ''`) : ajoute `canActivate: [authGuard]` (la garde est déjà écrite dans `garde.ts`, importe-la) et `data: { roles: ['staff'] }`. Les routes enfants sont protégées par héritage. Vérifie avec `tester routes`.
-    indice: >-
+    hint: >-
       Les deux nouvelles propriétés se placent à côté de `path` et `children`, dans l'objet de la route racine.
-    apres: [3]
-    verif:
-      - commande-reussit: tester routes
-      - commande-reussit: contient src/app/routes.ts 'canActivate\s*:\s*\[\s*authGuard\s*\]'
+    after: [3]
+    checks:
+      - command-succeeds: tester routes
+      - command-succeeds: contient src/app/routes.ts 'canActivate\s*:\s*\[\s*authGuard\s*\]'
     solution:
-      - ecrire:
+      - write:
           src/app/routes.ts: |
             import { Routes } from '@angular/router';
             import { authGuard } from './garde';
@@ -251,19 +251,19 @@ etapes:
                 ],
               },
             ];
-  - texte: >-
+  - text: >-
       Dans `src/app/keycloak.config.ts`, remplis la configuration : `configKeycloak` prend `url`, `realm` et `clientId` dans `environment` (`keycloak_url`, `keycloak_realm`, `keycloak_client_id`), et `optionsInit` vaut `onLoad: 'check-sso'`, `flow: 'standard'` et `silentCheckSsoRedirectUri: window.location.origin + '/assets/silent-check-sso.html'`. Puis lance `tester` (tout doit être vert) et `ngc -p tsconfig.json --noEmit` (le projet doit compiler en mode strict).
-    indice: >-
+    hint: >-
       Les noms des clés viennent de la leçon : `url: environment.keycloak_url`, `realm: environment.keycloak_realm`, `clientId: environment.keycloak_client_id`.
-    apres: [4]
-    verif:
-      - commande-reussit: tester keycloak.config
-      - commande-reussit: tester
-      - commande-reussit: tester --compile-seul
-      - commande-reussit: contient src/app/keycloak.config.ts 'check-sso'
+    after: [4]
+    checks:
+      - command-succeeds: tester keycloak.config
+      - command-succeeds: tester
+      - command-succeeds: tester --compile-seul
+      - command-succeeds: contient src/app/keycloak.config.ts 'check-sso'
     solution:
-      - ecrire:
-          src/app/keycloak.config.ts: |
+      - write:
+          src/app/keycloak.config.ts: |-
             import { provideKeycloak } from 'keycloak-angular';
             import { KeycloakConfig, KeycloakInitOptions } from 'keycloak-js';
             import { environment } from './environment';

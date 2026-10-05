@@ -1,9 +1,9 @@
 ---
 id: erreurs-interfaces-paquets
-titre: "Erreurs, interfaces et paquets"
-resume: "Gérer ce qui peut mal tourner avec les erreurs, décrire un comportement avec une interface et ranger le code en paquets."
-duree: 45
-objectifs:
+title: "Erreurs, interfaces et paquets"
+summary: "Gérer ce qui peut mal tourner avec les erreurs, décrire un comportement avec une interface et ranger le code en paquets."
+minutes: 45
+objectives:
   - Retourner, envelopper et tester une erreur avec `errors.Is` et `errors.As`
   - Expliquer ce qu'est une interface et pourquoi elle est « implicite » en Go
   - Découper un module en paquets et savoir ce qui est visible d'un paquet à l'autre
@@ -167,18 +167,18 @@ Go a aussi `panic(err)`, qui arrête brutalement le programme. Il est réservé 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu travailles sur le paquet `pret` de la ludothèque (dossier `pret/`). Les types d'erreurs sont déjà dans `pret/pret.go` ; il manque `NouveauStock`, `Preter` et l'interface `Preteur`. Chaque morceau à écrire est dans son fichier, avec un commentaire qui décrit ce qu'il doit faire : remplace `panic("à écrire")` par ton code. Les tests sont dans `pret/pret_test.go` ; lance-les avec `go test ./...`. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/02-erreurs-interfaces/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Écris `NouveauStock` dans `pret/nouveau.go` : un stock où tous les titres reçus (paramètre variadique) sont disponibles. `TestNouveauStock` doit passer'
-    indice: 'Reprends le code de la leçon : `s := &Stock{dispo: map[string]bool{}, emprunts: map[string]int{}}`, une boucle `for _, t := range titres` qui fait `s.dispo[t] = true`, puis `return s`.'
-    verif:
-      - commande-reussit: "verifier-go tests 02-erreurs-interfaces pret TestNouveauStock"
+steps:
+  - text: 'Écris `NouveauStock` dans `pret/nouveau.go` : un stock où tous les titres reçus (paramètre variadique) sont disponibles. `TestNouveauStock` doit passer'
+    hint: 'Reprends le code de la leçon : `s := &Stock{dispo: map[string]bool{}, emprunts: map[string]int{}}`, une boucle `for _, t := range titres` qui fait `s.dispo[t] = true`, puis `return s`.'
+    checks:
+      - command-succeeds: "verifier-go tests 02-erreurs-interfaces pret TestNouveauStock"
     solution:
       - |
         cat > pret/nouveau.go <<'EOF'
@@ -193,11 +193,11 @@ etapes:
         	return s
         }
         EOF
-  - texte: 'Dans `pret/preter.go`, fais d''abord échouer `Preter` quand le titre n''est pas disponible : renvoie une erreur qui **enveloppe** `ErrIndisponible` et cite le titre avec `%q`. `TestIndisponible` doit passer'
-    indice: 'Commence par `if !s.dispo[titre] { return fmt.Errorf("prêt de %q : %w", titre, ErrIndisponible) }`, puis `return nil` pour le reste. N''oublie pas `import "fmt"`.'
-    apres: [1]
-    verif:
-      - commande-reussit: "verifier-go tests 02-erreurs-interfaces pret TestIndisponible"
+  - text: 'Dans `pret/preter.go`, fais d''abord échouer `Preter` quand le titre n''est pas disponible : renvoie une erreur qui **enveloppe** `ErrIndisponible` et cite le titre avec `%q`. `TestIndisponible` doit passer'
+    hint: 'Commence par `if !s.dispo[titre] { return fmt.Errorf("prêt de %q : %w", titre, ErrIndisponible) }`, puis `return nil` pour le reste. N''oublie pas `import "fmt"`.'
+    after: [1]
+    checks:
+      - command-succeeds: "verifier-go tests 02-erreurs-interfaces pret TestIndisponible"
     solution:
       - |
         cat > pret/preter.go <<'EOF'
@@ -213,11 +213,11 @@ etapes:
         	return nil
         }
         EOF
-  - texte: 'Complète `Preter` pour qu''un prêt réussi retire le titre du stock (`dispo` à `false`) et compte l''emprunt du membre. `TestPretReussi` doit passer'
-    indice: 'Avant le `return nil` final : `s.dispo[titre] = false` puis `s.emprunts[membre]++`.'
-    apres: [2]
-    verif:
-      - commande-reussit: "verifier-go tests 02-erreurs-interfaces pret TestPretReussi"
+  - text: 'Complète `Preter` pour qu''un prêt réussi retire le titre du stock (`dispo` à `false`) et compte l''emprunt du membre. `TestPretReussi` doit passer'
+    hint: 'Avant le `return nil` final : `s.dispo[titre] = false` puis `s.emprunts[membre]++`.'
+    after: [2]
+    checks:
+      - command-succeeds: "verifier-go tests 02-erreurs-interfaces pret TestPretReussi"
     solution:
       - |
         cat > pret/preter.go <<'EOF'
@@ -235,11 +235,11 @@ etapes:
         	return nil
         }
         EOF
-  - texte: 'Ajoute la limite de **deux jeux par membre** : au troisième prêt, `Preter` renvoie un `*ErreurQuota` (avec `Membre` et `Max: 2`) et ne retire rien du stock. `TestQuota` doit passer'
-    indice: 'Après le test de disponibilité : `if s.emprunts[membre] >= 2 { return &ErreurQuota{Membre: membre, Max: 2} }`.'
-    apres: [3]
-    verif:
-      - commande-reussit: "verifier-go tests 02-erreurs-interfaces pret TestQuota"
+  - text: 'Ajoute la limite de **deux jeux par membre** : au troisième prêt, `Preter` renvoie un `*ErreurQuota` (avec `Membre` et `Max: 2`) et ne retire rien du stock. `TestQuota` doit passer'
+    hint: 'Après le test de disponibilité : `if s.emprunts[membre] >= 2 { return &ErreurQuota{Membre: membre, Max: 2} }`.'
+    after: [3]
+    checks:
+      - command-succeeds: "verifier-go tests 02-erreurs-interfaces pret TestQuota"
     solution:
       - |
         cat > pret/preter.go <<'EOF'
@@ -260,11 +260,11 @@ etapes:
         	return nil
         }
         EOF
-  - texte: 'Déclare l''interface `Preteur` (une seule méthode : `Preter(titre, membre string) error`) dans un nouveau fichier `pret/interface.go`. Puis lance `go run .` : `main.go` utilise ton interface et doit afficher `quota atteint pour Camille`'
-    indice: 'Le fichier commence par `package pret`, puis `type Preteur interface { Preter(titre, membre string) error }`. Aucun `implements` : `*Stock` la satisfait déjà.'
-    apres: [1, 2, 3, 4]
-    verif:
-      - commande-reussit: "verifier-go lancer 02-erreurs-interfaces 'quota atteint pour Camille'"
+  - text: 'Déclare l''interface `Preteur` (une seule méthode : `Preter(titre, membre string) error`) dans un nouveau fichier `pret/interface.go`. Puis lance `go run .` : `main.go` utilise ton interface et doit afficher `quota atteint pour Camille`'
+    hint: 'Le fichier commence par `package pret`, puis `type Preteur interface { Preter(titre, membre string) error }`. Aucun `implements` : `*Stock` la satisfait déjà.'
+    after: [1, 2, 3, 4]
+    checks:
+      - command-succeeds: "verifier-go lancer 02-erreurs-interfaces 'quota atteint pour Camille'"
     solution:
       - |
         cat > pret/interface.go <<'EOF'
@@ -275,12 +275,12 @@ etapes:
         	Preter(titre, membre string) error
         }
         EOF
-  - texte: 'Vérifie l''ensemble : compile le programme dans un exécutable `prets` avec `go build -o prets .`, puis `go vet ./...` ne signale rien et `go test ./...` passe en entier'
-    indice: 'Lance `go build -o prets . && go vet ./... && go test ./...`.'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: 'verifier-go binaire 02-erreurs-interfaces prets'
-      - commande-reussit: 'verifier-go tout 02-erreurs-interfaces'
+  - text: 'Vérifie l''ensemble : compile le programme dans un exécutable `prets` avec `go build -o prets .`, puis `go vet ./...` ne signale rien et `go test ./...` passe en entier'
+    hint: 'Lance `go build -o prets . && go vet ./... && go test ./...`.'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: 'verifier-go binaire 02-erreurs-interfaces prets'
+      - command-succeeds: 'verifier-go tout 02-erreurs-interfaces'
     solution:
       - go build -o prets . && go vet ./... && go test ./...
 :::

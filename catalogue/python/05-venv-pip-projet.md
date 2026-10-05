@@ -1,9 +1,9 @@
 ---
 id: venv-pip-projet
-titre: "Environnements virtuels, pip et organisation d'un projet"
-resume: "Isole les dépendances de chaque projet avec venv, comprends pip et range ton code proprement."
-duree: 25
-objectifs:
+title: "Environnements virtuels, pip et organisation d'un projet"
+summary: "Isole les dépendances de chaque projet avec venv, comprends pip et range ton code proprement."
+minutes: 25
+objectives:
   - Créer un environnement virtuel avec `python3 -m venv`
   - Expliquer à quoi servent `pip`, `pip list` et `requirements.txt`
   - Organiser un projet (`src/`, `tests/`, `README.md`, `.gitignore`)
@@ -86,49 +86,49 @@ Tu retrouveras ce schéma partout : `requirements.txt` ou `Pipfile` pour les d�
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail est vide : tu construis un petit projet de A à Z. Les commandes fonctionnent hors ligne.
-etapes:
-  - texte: 'Crée un environnement virtuel dans `.venv` avec `python3 -m venv .venv`'
-    indice: 'Une seule commande, lancée dans ton dossier de travail. Vérifie ensuite avec `ls .venv/bin`.'
-    verif:
-      - fichier-existe-dans-env: .venv/bin/python
+steps:
+  - text: 'Crée un environnement virtuel dans `.venv` avec `python3 -m venv .venv`'
+    hint: 'Une seule commande, lancée dans ton dossier de travail. Vérifie ensuite avec `ls .venv/bin`.'
+    checks:
+      - env-file-exists: .venv/bin/python
     solution:
       - python3 -m venv .venv
 
-  - texte: 'Écris la liste des paquets du venv dans `paquets.txt` avec `.venv/bin/python -m pip list`'
-    indice: 'Lance pip *par le Python du venv* : `.venv/bin/python -m pip list` (avec `-m pip`, tu es sûr·e d''utiliser le pip de CE venv ; après `source .venv/bin/activate`, `pip list` marche aussi). Redirige la sortie avec `>`.'
-    apres: [1]
-    verif:
-      - fichier-contient-dans-env: [paquets.txt, '^pip ']
+  - text: 'Écris la liste des paquets du venv dans `paquets.txt` avec `.venv/bin/python -m pip list`'
+    hint: 'Lance pip *par le Python du venv* : `.venv/bin/python -m pip list` (avec `-m pip`, tu es sûr·e d''utiliser le pip de CE venv ; après `source .venv/bin/activate`, `pip list` marche aussi). Redirige la sortie avec `>`.'
+    after: [1]
+    checks:
+      - env-file-contains: [paquets.txt, '^pip ']
     solution:
-           - .venv/bin/python -m pip list > paquets.txt
+      - .venv/bin/python -m pip list > paquets.txt
 
-  - texte: 'Crée `requirements.txt` avec une ligne `pytest==8.3.5`'
-    indice: 'Un `echo "..." > requirements.txt` suffit. Le nom du paquet, deux signes `=`, puis la version.'
-    verif:
-      - fichier-contient-dans-env: [requirements.txt, '^pytest==8\.3\.5$']
+  - text: 'Crée `requirements.txt` avec une ligne `pytest==8.3.5`'
+    hint: 'Un `echo "..." > requirements.txt` suffit. Le nom du paquet, deux signes `=`, puis la version.'
+    checks:
+      - env-file-contains: [requirements.txt, '^pytest==8\.3\.5$']
     solution:
       - echo "pytest==8.3.5" > requirements.txt
 
-  - texte: 'Crée l''arborescence du projet : les dossiers `src` et `tests`, et le fichier `README.md`'
-    indice: '`mkdir -p src tests` crée les deux dossiers d''un coup, `touch README.md` crée le fichier vide.'
-    verif:
-      - fichier-existe-dans-env: src
-      - fichier-existe-dans-env: tests
-      - fichier-existe-dans-env: README.md
+  - text: 'Crée l''arborescence du projet : les dossiers `src` et `tests`, et le fichier `README.md`'
+    hint: '`mkdir -p src tests` crée les deux dossiers d''un coup, `touch README.md` crée le fichier vide.'
+    checks:
+      - env-file-exists: src
+      - env-file-exists: tests
+      - env-file-exists: README.md
     solution:
       - mkdir -p src tests
       - touch README.md
 
-  - texte: 'Crée un `.gitignore` qui exclut `.venv/` et `__pycache__/`'
-    indice: 'Deux lignes dans le fichier. Tu peux utiliser `printf ".venv/\n__pycache__/\n" > .gitignore`.'
-    apres: [1]
-    verif:
-      - fichier-contient-dans-env: [.gitignore, '^\.venv/$']
-      - fichier-contient-dans-env: [.gitignore, '^__pycache__/$']
+  - text: 'Crée un `.gitignore` qui exclut `.venv/` et `__pycache__/`'
+    hint: 'Deux lignes dans le fichier. Tu peux utiliser `printf ".venv/\n__pycache__/\n" > .gitignore`.'
+    after: [1]
+    checks:
+      - env-file-contains: [.gitignore, '^\.venv/$']
+      - env-file-contains: [.gitignore, '^__pycache__/$']
     solution:
       - printf ".venv/\n__pycache__/\n" > .gitignore
 :::

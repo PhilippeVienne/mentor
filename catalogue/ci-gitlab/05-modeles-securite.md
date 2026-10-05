@@ -1,9 +1,9 @@
 ---
 id: modeles-securite
-titre: "Les analyses de sécurité de GitLab"
-resume: "SAST, Dependency Scanning, Secret Detection et Code Quality : les ajouter en quatre lignes et les régler."
-duree: 40
-objectifs:
+title: "Les analyses de sécurité de GitLab"
+summary: "SAST, Dependency Scanning, Secret Detection et Code Quality : les ajouter en quatre lignes et les régler."
+minutes: 40
+objectives:
   - Dire ce que détecte chacune des quatre analyses
   - Ajouter les modèles de sécurité à un nouveau projet
   - Exclure des chemins ou adapter les `rules` d'un job de modèle
@@ -16,7 +16,7 @@ Quelques mots, d'abord. Une **vulnérabilité** est une faiblesse du code (ou d'
 
 ## Les quatre analyses
 
-:::cartes
+:::cards
 ### SAST
 
 *Static Application Security Testing* : analyse statique, c'est-à-dire sans exécuter le programme, de **ton code** à la recherche de motifs dangereux (injection SQL, usage risqué d'une fonction…). Jobs vus dans l'équipe : `semgrep-sast`, `kubesec-sast` pour les fichiers Kubernetes, `gitlab-advanced-sast`.
@@ -110,19 +110,19 @@ Les alertes apparaissent dans la merge request et dans le rapport de vulnérabil
 Le conteneur n'a pas de réseau et les vrais modèles de GitLab ne s'y trouvent pas. `verifier-ci` connaît seulement le **nom** de quelques jobs de ces modèles (`semgrep-sast`, `secret_detection`, `code_quality`, `gemnasium-dependency_scanning`…) et sait qu'ils vont dans le stage `test`. Il peut donc simuler tes `rules` sur ces jobs, mais il ne voit pas leur contenu réel (et il ignore les jobs que GitLab ajoute selon les langages détectés). Le résultat réel s'observe seulement dans GitLab.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un `.gitlab-ci.yml` à deux jobs (`build` et `deploiement`, dans les stages `build` et `deploy`), un dossier `app` avec un fichier Python et un `README.md`. Modifie le fichier avec `nano .gitlab-ci.yml` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code. Pour simuler un pipeline de merge request qui modifie `app/main.py` : `verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie app/main.py .gitlab-ci.yml`.
-commandes:
+commands:
   - cp -R /opt/exercices/05-securite/. .
-etapes:
-  - texte: 'Inclus les quatre modèles de sécurité comme Vitrine : `Jobs/SAST.gitlab-ci.yml`, `Jobs/Code-Quality.gitlab-ci.yml`, `Jobs/Dependency-Scanning.gitlab-ci.yml` et `Jobs/Secret-Detection.gitlab-ci.yml`, sous une clé `include:` en tête de fichier'
-    indice: 'Copie le bloc `include:` de la leçon au tout début du fichier. Ensuite, lance `verifier-ci .gitlab-ci.yml` : il va se plaindre d''un stage, c''est l''étape suivante.'
-    verif:
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --include-template Jobs/SAST.gitlab-ci.yml --include-template Jobs/Code-Quality.gitlab-ci.yml --include-template Jobs/Dependency-Scanning.gitlab-ci.yml --include-template Jobs/Secret-Detection.gitlab-ci.yml"
+steps:
+  - text: 'Inclus les quatre modèles de sécurité comme Vitrine : `Jobs/SAST.gitlab-ci.yml`, `Jobs/Code-Quality.gitlab-ci.yml`, `Jobs/Dependency-Scanning.gitlab-ci.yml` et `Jobs/Secret-Detection.gitlab-ci.yml`, sous une clé `include:` en tête de fichier'
+    hint: 'Copie le bloc `include:` de la leçon au tout début du fichier. Ensuite, lance `verifier-ci .gitlab-ci.yml` : il va se plaindre d''un stage, c''est l''étape suivante.'
+    checks:
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --include-template Jobs/SAST.gitlab-ci.yml --include-template Jobs/Code-Quality.gitlab-ci.yml --include-template Jobs/Dependency-Scanning.gitlab-ci.yml --include-template Jobs/Secret-Detection.gitlab-ci.yml"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             include:
               - template: Jobs/SAST.gitlab-ci.yml
@@ -146,16 +146,16 @@ etapes:
               image: alpine:3.20
               script:
                 - echo "Déploiement"
-  - texte: 'Corrige l''erreur signalée par `verifier-ci` : les jobs des modèles vont dans le stage `test`, qui n''est pas déclaré. Ajoute-le à `stages`, entre `build` et `deploy`. Vérifie avec `verifier-ci --montrer .gitlab-ci.yml` : on doit voir `semgrep-sast` et `secret_detection`'
-    indice: 'La liste devient `build`, `test`, `deploy`, dans cet ordre (les analyses tournent après le build et avant le déploiement).'
-    apres: [1]
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - sortie-contient: ['verifier-ci --montrer .gitlab-ci.yml', '^stages : .*\btest\b']
-      - sortie-contient: ['verifier-ci --montrer .gitlab-ci.yml', '\[test\] semgrep-sast']
-      - sortie-contient: ['verifier-ci --montrer .gitlab-ci.yml', '\[test\] secret_detection']
+  - text: 'Corrige l''erreur signalée par `verifier-ci` : les jobs des modèles vont dans le stage `test`, qui n''est pas déclaré. Ajoute-le à `stages`, entre `build` et `deploy`. Vérifie avec `verifier-ci --montrer .gitlab-ci.yml` : on doit voir `semgrep-sast` et `secret_detection`'
+    hint: 'La liste devient `build`, `test`, `deploy`, dans cet ordre (les analyses tournent après le build et avant le déploiement).'
+    after: [1]
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - output-contains: ['verifier-ci --montrer .gitlab-ci.yml', '^stages : .*\btest\b']
+      - output-contains: ['verifier-ci --montrer .gitlab-ci.yml', '\[test\] semgrep-sast']
+      - output-contains: ['verifier-ci --montrer .gitlab-ci.yml', '\[test\] secret_detection']
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             include:
               - template: Jobs/SAST.gitlab-ci.yml
@@ -180,14 +180,14 @@ etapes:
               image: alpine:3.20
               script:
                 - echo "Déploiement"
-  - texte: 'Écarte les dossiers qui ne sont pas du code maison, comme Vitrine : ajoute une section `variables:` avec `SAST_EXCLUDED_PATHS` et `DS_EXCLUDED_PATHS`, toutes deux égales à `node_modules/**, test/**`'
-    indice: 'Une section `variables:` au premier niveau du fichier, avec deux lignes `NOM: valeur`. La valeur est une liste de chemins séparés par des virgules.'
-    apres: [2]
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --variable-globale 'SAST_EXCLUDED_PATHS=node_modules/**, test/**' --variable-globale 'DS_EXCLUDED_PATHS=node_modules/**, test/**'"
+  - text: 'Écarte les dossiers qui ne sont pas du code maison, comme Vitrine : ajoute une section `variables:` avec `SAST_EXCLUDED_PATHS` et `DS_EXCLUDED_PATHS`, toutes deux égales à `node_modules/**, test/**`'
+    hint: 'Une section `variables:` au premier niveau du fichier, avec deux lignes `NOM: valeur`. La valeur est une liste de chemins séparés par des virgules.'
+    after: [2]
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --variable-globale 'SAST_EXCLUDED_PATHS=node_modules/**, test/**' --variable-globale 'DS_EXCLUDED_PATHS=node_modules/**, test/**'"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             include:
               - template: Jobs/SAST.gitlab-ci.yml
@@ -216,15 +216,15 @@ etapes:
               image: alpine:3.20
               script:
                 - echo "Déploiement"
-  - texte: 'Redéclare `semgrep-sast` avec des `rules` : dans un pipeline de merge request (`merge_request_event`), il ne doit exister que si un fichier `.py` change. Teste avec `--modifie app/main.py` (le job doit apparaître), puis avec `--modifie README.md` (il doit être absent)'
-    indice: 'Ajoute un bloc `semgrep-sast:` avec `rules:`, une règle `- if: ''$CI_PIPELINE_SOURCE == "merge_request_event"''` et dessous `changes:` suivi de `- "**/*.py"`.'
-    apres: [3]
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie README.md .gitlab-ci.yml | grep -q '^- semgrep-sast'
+  - text: 'Redéclare `semgrep-sast` avec des `rules` : dans un pipeline de merge request (`merge_request_event`), il ne doit exister que si un fichier `.py` change. Teste avec `--modifie app/main.py` (le job doit apparaître), puis avec `--modifie README.md` (il doit être absent)'
+    hint: 'Ajoute un bloc `semgrep-sast:` avec `rules:`, une règle `- if: ''$CI_PIPELINE_SOURCE == "merge_request_event"''` et dessous `changes:` suivi de `- "**/*.py"`.'
+    after: [3]
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie README.md .gitlab-ci.yml | grep -q '^- semgrep-sast'
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             include:
               - template: Jobs/SAST.gitlab-ci.yml
@@ -259,17 +259,17 @@ etapes:
               image: alpine:3.20
               script:
                 - echo "Déploiement"
-  - texte: 'Complète les règles de `semgrep-sast` pour les pipelines de **branche** (`CI_PIPELINE_SOURCE` vaut alors `push`) : exclus d''abord le cas d''une branche qui a déjà une merge request ouverte (`$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS`, avec `when: never`), puis lance le job pour une branche (`$CI_COMMIT_BRANCH`) si un fichier `.py` change'
-    indice: 'Copie les deux dernières règles du bloc `semgrep-sast` de la leçon, en gardant seulement `**/*.py`. Pour tester : `--contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --modifie app/main.py`, avec puis sans `--contexte CI_OPEN_MERGE_REQUESTS=1`.'
-    apres: [4]
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --contexte CI_OPEN_MERGE_REQUESTS=1 --modifie app/main.py .gitlab-ci.yml | grep -q '^- semgrep-sast'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
+  - text: 'Complète les règles de `semgrep-sast` pour les pipelines de **branche** (`CI_PIPELINE_SOURCE` vaut alors `push`) : exclus d''abord le cas d''une branche qui a déjà une merge request ouverte (`$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS`, avec `when: never`), puis lance le job pour une branche (`$CI_COMMIT_BRANCH`) si un fichier `.py` change'
+    hint: 'Copie les deux dernières règles du bloc `semgrep-sast` de la leçon, en gardant seulement `**/*.py`. Pour tester : `--contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --modifie app/main.py`, avec puis sans `--contexte CI_OPEN_MERGE_REQUESTS=1`.'
+    after: [4]
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=ma-branche --contexte CI_OPEN_MERGE_REQUESTS=1 --modifie app/main.py .gitlab-ci.yml | grep -q '^- semgrep-sast'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event --modifie app/main.py .gitlab-ci.yml | grep -q '^+ \[test\] semgrep-sast'
     solution:
-      - ecrire:
-          .gitlab-ci.yml: |
+      - write:
+          .gitlab-ci.yml: |-
             include:
               - template: Jobs/SAST.gitlab-ci.yml
               - template: Jobs/Code-Quality.gitlab-ci.yml

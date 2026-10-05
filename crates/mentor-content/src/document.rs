@@ -35,7 +35,6 @@ pub enum Segment {
 pub struct Quiz {
     pub question: String,
     pub options: Vec<QuizOption>,
-    #[serde(rename = "explication")]
     pub explanation: String,
 }
 
@@ -95,10 +94,10 @@ pub fn split_segments(text: &str, ctx: &Render) -> Result<Vec<Segment>> {
         }
     }
     if let Some((name, _, _, line)) = directive {
-        return ctx.fail(format!("ligne {line} : le bloc `:::{name}` n'est jamais refermé par `:::`"));
+        return ctx.fail(format!("line {line}: the `:::{name}` block is never closed by `:::`"));
     }
     if fence.is_some() {
-        return ctx.fail("un bloc de code ``` n'est jamais refermé");
+        return ctx.fail("a ``` code block is never closed");
     }
     if !buffer.is_empty() {
         segments.push(Segment::Markdown(buffer.join("\n")));
@@ -118,7 +117,7 @@ fn render_callout(kind: &str, title: &str, body: &str, ctx: &mut Render) -> Resu
 fn render_cards(body: &str, ctx: &mut Render) -> Result<String> {
     let titles: Vec<_> = CARD_TITLE_RE.captures_iter(body).collect();
     if titles.is_empty() {
-        return ctx.fail("un bloc `:::cartes` doit contenir des sous-titres `### Titre`");
+        return ctx.fail("a `:::cards` block must contain `### Title` sub-headings");
     }
     let mut cards = String::new();
     for (i, caps) in titles.iter().enumerate() {
@@ -147,15 +146,15 @@ fn parse_quiz(body: &str, start_line: usize, ctx: &Render) -> Result<Quiz> {
             explanation.push(line.trim());
         }
     }
-    let place = format!("ligne {start_line} : `:::quiz`");
+    let place = format!("line {start_line}: `:::quiz`");
     if question.concat().trim().is_empty() {
-        return ctx.fail(format!("{place} sans question (écris la question avant la liste de réponses)"));
+        return ctx.fail(format!("{place} has no question (write the question before the list of answers)"));
     }
     if options.len() < 2 {
-        return ctx.fail(format!("{place} : il faut au moins 2 réponses `- [ ] …` / `- [x] …`"));
+        return ctx.fail(format!("{place}: at least 2 answers are required (`- [ ] …` / `- [x] …`)"));
     }
     if options.iter().filter(|(correct, _)| *correct).count() != 1 {
-        return ctx.fail(format!("{place} : exactement une réponse doit être cochée `[x]`"));
+        return ctx.fail(format!("{place}: exactly one answer must be ticked `[x]`"));
     }
     Ok(Quiz {
         question: md_inline(&question.join("\n")),
@@ -173,15 +172,14 @@ pub fn render_document(body: &str, ctx: &mut Render, mut labs: Option<&mut LabCo
             Segment::Markdown(text) => parts.push(render_md(&text, ctx)?),
             Segment::Directive { name, title, body, line } => match name.as_str() {
                 kind if callout_title(kind).is_some() => parts.push(render_callout(kind, &title, &body, ctx)?),
-                "cartes" => parts.push(render_cards(&body, ctx)?),
+                "cards" => parts.push(render_cards(&body, ctx)?),
                 "quiz" => collected.quizzes.push(parse_quiz(&body, line, ctx)?),
-                "labo" => match labs.as_deref_mut() {
+                "lab" => match labs.as_deref_mut() {
                     Some(lab_ctx) => collected.labs.push(parse_lab(&body, line, lab_ctx, ctx)?),
-                    None => return ctx.fail(format!("ligne {line} : un examen ne peut pas contenir de bloc `:::labo`")),
+                    None => return ctx.fail(format!("line {line}: an exam cannot contain a `:::lab` block")),
                 },
                 other => {
-                    return ctx
-                        .fail(format!("ligne {line} : directive `:::{other}` inconnue (info, tip, warning, danger, cartes, labo, quiz)"))
+                    return ctx.fail(format!("line {line}: unknown directive `:::{other}` (info, tip, warning, danger, cards, lab, quiz)"))
                 }
             },
         }
@@ -215,7 +213,7 @@ mod tests {
     #[test]
     fn unclosed_directive_is_an_error() {
         let err = split_segments("texte\n:::info\ncorps", &ctx()).unwrap_err();
-        assert_eq!(err.to_string(), "lecon.md : ligne 2 : le bloc `:::info` n'est jamais refermé par `:::`");
+        assert_eq!(err.to_string(), "lecon.md: line 2: the `:::info` block is never closed by `:::`");
     }
 
     #[test]
@@ -229,12 +227,12 @@ mod tests {
     #[test]
     fn quiz_with_two_correct_answers_is_rejected() {
         let err = parse_quiz("Q ?\n- [x] a\n- [x] b", 7, &ctx()).unwrap_err();
-        assert!(err.message.starts_with("ligne 7 : `:::quiz` : exactement une réponse"));
+        assert!(err.message.starts_with("line 7: `:::quiz`: exactly one answer"));
     }
 
     #[test]
     fn callout_and_cards() {
-        let (html, _) = render_document(":::warning\nDoucement.\n:::\n:::cartes\n### Un\nA\n### Deux\nB\n:::", &mut ctx(), None).unwrap();
+        let (html, _) = render_document(":::warning\nDoucement.\n:::\n:::cards\n### Un\nA\n### Deux\nB\n:::", &mut ctx(), None).unwrap();
         assert!(
             html.contains(r#"<aside class="callout callout--warning"><p class="callout__title">Attention</p><p>Doucement.</p></aside>"#)
         );
@@ -244,6 +242,6 @@ mod tests {
     #[test]
     fn unknown_directive_is_an_error() {
         let err = render_document(":::truc\nx\n:::", &mut ctx(), None).unwrap_err();
-        assert!(err.message.contains("directive `:::truc` inconnue"));
+        assert!(err.message.contains("unknown directive `:::truc`"));
     }
 }

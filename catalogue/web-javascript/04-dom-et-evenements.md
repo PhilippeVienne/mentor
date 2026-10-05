@@ -1,9 +1,9 @@
 ---
 id: dom-et-evenements
-titre: "Manipuler le DOM et gérer les événements"
-resume: "Sélectionner des éléments, modifier la page et réagir aux clics et aux saisies, avec une vraie page à faire vivre."
-duree: 30
-objectifs:
+title: "Manipuler le DOM et gérer les événements"
+summary: "Sélectionner des éléments, modifier la page et réagir aux clics et aux saisies, avec une vraie page à faire vivre."
+minutes: 30
+objectives:
   - Expliquer ce qu'est le DOM
   - Sélectionner un élément avec `querySelector` et modifier son contenu
   - Réagir à un clic ou à l'envoi d'un formulaire avec `addEventListener`
@@ -149,32 +149,32 @@ Le HTML obtenu est :
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient `index.html` (le titre `#titre`, le compteur `#compteur`, le bouton `#inscription`, la liste `#liste`, le formulaire `#formulaire` avec son champ `#email`, et un paragraphe `#message`) et un fichier `app.js` vide. Tu n'écris que du JavaScript, dans `app.js` (avec `nano app.js`). Après chaque étape, `verifier-page index.html` charge la page, exécute ton script et te montre le DOM obtenu ; les vérifications cliquent et remplissent le formulaire à ta place, puis lisent le résultat dans la page. `index.html` doit rester tel quel : le portail le contrôle et refuse l'étape s'il a été modifié.
-commandes:
+commands:
   - cp -R /opt/exercices/04-dom-et-evenements/. .
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `app.js`, retrouve l'élément `#titre` avec `querySelector` et remplace son texte par `Club Photo du campus` avec `textContent`.
-    indice: >-
+    hint: >-
       `const titre = document.querySelector("#titre");` puis `titre.textContent = "Club Photo du campus";`. Vérifie avec `verifier-page index.html` : la structure doit montrer le nouveau titre.
-    verif:
-      - commande-reussit: 'verifier-web 04 titre'
+    checks:
+      - command-succeeds: 'verifier-web 04 titre'
     solution:
       - |
         cat > app.js <<'EOF'
         const titre = document.querySelector("#titre");
         titre.textContent = "Club Photo du campus";
         EOF
-  - texte: >-
+  - text: >-
       Fais diminuer le compteur à chaque clic : retrouve `#compteur` et `#inscription`, garde le nombre de places dans une variable `places` (qui part de `20`) et, dans un écouteur `click`, retire une place et affiche-la dans `#compteur`. Deux clics doivent donner `18`.
-    indice: >-
+    hint: >-
       Reprends l'exemple de la leçon. Déclare chaque constante (`titre`, `compteur`, `bouton`) une seule fois dans `app.js`, en haut du fichier.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-web 04 compteur'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-web 04 compteur'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -190,13 +190,13 @@ etapes:
           compteur.textContent = places;
         });
         EOF
-  - texte: >-
+  - text: >-
       Empêche le compteur de passer sous zéro : entoure le retrait de la place d'un `if (places > 0)`. Vingt-cinq clics de suite doivent laisser `0` dans `#compteur`.
-    indice: >-
+    hint: >-
       Le `if` va à l'intérieur de la fonction de l'écouteur, autour des deux lignes qui modifient `places` et `compteur.textContent`.
-    apres: [2]
-    verif:
-      - commande-reussit: 'verifier-web 04 plancher'
+    after: [2]
+    checks:
+      - command-succeeds: 'verifier-web 04 plancher'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -214,13 +214,13 @@ etapes:
           }
         });
         EOF
-  - texte: >-
+  - text: >-
       Remplis la liste `#liste` avec trois `<li>` créés par JavaScript (`createElement`, `textContent`, `append`) : `Camille`, `Noé` et `Inès`, avec une boucle `for…of` sur un tableau.
-    indice: >-
+    hint: >-
       Ajoute à la fin de `app.js` : le tableau `participants`, la boucle, et dedans `document.createElement("li")`. N'utilise pas `innerHTML`.
-    apres: [3]
-    verif:
-      - commande-reussit: 'verifier-web 04 liste'
+    after: [3]
+    checks:
+      - command-succeeds: 'verifier-web 04 liste'
     solution:
       - |
         cat >> app.js <<'EOF'
@@ -234,15 +234,15 @@ etapes:
           liste.append(li);
         }
         EOF
-  - texte: >-
+  - text: >-
       Gère le formulaire : écoute `submit` sur `#formulaire`, appelle `evenement.preventDefault()`, lis la valeur du champ `#email` et écris `Inscription de <adresse>` dans le paragraphe `#message`. L'outil saisit `camille@example.org` dans le champ et envoie le formulaire : il refuse si la page n'empêche pas son rechargement.
-    indice: >-
+    hint: >-
       `const champ = document.querySelector("#email");` puis, dans l'écouteur, ``message.textContent = `Inscription de ${champ.value}`;``, avec le `preventDefault()` en première ligne de la fonction.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-web 04 formulaire'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-web 04 formulaire'
     solution:
-      - |
+      - |-
         cat >> app.js <<'EOF'
 
         const formulaire = document.querySelector("#formulaire");

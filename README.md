@@ -23,7 +23,8 @@ The details of what is and is not ported are in [doc/architecture.md §6.1](doc/
 
 ```text
 crates/          Rust workspace
-catalogue/       the 19 courses, copied from v1 (French content, format described in catalogue/README.md)
+catalogue/       the 19 courses, converted from v1 (French content, English format)
+tools/           one-off tools (v1 catalogue migration)
 conformance/     reference output exported from v1, and the v1 commit it comes from
 doc/             architecture and decisions
 ```
@@ -39,10 +40,19 @@ cargo clippy --all-targets && cargo fmt --check
 The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
 strictly equal, and HTML fragments must have the same text.
 
-## Language
+## Language and catalogue format
 
-Code, comments, tests and documentation are in English. The catalogue (course content, front matter keys,
-directive names) and the diagnostics shown to catalogue authors are French: they are product content.
+Everything is in English: code, comments, tests, documentation, compiler diagnostics and the **catalogue format**
+(file names, front matter keys, lab keys, directive and check names). Course *content* stays in the language of
+its authors; the 19 courses shipped here are written in French, and so are the default callout titles and the
+labels of generated buttons.
+
+The catalogue was converted from the French v1 format with
+[`tools/migrate_v1_catalogue.py`](tools/migrate_v1_catalogue.py), driven by the name table
+[`conformance/v1-names.json`](conformance/v1-names.json). The same table lets the conformance test compare v2's
+output with v1's export.
+
+`catalogue/README.md`, the authoring guide, still describes the French v1 names and has to be rewritten.
 
 ## Licence
 

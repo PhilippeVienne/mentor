@@ -1,9 +1,9 @@
 ---
 id: workflow
-titre: "Workflow d'équipe et bonnes pratiques"
-resume: 'Branches de fonctionnalité, Merge Requests et réflexes de pro.'
-duree: 15
-objectifs:
+title: "Workflow d'équipe et bonnes pratiques"
+summary: 'Branches de fonctionnalité, Merge Requests et réflexes de pro.'
+minutes: 15
+objectives:
   - Appliquer le flux « feature branch + Merge Request »
   - "Appliquer les bons réflexes : commits atomiques, pull avant push"
   - "Écrire un `.gitignore` pour ne pas suivre secrets et fichiers générés"
@@ -43,7 +43,7 @@ C'est la même chose : **Merge Request** sur GitLab, **Pull Request** sur GitHu
 
 ## Les bons réflexes
 
-:::cartes
+:::cards
 ### Commits atomiques
 
 Un commit = un changement logique, qui fonctionne. Plus facile à relire, à annuler, à comprendre.
@@ -85,11 +85,11 @@ Les projets sont sur [GitLab](https://gitlab.example.org/equipe). Aucun prérequ
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Mini-projet final : tu corriges une faute de frappe via une branche, tu la publies, et la « Merge Request » est acceptée par l'équipe.
-commandes:
+commands:
   - 'rm -rf ~/.gitlab-sim && git init -q --bare ~/.gitlab-sim/formation-git.git'
   - git init -q
   - 'echo "# Annuaire des assos" > README.md'
@@ -97,43 +97,43 @@ commandes:
   - "git add . && git commit -q -m \"Initialise l'annuaire\""
   - 'git remote add origin git@gitlab.example.org:equipe/formation-git.git'
   - git push -q -u origin main
-etapes:
-  - texte: 'Crée la branche `fix-typo`'
-    indice: git switch -c fix-typo
-    verif:
-      - commande-reussit: 'git rev-parse --verify -q fix-typo'
+steps:
+  - text: 'Crée la branche `fix-typo`'
+    hint: git switch -c fix-typo
+    checks:
+      - command-succeeds: 'git rev-parse --verify -q fix-typo'
     solution:
       - git switch -c fix-typo
-  - texte: 'Corrige « Bienvenu » en « Bienvenue » dans `README.md` et commite'
-    indice: "Avec nano README.md, ajoute le « e » manquant, enregistre, puis lance git commit -am \"Corrige la faute de frappe\""
-    apres: [1]
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count main..fix-typo)" -ge 1 && git show fix-typo:README.md | grep -q Bienvenue'
+  - text: 'Corrige « Bienvenu » en « Bienvenue » dans `README.md` et commite'
+    hint: "Avec nano README.md, ajoute le « e » manquant, enregistre, puis lance git commit -am \"Corrige la faute de frappe\""
+    after: [1]
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count main..fix-typo)" -ge 1 && git show fix-typo:README.md | grep -q Bienvenue'
     solution:
       - "sed -i 's/Bienvenu /Bienvenue /' README.md"
       - 'git commit -am "Corrige la faute de frappe"'
-  - texte: 'Publie ta branche : `git push -u origin fix-typo`'
-    indice: git push -u origin fix-typo
-    apres: [2]
-    verif:
-      - commande-reussit: 'test "$(git rev-parse fix-typo)" = "$(git --git-dir="$HOME/.gitlab-sim/formation-git.git" rev-parse fix-typo)"'
+  - text: 'Publie ta branche : `git push -u origin fix-typo`'
+    hint: git push -u origin fix-typo
+    after: [2]
+    checks:
+      - command-succeeds: 'test "$(git rev-parse fix-typo)" = "$(git --git-dir="$HOME/.gitlab-sim/formation-git.git" rev-parse fix-typo)"'
     solution:
       - git push -u origin fix-typo
-  - texte: 'La MR est acceptée ! Lance `mr-acceptee fix-typo` pour simuler l''équipe, puis reviens sur `main` et mets-le à jour avec `git pull`'
-    indice: mr-acceptee fix-typo puis git switch main puis git pull
-    apres: [3]
-    verif:
-      - sortie-contient: ['git branch --show-current', '^main$']
-      - commande-reussit: 'test "$(git rev-parse main)" = "$(git rev-parse fix-typo)"'
+  - text: 'La MR est acceptée ! Lance `mr-acceptee fix-typo` pour simuler l''équipe, puis reviens sur `main` et mets-le à jour avec `git pull`'
+    hint: mr-acceptee fix-typo puis git switch main puis git pull
+    after: [3]
+    checks:
+      - output-contains: ['git branch --show-current', '^main$']
+      - command-succeeds: 'test "$(git rev-parse main)" = "$(git rev-parse fix-typo)"'
     solution:
       - mr-acceptee fix-typo
       - git switch main
       - git pull
-  - texte: 'Nettoie : supprime la branche locale avec `git branch -d fix-typo`'
-    indice: git branch -d fix-typo
-    apres: [4]
-    verif:
-      - commande-echoue: 'git rev-parse --verify -q fix-typo'
+  - text: 'Nettoie : supprime la branche locale avec `git branch -d fix-typo`'
+    hint: git branch -d fix-typo
+    after: [4]
+    checks:
+      - command-fails: 'git rev-parse --verify -q fix-typo'
     solution:
       - git branch -d fix-typo
 :::

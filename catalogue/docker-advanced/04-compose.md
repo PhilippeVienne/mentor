@@ -1,9 +1,9 @@
 ---
 id: compose
-titre: Docker Compose
-resume: Décrire toute une application (web + base) dans un seul fichier YAML.
-duree: 20
-objectifs:
+title: Docker Compose
+summary: Décrire toute une application (web + base) dans un seul fichier YAML.
+minutes: 20
+objectives:
   - "Décrire une application multi-conteneurs dans un fichier `compose.yml`"
   - "Démarrer, observer et arrêter la pile avec `docker compose up/ps/logs/down`"
   - "Diagnostiquer un service qui ne démarre pas et corriger la configuration"
@@ -73,10 +73,10 @@ Pour une valeur sensible (mot de passe), évite de l'écrire en dur dans le fich
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Un `compose.yml` est fourni… mais il y manque quelque chose pour que la base démarre. À toi de le découvrir.
-fichiers:
+files:
   compose.yml: |
     services:
       web:
@@ -92,27 +92,27 @@ fichiers:
 
     volumes:
       dbdata:
-etapes:
-  - texte: 'Démarre la pile : `docker compose up -d`'
-    indice: "Lis la section « Les commandes » : le `-d` fonctionne comme pour `docker run`."
-    verif:
-      - compose-conteneurs: 2
+steps:
+  - text: 'Démarre la pile : `docker compose up -d`'
+    hint: "Lis la section « Les commandes » : le `-d` fonctionne comme pour `docker run`."
+    checks:
+      - compose-containers: 2
     solution:
       - docker compose up -d
-  - texte: "Regarde l'état avec `docker compose ps` : un service est « Exited » !"
-    indice: "Le service qui n'est pas « Up » est celui dont tu dois lire les logs (`docker compose logs NOM-DU-SERVICE`)."
-    apres: [1]
-    verif:
-      - commande: ^docker compose ps
+  - text: "Regarde l'état avec `docker compose ps` : un service est « Exited » !"
+    hint: "Le service qui n'est pas « Up » est celui dont tu dois lire les logs (`docker compose logs NOM-DU-SERVICE`)."
+    after: [1]
+    checks:
+      - command: ^docker compose ps
     solution:
       - docker compose ps
       - docker compose logs db
-  - texte: 'Lis les logs de `db` pour comprendre, puis ajoute `POSTGRES_PASSWORD` dans `compose.yml` (section `environment` de `db`)'
-    indice: 'Sous « db: », ajoute : environment: puis POSTGRES_PASSWORD: secret (indentation de 4 espaces pour environment, 6 pour la variable). Tu peux remplacer le fichier par celui de la leçon.'
-    verif:
+  - text: 'Lis les logs de `db` pour comprendre, puis ajoute `POSTGRES_PASSWORD` dans `compose.yml` (section `environment` de `db`)'
+    hint: 'Sous « db: », ajoute : environment: puis POSTGRES_PASSWORD: secret (indentation de 4 espaces pour environment, 6 pour la variable). Tu peux remplacer le fichier par celui de la leçon.'
+    checks:
       - compose-variable: [db, POSTGRES_PASSWORD]
     solution:
-      - ecrire:
+      - write:
           compose.yml: |
             services:
               web:
@@ -130,25 +130,25 @@ etapes:
 
             volumes:
               dbdata:
-  - texte: 'Relance `docker compose up -d` : Compose recrée uniquement ce qui a changé'
-    indice: "Même commande qu'à l'étape 1 : Compose ne recrée que le service dont la configuration a changé."
-    apres: [3]
-    verif:
-      - compose-actifs: 2
+  - text: 'Relance `docker compose up -d` : Compose recrée uniquement ce qui a changé'
+    hint: "Même commande qu'à l'étape 1 : Compose ne recrée que le service dont la configuration a changé."
+    after: [3]
+    checks:
+      - compose-running: 2
     solution:
       - docker compose up -d
-  - texte: 'Vérifie que le web répond : `curl localhost:8080`'
-    indice: "Le port publié par `web` dans le `compose.yml`."
-    apres: [4]
-    verif:
-      - commande: '^curl .*8080'
+  - text: 'Vérifie que le web répond : `curl localhost:8080`'
+    hint: "Le port publié par `web` dans le `compose.yml`."
+    after: [4]
+    checks:
+      - command: '^curl .*8080'
     solution:
       - 'curl localhost:8080'
-  - texte: 'Démonte tout, volumes compris : `docker compose down -v`'
-    indice: "`down` démonte tout ; le drapeau `-v` supprime aussi les volumes nommés."
-    apres: [4]
-    verif:
-      - compose-vide: true
+  - text: 'Démonte tout, volumes compris : `docker compose down -v`'
+    hint: "`down` démonte tout ; le drapeau `-v` supprime aussi les volumes nommés."
+    after: [4]
+    checks:
+      - compose-empty: true
       - volume-absent: projet_dbdata
     solution:
       - docker compose down -v

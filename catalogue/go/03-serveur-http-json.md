@@ -1,9 +1,9 @@
 ---
 id: serveur-http-json
-titre: "Un serveur HTTP qui parle JSON"
-resume: "Écrire une petite API : recevoir une requête HTTP, répondre en JSON et ajouter un middleware, avec la bibliothèque standard."
-duree: 50
-objectifs:
+title: "Un serveur HTTP qui parle JSON"
+summary: "Écrire une petite API : recevoir une requête HTTP, répondre en JSON et ajouter un middleware, avec la bibliothèque standard."
+minutes: 50
+objectives:
   - Expliquer ce qu'est une API HTTP, une requête, une réponse et un code de statut
   - Écrire un handler qui lit et écrit du JSON avec `encoding/json`
   - Expliquer ce qu'est une fonction anonyme et une closure
@@ -181,18 +181,18 @@ Les projets de l'équipe n'utilisent pas tous la bibliothèque standard. Un **fr
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu écris le serveur de la ludothèque. `jeu.go` (la structure `Jeu` et le `serveur` avec son mutex) est déjà écrit. Les quatre morceaux à écrire sont chacun dans leur fichier : `liste.go`, `ajoute.go`, `journal.go` et `routeur.go`. Remplace `panic("à écrire")` par ton code ; les tests sont dans `serveur_test.go` et simulent des requêtes **sans ouvrir de port réseau**. Lance-les avec `go test ./...`. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/03-serveur-http/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Écris le handler `liste` dans `liste.go` : en-tête `Content-Type: application/json`, puis la liste `s.jeux` en JSON (sans oublier le verrou). `TestListe` doit passer'
-    indice: 'Reprends les quatre lignes de `liste` de la leçon : `s.mu.Lock()`, `defer s.mu.Unlock()`, `w.Header().Set(...)`, `json.NewEncoder(w).Encode(s.jeux)`. Il faut importer `encoding/json` et `net/http`.'
-    verif:
-      - commande-reussit: "verifier-go tests 03-serveur-http . TestListe"
+steps:
+  - text: 'Écris le handler `liste` dans `liste.go` : en-tête `Content-Type: application/json`, puis la liste `s.jeux` en JSON (sans oublier le verrou). `TestListe` doit passer'
+    hint: 'Reprends les quatre lignes de `liste` de la leçon : `s.mu.Lock()`, `defer s.mu.Unlock()`, `w.Header().Set(...)`, `json.NewEncoder(w).Encode(s.jeux)`. Il faut importer `encoding/json` et `net/http`.'
+    checks:
+      - command-succeeds: "verifier-go tests 03-serveur-http . TestListe"
     solution:
       - |
         cat > liste.go <<'EOF'
@@ -211,10 +211,10 @@ etapes:
         	json.NewEncoder(w).Encode(s.jeux)
         }
         EOF
-  - texte: 'Écris le handler `ajoute` dans `ajoute.go` pour le cas normal : décode le jeu, ajoute-le à `s.jeux` (sous verrou) et réponds `201` avec le jeu en JSON. `TestAjouteValide` et `TestAjouteConcurrent` doivent passer'
-    indice: 'Dans cet ordre : `json.NewDecoder(r.Body).Decode(&j)`, `s.mu.Lock()`, `append`, `s.mu.Unlock()`, puis `w.Header().Set(...)`, `w.WriteHeader(http.StatusCreated)` et `json.NewEncoder(w).Encode(j)`.'
-    verif:
-      - commande-reussit: "verifier-go tests 03-serveur-http . TestAjouteValide TestAjouteConcurrent"
+  - text: 'Écris le handler `ajoute` dans `ajoute.go` pour le cas normal : décode le jeu, ajoute-le à `s.jeux` (sous verrou) et réponds `201` avec le jeu en JSON. `TestAjouteValide` et `TestAjouteConcurrent` doivent passer'
+    hint: 'Dans cet ordre : `json.NewDecoder(r.Body).Decode(&j)`, `s.mu.Lock()`, `append`, `s.mu.Unlock()`, puis `w.Header().Set(...)`, `w.WriteHeader(http.StatusCreated)` et `json.NewEncoder(w).Encode(j)`.'
+    checks:
+      - command-succeeds: "verifier-go tests 03-serveur-http . TestAjouteValide TestAjouteConcurrent"
     solution:
       - |
         cat > ajoute.go <<'EOF'
@@ -237,11 +237,11 @@ etapes:
         	json.NewEncoder(w).Encode(j)
         }
         EOF
-  - texte: 'Rends `ajoute` robuste : réponds `400` (avec `http.Error`) et ne retiens rien quand le JSON est cassé ou que le titre est vide. `TestAjouteInvalide` doit passer'
-    indice: 'Mets le résultat de `Decode` dans `err` : `if err := json.NewDecoder(r.Body).Decode(&j); err != nil { http.Error(w, "...", http.StatusBadRequest); return }`. Fais pareil pour `j.Titre == ""`.'
-    apres: [2]
-    verif:
-      - commande-reussit: "verifier-go tests 03-serveur-http . TestAjouteInvalide"
+  - text: 'Rends `ajoute` robuste : réponds `400` (avec `http.Error`) et ne retiens rien quand le JSON est cassé ou que le titre est vide. `TestAjouteInvalide` doit passer'
+    hint: 'Mets le résultat de `Decode` dans `err` : `if err := json.NewDecoder(r.Body).Decode(&j); err != nil { http.Error(w, "...", http.StatusBadRequest); return }`. Fais pareil pour `j.Titre == ""`.'
+    after: [2]
+    checks:
+      - command-succeeds: "verifier-go tests 03-serveur-http . TestAjouteInvalide"
     solution:
       - |
         cat > ajoute.go <<'EOF'
@@ -271,10 +271,10 @@ etapes:
         	json.NewEncoder(w).Encode(j)
         }
         EOF
-  - texte: 'Écris le middleware `journal` dans `journal.go` : une **closure** (fonction anonyme convertie avec `http.HandlerFunc`) qui écrit « MÉTHODE CHEMIN » avec `log.Println`, puis appelle `suivant.ServeHTTP(w, r)`. `TestJournal` doit passer'
-    indice: 'Le corps de la fonction est : `return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { log.Println(r.Method, r.URL.Path); suivant.ServeHTTP(w, r) })` (une instruction par ligne).'
-    verif:
-      - commande-reussit: "verifier-go tests 03-serveur-http . TestJournal"
+  - text: 'Écris le middleware `journal` dans `journal.go` : une **closure** (fonction anonyme convertie avec `http.HandlerFunc`) qui écrit « MÉTHODE CHEMIN » avec `log.Println`, puis appelle `suivant.ServeHTTP(w, r)`. `TestJournal` doit passer'
+    hint: 'Le corps de la fonction est : `return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { log.Println(r.Method, r.URL.Path); suivant.ServeHTTP(w, r) })` (une instruction par ligne).'
+    checks:
+      - command-succeeds: "verifier-go tests 03-serveur-http . TestJournal"
     solution:
       - |
         cat > journal.go <<'EOF'
@@ -293,11 +293,11 @@ etapes:
         	})
         }
         EOF
-  - texte: 'Écris `NouveauRouteur` dans `routeur.go` : un `http.NewServeMux()` avec les motifs `"GET /jeux"` et `"POST /jeux"`, enveloppé par `journal`. `TestRouteur` doit passer (`404` pour un chemin inconnu, `405` pour `DELETE /jeux`)'
-    indice: '`mux := http.NewServeMux()`, `mux.HandleFunc("GET /jeux", s.liste)`, `mux.HandleFunc("POST /jeux", s.ajoute)`, puis `return journal(mux)`.'
-    apres: [1, 2, 4]
-    verif:
-      - commande-reussit: "verifier-go tests 03-serveur-http . TestRouteur"
+  - text: 'Écris `NouveauRouteur` dans `routeur.go` : un `http.NewServeMux()` avec les motifs `"GET /jeux"` et `"POST /jeux"`, enveloppé par `journal`. `TestRouteur` doit passer (`404` pour un chemin inconnu, `405` pour `DELETE /jeux`)'
+    hint: '`mux := http.NewServeMux()`, `mux.HandleFunc("GET /jeux", s.liste)`, `mux.HandleFunc("POST /jeux", s.ajoute)`, puis `return journal(mux)`.'
+    after: [1, 2, 4]
+    checks:
+      - command-succeeds: "verifier-go tests 03-serveur-http . TestRouteur"
     solution:
       - |
         cat > routeur.go <<'EOF'
@@ -313,12 +313,12 @@ etapes:
         	return journal(mux)
         }
         EOF
-  - texte: 'Vérifie l''ensemble : compile le serveur dans un exécutable `serveur` avec `go build -o serveur .`, puis `go vet ./...` ne signale rien et `go test ./...` passe en entier'
-    indice: 'Lance `go build -o serveur . && go vet ./... && go test ./...`.'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: 'verifier-go binaire 03-serveur-http serveur'
-      - commande-reussit: 'verifier-go tout 03-serveur-http'
+  - text: 'Vérifie l''ensemble : compile le serveur dans un exécutable `serveur` avec `go build -o serveur .`, puis `go vet ./...` ne signale rien et `go test ./...` passe en entier'
+    hint: 'Lance `go build -o serveur . && go vet ./... && go test ./...`.'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: 'verifier-go binaire 03-serveur-http serveur'
+      - command-succeeds: 'verifier-go tout 03-serveur-http'
     solution:
       - go build -o serveur . && go vet ./... && go test ./...
 :::

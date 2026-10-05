@@ -1,9 +1,9 @@
 ---
 id: mini-projet
-titre: "Mini-projet : un gestionnaire de tâches en ligne de commande"
-resume: "Assemble tout ce que tu as appris : un petit outil avec argparse, un fichier JSON et des tests pytest."
-duree: 45
-objectifs:
+title: "Mini-projet : un gestionnaire de tâches en ligne de commande"
+summary: "Assemble tout ce que tu as appris : un petit outil avec argparse, un fichier JSON et des tests pytest."
+minutes: 45
+objectives:
   - Découper un programme en modules (logique, stockage, interface)
   - Écrire une interface en ligne de commande avec `argparse`
   - Sauvegarder des données dans un fichier JSON
@@ -84,17 +84,17 @@ Le labo copie le projet dans ton dossier au démarrage : lance `pytest -q` tout
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet est dans ton dossier de travail : `todo/` (le code à écrire) et `tests/` (déjà écrits). Les trois modules lèvent `NotImplementedError` : ton but est de faire passer chaque série de tests, jusqu'à un `pytest -q` entièrement vert.
-commandes:
+commands:
   - cp -R /opt/exercices/06-mini-projet/. .
-etapes:
-  - texte: 'Écris la logique dans `todo/taches.py` : `ajouter`, `terminer` et `formater` (tests de `tests/test_taches.py`)'
-    indice: 'Commence par `ajouter` : retourne une **nouvelle** liste (`taches + [...]`). Pour `terminer`, copie chaque dictionnaire avant de modifier le bon. `formater` utilise `enumerate(taches, start=1)`.'
-    verif:
-      - commande-reussit: 'pytest -q tests/test_taches.py'
+steps:
+  - text: 'Écris la logique dans `todo/taches.py` : `ajouter`, `terminer` et `formater` (tests de `tests/test_taches.py`)'
+    hint: 'Commence par `ajouter` : retourne une **nouvelle** liste (`taches + [...]`). Pour `terminer`, copie chaque dictionnaire avant de modifier le bon. `formater` utilise `enumerate(taches, start=1)`.'
+    checks:
+      - command-succeeds: 'pytest -q tests/test_taches.py'
     solution:
       - |
         cat > todo/taches.py <<'EOF'
@@ -125,11 +125,11 @@ etapes:
                 lignes.append(f"{numero}. [{case}] {tache['texte']}")
             return "\n".join(lignes)
         EOF
-  - texte: 'Écris `todo/stockage.py` : `charger` (liste vide si le fichier n''existe pas) et `sauver` (JSON, accents lisibles)'
-    indice: '`json.load` dans un `try` / `except FileNotFoundError`, et `json.dump(..., ensure_ascii=False, indent=2)` pour `sauver`. N''oublie pas `encoding="utf-8"`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q tests/test_stockage.py'
+  - text: 'Écris `todo/stockage.py` : `charger` (liste vide si le fichier n''existe pas) et `sauver` (JSON, accents lisibles)'
+    hint: '`json.load` dans un `try` / `except FileNotFoundError`, et `json.dump(..., ensure_ascii=False, indent=2)` pour `sauver`. N''oublie pas `encoding="utf-8"`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q tests/test_stockage.py'
     solution:
       - |
         cat > todo/stockage.py <<'EOF'
@@ -152,11 +152,11 @@ etapes:
             with open(chemin, "w", encoding="utf-8") as fichier:
                 json.dump(taches, fichier, ensure_ascii=False, indent=2)
         EOF
-  - texte: 'Écris `todo/cli.py` : `construire_parser()` (option `--fichier`, sous-commandes `ajouter`, `lister`, `terminer`) et `main(argv)`'
-    indice: 'Pars de l''exemple `argparse` de la leçon. `main` charge les tâches, appelle la bonne fonction de `taches.py`, sauvegarde ou affiche, et retourne `0` (ou `1` après avoir affiché l''erreur d''un numéro inconnu sur `stderr`).'
-    apres: [1, 2]
-    verif:
-      - commande-reussit: 'pytest -q tests/test_cli.py'
+  - text: 'Écris `todo/cli.py` : `construire_parser()` (option `--fichier`, sous-commandes `ajouter`, `lister`, `terminer`) et `main(argv)`'
+    hint: 'Pars de l''exemple `argparse` de la leçon. `main` charge les tâches, appelle la bonne fonction de `taches.py`, sauvegarde ou affiche, et retourne `0` (ou `1` après avoir affiché l''erreur d''un numéro inconnu sur `stderr`).'
+    after: [1, 2]
+    checks:
+      - command-succeeds: 'pytest -q tests/test_cli.py'
     solution:
       - |
         cat > todo/cli.py <<'EOF'
@@ -197,29 +197,29 @@ etapes:
                 return 1
             return 0
         EOF
-  - texte: 'Utilise ton outil : ajoute la tâche `Écrire la doc` avec `python3 -m todo ajouter "Écrire la doc"` (fichier `taches.json`)'
-    indice: 'La commande est donnée dans l''introduction de la leçon. Vérifie le résultat avec `cat taches.json`.'
-    apres: [3]
-    verif:
-      - fichier-contient-dans-env: [taches.json, 'Écrire la doc']
+  - text: 'Utilise ton outil : ajoute la tâche `Écrire la doc` avec `python3 -m todo ajouter "Écrire la doc"` (fichier `taches.json`)'
+    hint: 'La commande est donnée dans l''introduction de la leçon. Vérifie le résultat avec `cat taches.json`.'
+    after: [3]
+    checks:
+      - env-file-contains: [taches.json, 'Écrire la doc']
     solution:
       - python3 -m todo ajouter "Écrire la doc"
 
-  - texte: 'Marque-la comme faite avec `python3 -m todo terminer 1`, puis affiche la liste avec `python3 -m todo lister`'
-    indice: 'Le numéro de la tâche est celui affiché par `lister`. Dans `taches.json`, la tâche passe à `"fait": true`.'
-    apres: [4]
-    verif:
-      - fichier-contient-dans-env: [taches.json, '"fait": true']
-      - sortie-contient: ['python3 -m todo lister', '^1\. \[x\] Écrire la doc$']
+  - text: 'Marque-la comme faite avec `python3 -m todo terminer 1`, puis affiche la liste avec `python3 -m todo lister`'
+    hint: 'Le numéro de la tâche est celui affiché par `lister`. Dans `taches.json`, la tâche passe à `"fait": true`.'
+    after: [4]
+    checks:
+      - env-file-contains: [taches.json, '"fait": true']
+      - output-contains: ['python3 -m todo lister', '^1\. \[x\] Écrire la doc$']
     solution:
       - python3 -m todo terminer 1
       - python3 -m todo lister
 
-  - texte: 'Lance toute la suite avec `pytest -q` : **tout doit être vert** !'
-    indice: 'Si un test échoue, lis le message : il dit ce qui était attendu. Corrige le module concerné et relance `pytest -q`.'
-    apres: [3]
-    verif:
-      - commande-reussit: 'pytest -q'
+  - text: 'Lance toute la suite avec `pytest -q` : **tout doit être vert** !'
+    hint: 'Si un test échoue, lis le message : il dit ce qui était attendu. Corrige le module concerné et relance `pytest -q`.'
+    after: [3]
+    checks:
+      - command-succeeds: 'pytest -q'
     solution:
       - pytest -q
 :::

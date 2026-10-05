@@ -1,0 +1,157 @@
+{
+  "_comment": "French names of the v1 catalogue format and their English equivalents in v2. Used by tools/migrate_v1_catalogue.py and by the conformance test.",
+  "files": {
+    "parcours.md": "course.md",
+    "antiseche.md": "cheatsheet.md",
+    "examen.md": "exam.md",
+    "bac-a-sable.yml": "sandbox.yml",
+    "_verifications.yml": "_checks.yml",
+    "_modele": "_template"
+  },
+  "directives": {
+    "labo": "lab",
+    "cartes": "cards"
+  },
+  "course": {
+    "titre": "title",
+    "icone": "icon",
+    "resume": "summary",
+    "moteur": "engine",
+    "prerequis": "requires",
+    "publie": "published",
+    "couleur": "color",
+    "banniere": "banner",
+    "environnement": "environment"
+  },
+  "lesson": {
+    "titre": "title",
+    "resume": "summary",
+    "duree": "minutes",
+    "objectifs": "objectives",
+    "environnement": "environment"
+  },
+  "exam": {
+    "titre": "title",
+    "tirage": "draw",
+    "seuil": "pass_mark",
+    "duree": "minutes",
+    "melange": "shuffle"
+  },
+  "lab": {
+    "moteur": "engine",
+    "environnement": "environment",
+    "fichiers": "files",
+    "commandes": "commands",
+    "serveur": "server",
+    "etapes": "steps"
+  },
+  "step": {
+    "texte": "text",
+    "indice": "hint",
+    "verif": "checks",
+    "apres": "after",
+    "effet": "effect"
+  },
+  "action": {
+    "ecrire": "write"
+  },
+  "commit": {
+    "branche": "branch",
+    "fichiers": "files",
+    "auteur": "author"
+  },
+  "scenario": {
+    "titre": "title",
+    "indice": "hint",
+    "commandes": "commands",
+    "fichiers": "files",
+    "serveur": "server"
+  },
+  "check_spec": {
+    "optionnels": "optional",
+    "moteurs": "engines"
+  },
+  "engines": {
+    "reel": "real"
+  },
+  "effects": {
+    "serveur-commit": "server-commit",
+    "serveur-avance": "server-advance"
+  },
+  "arguments": {
+    "fichier": "file",
+    "commande": "command",
+    "branche": "branch",
+    "conteneur": "container",
+    "reseau": "network",
+    "auteur": "author",
+    "nombre": "count",
+    "contenu": "content",
+    "chemin": "path",
+    "depot": "repository",
+    "amont": "upstream",
+    "autre": "other",
+    "cible": "target",
+    "nom": "name"
+  },
+  "checks": {
+    "commande": "command",
+    "commande-compte": "command-count",
+    "fichier-existe": "file-exists",
+    "fichier-absent": "file-absent",
+    "fichier-contient": "file-contains",
+    "fichier-ne-contient-pas": "file-lacks",
+    "fichier-modifie": "file-modified",
+    "session-fermee": "session-closed",
+    "depot-initialise": "repo-initialized",
+    "indexe": "staged",
+    "commits-au-moins": "commits-at-least",
+    "commits-exactement": "commits-exactly",
+    "fichier-dans-head": "file-in-head",
+    "fichier-propre": "file-clean",
+    "sur-branche": "on-branch",
+    "branche-existe": "branch-exists",
+    "branche-absente": "branch-absent",
+    "branche-en-avance": "branch-ahead",
+    "branche-egale": "branch-equal",
+    "fichier-dans-branche": "file-in-branch",
+    "fusionne": "merged",
+    "conflit-en-cours": "conflict-in-progress",
+    "aucun-conflit": "no-conflict",
+    "fusion-en-cours": "merge-in-progress",
+    "fichier-sans-marqueurs": "file-without-markers",
+    "commit-de-fusion": "merge-commit",
+    "remote-defini": "remote-set",
+    "amont-defini": "upstream-set",
+    "serveur-a-la-pointe": "server-up-to-date",
+    "en-retard-sur-origin": "behind-origin",
+    "dernier-auteur": "last-author",
+    "image-presente": "image-present",
+    "conteneur-existe": "container-exists",
+    "conteneur-actif": "container-running",
+    "conteneur-arrete": "container-stopped",
+    "conteneur-absent": "container-absent",
+    "conteneur-image": "container-image",
+    "aucun-conteneur-image": "no-container-for-image",
+    "conteneur-sorti-code": "container-exit-code",
+    "conteneur-port": "container-port",
+    "conteneur-reseau": "container-network",
+    "conteneur-bind": "container-bind",
+    "volume-existe": "volume-exists",
+    "volume-absent": "volume-absent",
+    "volume-contient": "volume-contains",
+    "reseau-existe": "network-exists",
+    "compose-conteneurs": "compose-containers",
+    "compose-actifs": "compose-running",
+    "compose-vide": "compose-empty",
+    "compose-variable": "compose-variable",
+    "registry-connecte": "registry-logged-in",
+    "image-poussee": "image-pushed",
+    "commande-reussit": "command-succeeds",
+    "commande-echoue": "command-fails",
+    "sortie-contient": "output-contains",
+    "fichier-existe-dans-env": "env-file-exists",
+    "fichier-absent-dans-env": "env-file-absent",
+    "fichier-contient-dans-env": "env-file-contains"
+  }
+}

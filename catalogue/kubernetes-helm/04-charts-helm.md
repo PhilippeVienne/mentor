@@ -1,9 +1,9 @@
 ---
 id: charts-helm
-titre: "Écrire et utiliser un chart Helm"
-resume: "Lire le chart de Vitrine, comprendre values.yaml et les templates, puis installer, mettre à jour et annuler une release."
-duree: 55
-objectifs:
+title: "Écrire et utiliser un chart Helm"
+summary: "Lire le chart de Vitrine, comprendre values.yaml et les templates, puis installer, mettre à jour et annuler une release."
+minutes: 55
+objectives:
   - Décrire le rôle de Chart.yaml, values.yaml et du dossier templates
   - Surcharger une valeur avec --set ou -f et visualiser le résultat avec helm template
   - Distinguer un chart, une release et une révision
@@ -224,39 +224,39 @@ Quelle version de Helm utilise l'équipe Infra, et d'où sont lancés les déplo
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, le chart `mini-portail` de la leçon est presque complet : il manque son Ingress et son ConfigMap, et le fichier `values-prod.yaml` contient une faute. **Il n'y a pas de cluster dans cet atelier** : tu utilises `helm lint`, `helm template` et `helm package` (qui travaillent hors ligne), jamais `helm install`. Tout ce que tu valides est donc le **YAML produit**, pas son fonctionnement sur un vrai cluster.
-commandes:
+commands:
   - cp -R /opt/exercices/04-helm/. .
-etapes:
-  - texte: 'Rends le chart pour une release appelée `demo` et garde le résultat dans un fichier : `helm template demo ./mini-portail > rendu.yaml`, puis lis-le avec `cat rendu.yaml`'
-    indice: 'Tu dois y retrouver un Service et un Deployment dont les noms commencent par `demo-`. Il n''y a pas encore d''Ingress.'
-    verif:
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom demo-web --existe rendu.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Service --nom demo-svc --existe rendu.yaml"
+steps:
+  - text: 'Rends le chart pour une release appelée `demo` et garde le résultat dans un fichier : `helm template demo ./mini-portail > rendu.yaml`, puis lis-le avec `cat rendu.yaml`'
+    hint: 'Tu dois y retrouver un Service et un Deployment dont les noms commencent par `demo-`. Il n''y a pas encore d''Ingress.'
+    checks:
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom demo-web --existe rendu.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Service --nom demo-svc --existe rendu.yaml"
     solution:
       - helm template demo ./mini-portail > rendu.yaml
-  - texte: 'Le fichier `values-prod.yaml` veut 2 copies et l''étiquette `v1.4.2`, mais `helm template demo ./mini-portail -f values-prod.yaml` affiche encore `replicas: 1`. Trouve la faute de frappe dans `values-prod.yaml` et corrige-la'
-    indice: 'Compare le nom de la clé avec celui de `mini-portail/values.yaml` : Helm ignore en silence une clé qu''aucun modèle ne lit.'
-    verif:
-      - commande-reussit: "verifier-k8s champ --chemin 'replicas' --egal 2 values-prod.yaml"
-      - commande-reussit: "verifier-k8s champ --chemin 'image.tag' --texte v1.4.2 values-prod.yaml"
-      - commande-reussit: "helm template demo ./mini-portail -f values-prod.yaml | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.replicas' --egal 2 -"
-      - commande-reussit: "helm template demo ./mini-portail -f values-prod.yaml | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.template.spec.containers[0].image' --texte registry.example.org/equipe/vitrine:v1.4.2 -"
+  - text: 'Le fichier `values-prod.yaml` veut 2 copies et l''étiquette `v1.4.2`, mais `helm template demo ./mini-portail -f values-prod.yaml` affiche encore `replicas: 1`. Trouve la faute de frappe dans `values-prod.yaml` et corrige-la'
+    hint: 'Compare le nom de la clé avec celui de `mini-portail/values.yaml` : Helm ignore en silence une clé qu''aucun modèle ne lit.'
+    checks:
+      - command-succeeds: "verifier-k8s champ --chemin 'replicas' --egal 2 values-prod.yaml"
+      - command-succeeds: "verifier-k8s champ --chemin 'image.tag' --texte v1.4.2 values-prod.yaml"
+      - command-succeeds: "helm template demo ./mini-portail -f values-prod.yaml | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.replicas' --egal 2 -"
+      - command-succeeds: "helm template demo ./mini-portail -f values-prod.yaml | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.template.spec.containers[0].image' --texte registry.example.org/equipe/vitrine:v1.4.2 -"
     solution:
       - sed -i 's/^replica:/replicas:/' values-prod.yaml
-  - texte: 'Crée le modèle `mini-portail/templates/ingress.yaml` de la leçon, avec sa condition `{{- if .Values.ingress.enabled }}` … `{{- end }}`. Contrôle les deux cas : `helm template demo ./mini-portail` produit un Ingress, `helm template demo ./mini-portail --set ingress.enabled=false` n''en produit aucun'
-    indice: 'Recopie le modèle de la leçon avec `nano mini-portail/templates/ingress.yaml`. Le service visé est `"{{ .Release.Name }}-svc"`. Termine par `helm lint ./mini-portail`.'
-    verif:
-      - commande-reussit: "helm template demo ./mini-portail | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.172.17.0.1.nip.io -"
-      - commande-reussit: "helm template demo ./mini-portail --set ingress.host=portail.exemple.invalid | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.exemple.invalid -"
-      - commande-reussit: "helm template demo ./mini-portail | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte demo-svc -"
-      - commande-reussit: "helm template demo ./mini-portail --set ingress.enabled=false | verifier-k8s champ --kind Ingress --absent -"
-      - commande-reussit: 'helm template demo ./mini-portail | kubeconform -'
+  - text: 'Crée le modèle `mini-portail/templates/ingress.yaml` de la leçon, avec sa condition `{{- if .Values.ingress.enabled }}` … `{{- end }}`. Contrôle les deux cas : `helm template demo ./mini-portail` produit un Ingress, `helm template demo ./mini-portail --set ingress.enabled=false` n''en produit aucun'
+    hint: 'Recopie le modèle de la leçon avec `nano mini-portail/templates/ingress.yaml`. Le service visé est `"{{ .Release.Name }}-svc"`. Termine par `helm lint ./mini-portail`.'
+    checks:
+      - command-succeeds: "helm template demo ./mini-portail | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.172.17.0.1.nip.io -"
+      - command-succeeds: "helm template demo ./mini-portail --set ingress.host=portail.exemple.invalid | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.exemple.invalid -"
+      - command-succeeds: "helm template demo ./mini-portail | verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte demo-svc -"
+      - command-succeeds: "helm template demo ./mini-portail --set ingress.enabled=false | verifier-k8s champ --kind Ingress --absent -"
+      - command-succeeds: 'helm template demo ./mini-portail | kubeconform -'
     solution:
-      - ecrire:
+      - write:
           mini-portail/templates/ingress.yaml: |
             {{- if .Values.ingress.enabled }}
             apiVersion: networking.k8s.io/v1
@@ -276,18 +276,18 @@ etapes:
                             port:
                               number: 80
             {{- end }}
-  - texte: 'Utilise enfin les valeurs `env.siteUrl` et `env.appDebug`, aujourd''hui inutilisées : crée `mini-portail/templates/configmap.yaml` (ConfigMap `"{{ .Release.Name }}-config"` avec `SITE_URL` et `APP_DEBUG`, entourés de `| quote`) et ajoute à `templates/deployment.yaml` l''`envFrom` qui le lit'
-    indice: 'Le modèle du ConfigMap est dans la leçon. Dans le déploiement, `envFrom` est au même niveau que `ports`, dans le conteneur. Contrôle avec `helm template demo ./mini-portail | verifier-k8s references -`.'
-    apres: [3]
-    verif:
-      - commande-reussit: "helm template demo ./mini-portail --set env.siteUrl=http://test.exemple.invalid | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.SITE_URL' --texte http://test.exemple.invalid -"
-      - commande-reussit: "helm template demo ./mini-portail --set env.appDebug=true | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.APP_DEBUG' --texte true -"
-      - commande-reussit: "helm template demo ./mini-portail | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.SITE_URL' --texte http://portail.172.17.0.1.nip.io -"
-      - commande-reussit: "helm template demo ./mini-portail | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.template.spec.containers[0].envFrom[0].configMapRef.name' --texte demo-config -"
-      - commande-reussit: 'helm template demo ./mini-portail | verifier-k8s references -'
-      - commande-reussit: 'helm template demo ./mini-portail | kubeconform -'
+  - text: 'Utilise enfin les valeurs `env.siteUrl` et `env.appDebug`, aujourd''hui inutilisées : crée `mini-portail/templates/configmap.yaml` (ConfigMap `"{{ .Release.Name }}-config"` avec `SITE_URL` et `APP_DEBUG`, entourés de `| quote`) et ajoute à `templates/deployment.yaml` l''`envFrom` qui le lit'
+    hint: 'Le modèle du ConfigMap est dans la leçon. Dans le déploiement, `envFrom` est au même niveau que `ports`, dans le conteneur. Contrôle avec `helm template demo ./mini-portail | verifier-k8s references -`.'
+    after: [3]
+    checks:
+      - command-succeeds: "helm template demo ./mini-portail --set env.siteUrl=http://test.exemple.invalid | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.SITE_URL' --texte http://test.exemple.invalid -"
+      - command-succeeds: "helm template demo ./mini-portail --set env.appDebug=true | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.APP_DEBUG' --texte true -"
+      - command-succeeds: "helm template demo ./mini-portail | verifier-k8s champ --kind ConfigMap --nom demo-config --chemin 'data.SITE_URL' --texte http://portail.172.17.0.1.nip.io -"
+      - command-succeeds: "helm template demo ./mini-portail | verifier-k8s champ --kind Deployment --nom demo-web --chemin 'spec.template.spec.containers[0].envFrom[0].configMapRef.name' --texte demo-config -"
+      - command-succeeds: 'helm template demo ./mini-portail | verifier-k8s references -'
+      - command-succeeds: 'helm template demo ./mini-portail | kubeconform -'
     solution:
-      - ecrire:
+      - write:
           mini-portail/templates/configmap.yaml: |
             apiVersion: v1
             kind: ConfigMap
@@ -296,7 +296,7 @@ etapes:
             data:
               SITE_URL: {{ .Values.env.siteUrl | quote }}
               APP_DEBUG: {{ .Values.env.appDebug | quote }}
-      - ecrire:
+      - write:
           mini-portail/templates/deployment.yaml: |
             apiVersion: apps/v1
             kind: Deployment
@@ -322,14 +322,14 @@ etapes:
                       envFrom:
                         - configMapRef:
                             name: "{{ .Release.Name }}-config"
-  - texte: 'Passe la `version` de `mini-portail/Chart.yaml` à `0.2.0`, vérifie le chart avec `helm lint ./mini-portail`, puis fabrique le paquet avec `helm package ./mini-portail` : il crée `mini-portail-0.2.0.tgz`'
-    indice: 'Le nom de l''archive vient de `name` et `version` dans `Chart.yaml`. C''est ce type de fichier qu''on publierait dans un dépôt de charts.'
-    apres: [4]
-    verif:
-      - commande-reussit: 'helm lint ./mini-portail'
-      - fichier-existe-dans-env: mini-portail-0.2.0.tgz
-      - commande-reussit: "verifier-k8s champ --chemin 'version' --texte 0.2.0 mini-portail/Chart.yaml"
-      - commande-reussit: "helm show chart mini-portail-0.2.0.tgz | verifier-k8s champ --chemin version --texte 0.2.0 -"
+  - text: 'Passe la `version` de `mini-portail/Chart.yaml` à `0.2.0`, vérifie le chart avec `helm lint ./mini-portail`, puis fabrique le paquet avec `helm package ./mini-portail` : il crée `mini-portail-0.2.0.tgz`'
+    hint: 'Le nom de l''archive vient de `name` et `version` dans `Chart.yaml`. C''est ce type de fichier qu''on publierait dans un dépôt de charts.'
+    after: [4]
+    checks:
+      - command-succeeds: 'helm lint ./mini-portail'
+      - env-file-exists: mini-portail-0.2.0.tgz
+      - command-succeeds: "verifier-k8s champ --chemin 'version' --texte 0.2.0 mini-portail/Chart.yaml"
+      - command-succeeds: "helm show chart mini-portail-0.2.0.tgz | verifier-k8s champ --chemin version --texte 0.2.0 -"
     solution:
       - "sed -i 's/^version: 0.1.0/version: 0.2.0/' mini-portail/Chart.yaml"
       - helm package ./mini-portail

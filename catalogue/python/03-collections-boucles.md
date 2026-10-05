@@ -1,9 +1,9 @@
 ---
 id: collections-boucles
-titre: "Listes, dictionnaires et boucles"
-resume: "Manipule des collections de données : listes, dictionnaires, boucles et compréhensions."
-duree: 30
-objectifs:
+title: "Listes, dictionnaires et boucles"
+summary: "Manipule des collections de données : listes, dictionnaires, boucles et compréhensions."
+minutes: 30
+objectives:
   - Créer, parcourir et modifier une liste
   - Utiliser un dictionnaire pour associer des clés à des valeurs
   - Écrire une boucle `for` avec une condition
@@ -95,17 +95,17 @@ python3 -c "print({'a': 1, 'b': 2}.items())"
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   `collections_exo.py` contient quatre fonctions à écrire, `test_collections_exo.py` les teste. Lance `pytest -q` après chaque modification pour voir ta progression.
-commandes:
+commands:
   - cp -R /opt/exercices/03-collections-boucles/. .
-etapes:
-  - texte: 'Écris `compter_mots(texte)` : elle retourne un dictionnaire `{mot: nombre d''occurrences}`'
-    indice: 'Parcours `texte.split()` avec une boucle `for` et utilise `compteur.get(mot, 0) + 1` pour incrémenter.'
-    verif:
-      - commande-reussit: 'pytest -q test_collections_exo.py -k compter_mots'
+steps:
+  - text: 'Écris `compter_mots(texte)` : elle retourne un dictionnaire `{mot: nombre d''occurrences}`'
+    hint: 'Parcours `texte.split()` avec une boucle `for` et utilise `compteur.get(mot, 0) + 1` pour incrémenter.'
+    checks:
+      - command-succeeds: 'pytest -q test_collections_exo.py -k compter_mots'
     solution:
       - |
         cat > collections_exo.py <<'EOF'
@@ -134,11 +134,11 @@ etapes:
             """Retourne un dictionnaire où les valeurs deviennent les clés (et inversement)."""
             raise NotImplementedError("À toi de jouer : parcours dictionnaire.items()")
         EOF
-  - texte: 'Écris `en_majuscules(noms)` **avec une compréhension de liste**'
-    indice: 'Forme générale : `[expression for nom in noms]`. Pour passer un texte en majuscules : `nom.upper()`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_collections_exo.py -k en_majuscules'
+  - text: 'Écris `en_majuscules(noms)` **avec une compréhension de liste**'
+    hint: 'Forme générale : `[expression for nom in noms]`. Pour passer un texte en majuscules : `nom.upper()`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_collections_exo.py -k en_majuscules'
     solution:
       - |
         cat > collections_exo.py <<'EOF'
@@ -167,11 +167,11 @@ etapes:
             """Retourne un dictionnaire où les valeurs deviennent les clés (et inversement)."""
             raise NotImplementedError("À toi de jouer : parcours dictionnaire.items()")
         EOF
-  - texte: 'Écris `somme_pairs(nombres)` : la somme des nombres pairs de la liste'
-    indice: 'Une boucle avec un `if n % 2 == 0`, ou `sum(...)` sur une compréhension avec une condition.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_collections_exo.py -k somme_pairs'
+  - text: 'Écris `somme_pairs(nombres)` : la somme des nombres pairs de la liste'
+    hint: 'Une boucle avec un `if n % 2 == 0`, ou `sum(...)` sur une compréhension avec une condition.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_collections_exo.py -k somme_pairs'
     solution:
       - |
         cat > collections_exo.py <<'EOF'
@@ -200,11 +200,11 @@ etapes:
             """Retourne un dictionnaire où les valeurs deviennent les clés (et inversement)."""
             raise NotImplementedError("À toi de jouer : parcours dictionnaire.items()")
         EOF
-  - texte: 'Écris `inverser(dictionnaire)` : les valeurs deviennent les clés'
-    indice: 'Parcours `dictionnaire.items()` ; une compréhension de dictionnaire s''écrit `{cle: valeur for ... in ...}`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_collections_exo.py -k inverser'
+  - text: 'Écris `inverser(dictionnaire)` : les valeurs deviennent les clés'
+    hint: 'Parcours `dictionnaire.items()` ; une compréhension de dictionnaire s''écrit `{cle: valeur for ... in ...}`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_collections_exo.py -k inverser'
     solution:
       - |
         cat > collections_exo.py <<'EOF'
@@ -233,11 +233,11 @@ etapes:
             """Retourne un dictionnaire où les valeurs deviennent les clés (et inversement)."""
             return {valeur: cle for cle, valeur in dictionnaire.items()}
         EOF
-  - texte: 'Lance `pytest -q` : les cinq tests doivent être verts'
-    indice: 'Si un test reste rouge, relance seulement celui-là avec `pytest -q -k nom_du_test` pour le déboguer.'
-    apres: [2, 3, 4]
-    verif:
-      - commande-reussit: 'pytest -q test_collections_exo.py'
+  - text: 'Lance `pytest -q` : les cinq tests doivent être verts'
+    hint: 'Si un test reste rouge, relance seulement celui-là avec `pytest -q -k nom_du_test` pour le déboguer.'
+    after: [2, 3, 4]
+    checks:
+      - command-succeeds: 'pytest -q test_collections_exo.py'
     solution:
       - pytest -q
 :::

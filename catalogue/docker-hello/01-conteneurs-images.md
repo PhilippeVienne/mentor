@@ -1,9 +1,9 @@
 ---
 id: conteneurs-images
-titre: 'Conteneurs, images : de quoi parle-t-on ?'
-resume: Comprendre le problème que Docker résout et lancer ton tout premier conteneur.
-duree: 10
-objectifs:
+title: 'Conteneurs, images : de quoi parle-t-on ?'
+summary: Comprendre le problème que Docker résout et lancer ton tout premier conteneur.
+minutes: 10
+objectives:
   - "Expliquer ce qu'est un conteneur et en quoi il diffère d'une machine virtuelle"
   - "Distinguer une image, un conteneur et un registry"
   - "Lancer ton premier conteneur avec `docker run` et retrouver ses images avec `docker images`"
@@ -15,7 +15,7 @@ Sur l'infra de l'équipe, c'est ainsi que tournent presque toutes les applicatio
 
 ## Le vocabulaire en 3 mots
 
-:::cartes
+:::cards
 ### Image
 
 Un modèle **en lecture seule** : le système de fichiers + la commande de démarrage. C'est la « recette figée » (ex. `nginx`, `postgres`).
@@ -88,27 +88,27 @@ docker images
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Le démon Docker est démarré. Lance ton premier conteneur !
-etapes:
-  - texte: 'Affiche la version avec `docker --version`'
-    indice: "Une commande avec un double tiret : demande à Docker son numéro de version."
-    verif:
-      - commande: '^docker (--version|version)'
+steps:
+  - text: 'Affiche la version avec `docker --version`'
+    hint: "Une commande avec un double tiret : demande à Docker son numéro de version."
+    checks:
+      - command: '^docker (--version|version)'
     solution:
       - docker --version
-  - texte: 'Lance `docker run hello-world`'
-    indice: "`docker run` suivi du nom de l'image de test officielle (elle s'appelle comme le programme de tes débuts)."
-    verif:
-      - conteneur-image: hello-world
+  - text: 'Lance `docker run hello-world`'
+    hint: "`docker run` suivi du nom de l'image de test officielle (elle s'appelle comme le programme de tes débuts)."
+    checks:
+      - container-image: hello-world
     solution:
       - docker run hello-world
-  - texte: 'Liste les images téléchargées avec `docker images`'
-    indice: "Une commande d'une seule ligne qui liste les images locales : `hello-world` doit y figurer, et elle est minuscule."
-    verif:
-      - commande: '^docker (images|image ls)'
-      - image-presente: hello-world
+  - text: 'Liste les images téléchargées avec `docker images`'
+    hint: "Une commande d'une seule ligne qui liste les images locales : `hello-world` doit y figurer, et elle est minuscule."
+    checks:
+      - command: '^docker (images|image ls)'
+      - image-present: hello-world
     solution:
       - docker images
 :::

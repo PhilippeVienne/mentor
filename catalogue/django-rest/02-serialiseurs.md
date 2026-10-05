@@ -1,9 +1,9 @@
 ---
 id: serialiseurs
-titre: "Les sérialiseurs : du modèle au JSON, et retour"
-resume: "Transformer un modèle Django en JSON, valider ce qui arrive et exposer des champs calculés."
-duree: 45
-objectifs:
+title: "Les sérialiseurs : du modèle au JSON, et retour"
+summary: "Transformer un modèle Django en JSON, valider ce qui arrive et exposer des champs calculés."
+minutes: 45
+objectives:
   - Expliquer à quoi sert un sérialiseur
   - Écrire un `ModelSerializer` avec `fields` et `read_only_fields`
   - Valider une donnée avec `validate_<champ>()` et `validate()`
@@ -169,20 +169,20 @@ C'est ce que fait `MemberSerializer` dans Adhésion avec `memberships`, `cards` 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet de l'API des événements est dans ton dossier de travail, avec un sérialiseur à compléter dans `agenda/serializers.py`. Au départ, l'association s'affiche comme un numéro, il n'y a ni champ calculé ni validation. Lance `pytest -q test_serialiseurs.py` : les cinq tests échouent, et chaque message te dit ce qui manque. Corrige-les un par un.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/02-serialiseurs/. .
-etapes:
-  - texte: 'Dans `agenda/serializers.py`, affiche l''association d''un événement par son **nom** (`"asso": "Ciné-club"`) au lieu de son numéro, avec un `SlugRelatedField` : `test_asso_affichee_par_son_nom` doit passer'
-    indice: 'Dans la classe, déclare `asso = serializers.SlugRelatedField(slug_field="nom", queryset=Asso.objects.all())`. Puis `pytest -q -k asso_affichee`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 02-serialiseurs test_asso_affichee_par_son_nom'
+steps:
+  - text: 'Dans `agenda/serializers.py`, affiche l''association d''un événement par son **nom** (`"asso": "Ciné-club"`) au lieu de son numéro, avec un `SlugRelatedField` : `test_asso_affichee_par_son_nom` doit passer'
+    hint: 'Dans la classe, déclare `asso = serializers.SlugRelatedField(slug_field="nom", queryset=Asso.objects.all())`. Puis `pytest -q -k asso_affichee`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 02-serialiseurs test_asso_affichee_par_son_nom'
     solution:
-      - ecrire:
+      - write:
           agenda/serializers.py: |
             from rest_framework import serializers
 
@@ -201,13 +201,13 @@ etapes:
                 class Meta:
                     model = Asso
                     fields = ("id", "nom")
-  - texte: 'Ajoute le champ calculé `places_restantes` (places moins inscriptions) : un `SerializerMethodField`, sa méthode `get_places_restantes`, et le nom du champ dans `fields`. `test_places_restantes` doit passer'
-    indice: 'La méthode reçoit l''événement dans `obj` : `obj.places - obj.inscriptions.count()`. N''oublie pas d''ajouter `"places_restantes"` dans `fields`.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 02-serialiseurs test_places_restantes'
+  - text: 'Ajoute le champ calculé `places_restantes` (places moins inscriptions) : un `SerializerMethodField`, sa méthode `get_places_restantes`, et le nom du champ dans `fields`. `test_places_restantes` doit passer'
+    hint: 'La méthode reçoit l''événement dans `obj` : `obj.places - obj.inscriptions.count()`. N''oublie pas d''ajouter `"places_restantes"` dans `fields`.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 02-serialiseurs test_places_restantes'
     solution:
-      - ecrire:
+      - write:
           agenda/serializers.py: |
             from rest_framework import serializers
 
@@ -231,13 +231,13 @@ etapes:
                 class Meta:
                     model = Asso
                     fields = ("id", "nom")
-  - texte: 'Refuse les événements à moins d''une place avec `validate_places` : l''erreur doit apparaître sous la clé `places`. `test_places_positives` doit passer'
-    indice: 'La méthode s''appelle `validate_places(self, value)` : lève `serializers.ValidationError("Il faut au moins une place.")` si `value < 1`, sinon retourne `value`.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 02-serialiseurs test_places_positives'
+  - text: 'Refuse les événements à moins d''une place avec `validate_places` : l''erreur doit apparaître sous la clé `places`. `test_places_positives` doit passer'
+    hint: 'La méthode s''appelle `validate_places(self, value)` : lève `serializers.ValidationError("Il faut au moins une place.")` si `value < 1`, sinon retourne `value`.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 02-serialiseurs test_places_positives'
     solution:
-      - ecrire:
+      - write:
           agenda/serializers.py: |
             from rest_framework import serializers
 
@@ -266,13 +266,13 @@ etapes:
                 class Meta:
                     model = Asso
                     fields = ("id", "nom")
-  - texte: 'Refuse un événement **passé** et **ouvert** avec `validate(self, data)` (compare `data["date"]` à `timezone.now()`) : l''erreur est rangée sous `non_field_errors`. `test_evenement_passe` doit passer'
-    indice: 'Il faut importer `timezone` (`from django.utils import timezone`). `data.get("ouvert", True)` lit le champ avec `True` par défaut. N''oublie pas de retourner `data`.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 02-serialiseurs test_evenement_passe'
+  - text: 'Refuse un événement **passé** et **ouvert** avec `validate(self, data)` (compare `data["date"]` à `timezone.now()`) : l''erreur est rangée sous `non_field_errors`. `test_evenement_passe` doit passer'
+    hint: 'Il faut importer `timezone` (`from django.utils import timezone`). `data.get("ouvert", True)` lit le champ avec `True` par défaut. N''oublie pas de retourner `data`.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 02-serialiseurs test_evenement_passe'
     solution:
-      - ecrire:
+      - write:
           agenda/serializers.py: |
             from django.utils import timezone
             from rest_framework import serializers
@@ -307,14 +307,14 @@ etapes:
                 class Meta:
                     model = Asso
                     fields = ("id", "nom")
-  - texte: 'Imbrique les événements dans `AssoSerializer` : un champ `evenements = EvenementSerializer(many=True, read_only=True)`, à ajouter aussi dans `fields`. `test_asso_contient_ses_evenements` doit passer'
-    indice: 'Le champ porte le nom du `related_name` du modèle (`evenements`) ; `many=True` car il y en a plusieurs.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 02-serialiseurs test_asso_contient'
+  - text: 'Imbrique les événements dans `AssoSerializer` : un champ `evenements = EvenementSerializer(many=True, read_only=True)`, à ajouter aussi dans `fields`. `test_asso_contient_ses_evenements` doit passer'
+    hint: 'Le champ porte le nom du `related_name` du modèle (`evenements`) ; `many=True` car il y en a plusieurs.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 02-serialiseurs test_asso_contient'
     solution:
-      - ecrire:
-          agenda/serializers.py: |
+      - write:
+          agenda/serializers.py: |-
             from django.utils import timezone
             from rest_framework import serializers
 

@@ -1,9 +1,9 @@
 ---
 id: eviter-coupures-et-pertes
-titre: "Éviter les coupures et les pertes de données"
-resume: "Reconnaître les actions destructrices dans un plan et utiliser les garde-fous : prevent_destroy, sauvegardes et revue."
-duree: 45
-objectifs:
+title: "Éviter les coupures et les pertes de données"
+summary: "Reconnaître les actions destructrices dans un plan et utiliser les garde-fous : prevent_destroy, sauvegardes et revue."
+minutes: 45
+objectives:
   - Identifier dans un plan les remplacements qui coupent un service ou détruisent des données
   - Utiliser prevent_destroy et comprendre ses limites
   - Appliquer une routine de relecture avant tout apply en production
@@ -19,7 +19,7 @@ Dans `cluster-configuration`, plusieurs ressources portent des données : le st
 
 ## Les trois façons de détruire sans le vouloir
 
-:::cartes
+:::cards
 ### Un remplacement
 
 Un attribut change, la ressource est détruite puis recréée (`-/+`, `forces replacement`). Pour un volume, une base ou un secret, cela peut effacer ou régénérer des données.
@@ -117,56 +117,56 @@ La ressource protégée est un `terraform_data` (une ressource qui ne crée rien
 
 Commandes du labo : `terraform plan -destroy` simule la destruction de tout, sans rien détruire ; `2>&1` envoie aussi les messages d'erreur vers la même destination que le texte normal ; `sed -i 's/v1/v2/' fichier` remplace `v1` par `v2` dans un fichier ; `nano fichier` ouvre un petit éditeur de texte.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient un `main.tf` avec une ressource « précieuse » `terraform_data.donnees` protégée par `prevent_destroy = true`, et un fichier `note.txt` sans importance. Son attribut `triggers_replace = ["v1"]` dit : « si cette liste change, détruis et recrée la ressource ». Tu vas provoquer ce remplacement, voir le garde-fou t'arrêter, constater ses limites, puis tout remettre en ordre.
-commandes:
+commands:
   - cp -R /opt/exercices/05-garde-fous/. .
-etapes:
-  - texte: 'Initialise et applique : `terraform init` puis `terraform apply -auto-approve`. `terraform state list` doit citer `terraform_data.donnees`'
-    indice: 'Deux commandes à la suite.'
-    verif:
-      - sortie-contient: ['terraform state list', 'terraform_data\.donnees']
+steps:
+  - text: 'Initialise et applique : `terraform init` puis `terraform apply -auto-approve`. `terraform state list` doit citer `terraform_data.donnees`'
+    hint: 'Deux commandes à la suite.'
+    checks:
+      - output-contains: ['terraform state list', 'terraform_data\.donnees']
     solution:
       - terraform init
       - terraform apply -auto-approve
-  - texte: 'Dans `main.tf`, remplace `"v1"` par `"v2"` dans `triggers_replace`, puis lance `terraform plan` : il doit échouer (code d''erreur) avec `Instance cannot be destroyed`'
-    apres: [1]
-    indice: 'Édite avec `nano main.tf` ou `sed -i ''s/v1/v2/'' main.tf`. Le plan affiche d''abord `must be replaced`, puis l''erreur : `prevent_destroy` a bloqué la destruction.'
-    verif:
-      - fichier-contient-dans-env: [main.tf, '"v2"']
-      - sortie-contient: ['terraform plan -no-color -input=false 2>&1', 'cannot be destroyed']
-      - commande-echoue: 'terraform plan -input=false'
+  - text: 'Dans `main.tf`, remplace `"v1"` par `"v2"` dans `triggers_replace`, puis lance `terraform plan` : il doit échouer (code d''erreur) avec `Instance cannot be destroyed`'
+    after: [1]
+    hint: 'Édite avec `nano main.tf` ou `sed -i ''s/v1/v2/'' main.tf`. Le plan affiche d''abord `must be replaced`, puis l''erreur : `prevent_destroy` a bloqué la destruction.'
+    checks:
+      - env-file-contains: [main.tf, '"v2"']
+      - output-contains: ['terraform plan -no-color -input=false 2>&1', 'cannot be destroyed']
+      - command-fails: 'terraform plan -input=false'
     solution:
       - sed -i 's/v1/v2/' main.tf
       - terraform plan || echo "plan refusé, comme prévu"
-  - texte: 'Garde une trace de l''erreur : `terraform plan -no-color > erreur.txt 2>&1` (`2>&1` envoie aussi les messages d''erreur dans le fichier)'
-    apres: [2]
-    indice: 'Le fichier `erreur.txt` doit contenir le message `Instance cannot be destroyed`.'
-    verif:
-      - fichier-contient-dans-env: [erreur.txt, 'cannot be destroyed']
-      - commande-reussit: 'terraform plan -no-color 2>&1 | cmp -s - erreur.txt'
+  - text: 'Garde une trace de l''erreur : `terraform plan -no-color > erreur.txt 2>&1` (`2>&1` envoie aussi les messages d''erreur dans le fichier)'
+    after: [2]
+    hint: 'Le fichier `erreur.txt` doit contenir le message `Instance cannot be destroyed`.'
+    checks:
+      - env-file-contains: [erreur.txt, 'cannot be destroyed']
+      - command-succeeds: 'terraform plan -no-color 2>&1 | cmp -s - erreur.txt'
     solution:
       - terraform plan -no-color > erreur.txt 2>&1 || true
-  - texte: 'Constate la limite du garde-fou : supprime le bloc `lifecycle { … }` de `main.tf`. `terraform plan` doit alors réussir et annoncer `must be replaced` : la donnée serait détruite'
-    apres: [2]
-    indice: 'Supprime les lignes du bloc `lifecycle` (accolade fermante comprise). Sans le bloc, plus de protection : c''est pourquoi un plan se relit et une relecture à deux est utile.'
-    verif:
-      - commande-reussit: 'terraform plan -input=false'
-      - sortie-contient: ['terraform plan -no-color -input=false', 'terraform_data\.donnees must be replaced']
+  - text: 'Constate la limite du garde-fou : supprime le bloc `lifecycle { … }` de `main.tf`. `terraform plan` doit alors réussir et annoncer `must be replaced` : la donnée serait détruite'
+    after: [2]
+    hint: 'Supprime les lignes du bloc `lifecycle` (accolade fermante comprise). Sans le bloc, plus de protection : c''est pourquoi un plan se relit et une relecture à deux est utile.'
+    checks:
+      - command-succeeds: 'terraform plan -input=false'
+      - output-contains: ['terraform plan -no-color -input=false', 'terraform_data\.donnees must be replaced']
     solution:
       - sed -i '/lifecycle {/,/^  }/d' main.tf
       - terraform plan
-  - texte: 'Remets tout en ordre : retrouve `"v1"` et remets le bloc `lifecycle` avec `prevent_destroy = true`. `terraform plan -detailed-exitcode` doit répondre « aucun changement »'
-    apres: [4]
-    indice: 'Le bloc est `lifecycle {` puis `prevent_destroy = true` puis `}`, à l''intérieur de la ressource `terraform_data.donnees`.'
-    verif:
-      - fichier-contient-dans-env: [main.tf, 'prevent_destroy\s*=\s*true']
-      - fichier-contient-dans-env: [main.tf, '"v1"']
-      - commande-reussit: 'terraform plan -input=false -detailed-exitcode'
+  - text: 'Remets tout en ordre : retrouve `"v1"` et remets le bloc `lifecycle` avec `prevent_destroy = true`. `terraform plan -detailed-exitcode` doit répondre « aucun changement »'
+    after: [4]
+    hint: 'Le bloc est `lifecycle {` puis `prevent_destroy = true` puis `}`, à l''intérieur de la ressource `terraform_data.donnees`.'
+    checks:
+      - env-file-contains: [main.tf, 'prevent_destroy\s*=\s*true']
+      - env-file-contains: [main.tf, '"v1"']
+      - command-succeeds: 'terraform plan -input=false -detailed-exitcode'
     solution:
-      - ecrire:
+      - write:
           main.tf: |
             terraform {
               required_providers {
@@ -189,12 +189,12 @@ etapes:
               filename = "${path.module}/note.txt"
               content  = "Ce fichier peut être recréé sans dégât.\n"
             }
-  - texte: 'Vérifie que la protection bloque aussi une destruction complète : `terraform plan -destroy -no-color > destroy.txt 2>&1` (le plan de destruction simule `terraform destroy` sans rien détruire)'
-    apres: [5]
-    indice: 'Le fichier doit contenir `cannot be destroyed`. N''utilise jamais `terraform destroy` sur un vrai environnement sans accord de l''équipe Infra.'
-    verif:
-      - fichier-contient-dans-env: [destroy.txt, 'cannot be destroyed']
-      - commande-reussit: 'terraform plan -destroy -no-color 2>&1 | cmp -s - destroy.txt'
+  - text: 'Vérifie que la protection bloque aussi une destruction complète : `terraform plan -destroy -no-color > destroy.txt 2>&1` (le plan de destruction simule `terraform destroy` sans rien détruire)'
+    after: [5]
+    hint: 'Le fichier doit contenir `cannot be destroyed`. N''utilise jamais `terraform destroy` sur un vrai environnement sans accord de l''équipe Infra.'
+    checks:
+      - env-file-contains: [destroy.txt, 'cannot be destroyed']
+      - command-succeeds: 'terraform plan -destroy -no-color 2>&1 | cmp -s - destroy.txt'
     solution:
       - terraform plan -destroy -no-color > destroy.txt 2>&1 || true
 :::

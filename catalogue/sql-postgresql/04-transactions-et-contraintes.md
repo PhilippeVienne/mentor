@@ -1,9 +1,9 @@
 ---
 id: transactions-et-contraintes
-titre: "Transactions et contraintes"
-resume: "Faire réussir ou échouer un ensemble d'écritures d'un seul bloc, et laisser la base refuser les données invalides."
-duree: 30
-objectifs:
+title: "Transactions et contraintes"
+summary: "Faire réussir ou échouer un ensemble d'écritures d'un seul bloc, et laisser la base refuser les données invalides."
+minutes: 30
+objectives:
   - Regrouper des écritures dans une transaction avec `BEGIN`, `COMMIT` et `ROLLBACK`
   - Ajouter une contrainte `CHECK` à une table existante
   - Se protéger d'un `UPDATE` ou d'un `DELETE` sans `WHERE`
@@ -129,44 +129,44 @@ UPDATE 1
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Les quatre tables sont chargées dans la base `asso` : l'événement `4` (Atelier soudure) a `8` places, David est l'adhérent `4`, Emma l'adhérente `5`. Envoie du SQL avec `psql -c "…"` ou dans une session interactive `psql` (`\q` pour quitter). Avec `-c`, plusieurs instructions séparées par `;` forment déjà un seul bloc : si l'une échoue, rien n'est enregistré. Chaque étape est vérifiée sur l'état de la base.
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
   - psql -q -v ON_ERROR_STOP=1 -f /opt/exercices/schema.sql -f /opt/exercices/donnees.sql
-etapes:
-  - texte: 'En **une seule transaction** (`BEGIN` … `COMMIT`), inscris David (`adherent_id` 4) à l''Atelier soudure (`evenement_id` 4) et retire une place à l''événement 4 avec `places_restantes = places_restantes - 1`'
-    indice: 'psql -c "BEGIN; INSERT INTO inscriptions (adherent_id, evenement_id) VALUES (4, 4); UPDATE evenements SET places_restantes = places_restantes - 1 WHERE id = 4; COMMIT;"'
-    verif:
-      - sortie-contient:
+steps:
+  - text: 'En **une seule transaction** (`BEGIN` … `COMMIT`), inscris David (`adherent_id` 4) à l''Atelier soudure (`evenement_id` 4) et retire une place à l''événement 4 avec `places_restantes = places_restantes - 1`'
+    hint: 'psql -c "BEGIN; INSERT INTO inscriptions (adherent_id, evenement_id) VALUES (4, 4); UPDATE evenements SET places_restantes = places_restantes - 1 WHERE id = 4; COMMIT;"'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT (SELECT count(*) FROM inscriptions WHERE adherent_id = 4 AND evenement_id = 4) || '/' || (SELECT places_restantes <= 7 FROM evenements WHERE id = 4)"
           - '^1/true$'
     solution:
       - psql -c "BEGIN; INSERT INTO inscriptions (adherent_id, evenement_id) VALUES (4, 4); UPDATE evenements SET places_restantes = places_restantes - 1 WHERE id = 4; COMMIT;"
-  - texte: 'Ajoute à `evenements` une contrainte `CHECK` nommée `evenements_places_positives` qui impose `places_restantes >= 0`'
-    indice: 'psql -c "ALTER TABLE evenements ADD CONSTRAINT evenements_places_positives CHECK (places_restantes >= 0);"'
-    verif:
-      - sortie-contient:
+  - text: 'Ajoute à `evenements` une contrainte `CHECK` nommée `evenements_places_positives` qui impose `places_restantes >= 0`'
+    hint: 'psql -c "ALTER TABLE evenements ADD CONSTRAINT evenements_places_positives CHECK (places_restantes >= 0);"'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT conname FROM pg_constraint WHERE conrelid = to_regclass('evenements') AND contype = 'c'"
           - '^evenements_places_positives$'
-      - commande-echoue: psql -v ON_ERROR_STOP=1 -c "BEGIN; UPDATE evenements SET places_restantes = -1 WHERE id = 1; ROLLBACK;"
+      - command-fails: psql -v ON_ERROR_STOP=1 -c "BEGIN; UPDATE evenements SET places_restantes = -1 WHERE id = 1; ROLLBACK;"
     solution:
       - psql -c "ALTER TABLE evenements ADD CONSTRAINT evenements_places_positives CHECK (places_restantes >= 0);"
-  - texte: 'Corrige l''e-mail d''Emma (`id` 5) en `emma.petit@example.net` avec un `UPDATE` qui a bien un `WHERE`, et lis le message `UPDATE 1`'
-    indice: 'Commande : `psql -c "UPDATE adherents SET email = ''emma.petit@example.net'' WHERE id = 5;"`. Le compteur doit annoncer une seule ligne.'
-    verif:
-      - sortie-contient:
+  - text: 'Corrige l''e-mail d''Emma (`id` 5) en `emma.petit@example.net` avec un `UPDATE` qui a bien un `WHERE`, et lis le message `UPDATE 1`'
+    hint: 'Commande : `psql -c "UPDATE adherents SET email = ''emma.petit@example.net'' WHERE id = 5;"`. Le compteur doit annoncer une seule ligne.'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT email FROM adherents WHERE id = 5"
           - '^emma\.petit@example\.net$'
     solution:
       - psql -c "UPDATE adherents SET email = 'emma.petit@example.net' WHERE id = 5;"
-  - texte: 'L''Atelier soudure est complet : mets ses `places_restantes` à `0`, sans toucher aux autres événements. La contrainte `CHECK` doit rester respectée'
-    indice: 'Un `UPDATE evenements SET places_restantes = 0 WHERE id = 4;`. Sans `WHERE`, tu viderais tous les événements !'
-    apres: [1, 2]
-    verif:
-      - sortie-contient:
+  - text: 'L''Atelier soudure est complet : mets ses `places_restantes` à `0`, sans toucher aux autres événements. La contrainte `CHECK` doit rester respectée'
+    hint: 'Un `UPDATE evenements SET places_restantes = 0 WHERE id = 4;`. Sans `WHERE`, tu viderais tous les événements !'
+    after: [1, 2]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT string_agg(places_restantes::text, ',' ORDER BY id) FROM evenements"
           - '^30,20,10,0$'
     solution:

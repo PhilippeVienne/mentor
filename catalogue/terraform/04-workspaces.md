@@ -1,9 +1,9 @@
 ---
 id: workspaces
-titre: "Les workspaces : production et les autres"
-resume: "Savoir dans quel workspace tu travailles avant chaque commande, et ce que terraform.workspace change dans le code."
-duree: 40
-objectifs:
+title: "Les workspaces : production et les autres"
+summary: "Savoir dans quel workspace tu travailles avant chaque commande, et ce que terraform.workspace change dans le code."
+minutes: 40
+objectives:
   - Expliquer ce qu'est un workspace et ce qu'il isole
   - Vérifier le workspace actif avant un plan ou un apply
   - Lire un nom dépendant de terraform.workspace
@@ -82,59 +82,59 @@ Le backend distant de l'équipe est remplacé ici par le backend **local** : ch
 
 Commandes du labo : `terraform workspace new nom` crée un workspace et s'y place ; `terraform workspace delete nom` en supprime un (qui doit être vide et inactif) ; `terraform destroy` détruit tout ce que le workspace actif a créé ; `ls dossier` liste le contenu d'un dossier.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier contient un `main.tf` inspiré de `keycloak/main.tf` : un fichier nommé `keycloak-backup-<workspace>.txt` contient le nombre de réplicas (2 dans `production`, 1 ailleurs). Tu vas créer deux workspaces, appliquer dans chacun, vérifier où tu es, puis nettoyer. Dans un terminal, `terraform workspace show` est ton réflexe avant chaque commande.
-commandes:
+commands:
   - cp -R /opt/exercices/04-workspaces/. .
-etapes:
-  - texte: 'Initialise le dossier avec `terraform init`'
-    indice: 'La commande est `terraform init`.'
-    verif:
-      - commande-reussit: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
+steps:
+  - text: 'Initialise le dossier avec `terraform init`'
+    hint: 'La commande est `terraform init`.'
+    checks:
+      - command-succeeds: 'find -L .terraform/providers -name "terraform-provider-local*" -type f | grep -q . && grep -q "h1:" .terraform.lock.hcl'
     solution:
       - terraform init
-  - texte: 'Crée le workspace `production` avec `terraform workspace new production` (Terraform s''y place aussitôt). Contrôle avec `terraform workspace list`'
-    apres: [1]
-    indice: 'La liste affiche une étoile devant le workspace actif. Avant, seul `default` existait.'
-    verif:
-      - sortie-contient: ['terraform workspace list', 'production']
-      - sortie-contient: ['terraform workspace show', '^production$']
+  - text: 'Crée le workspace `production` avec `terraform workspace new production` (Terraform s''y place aussitôt). Contrôle avec `terraform workspace list`'
+    after: [1]
+    hint: 'La liste affiche une étoile devant le workspace actif. Avant, seul `default` existait.'
+    checks:
+      - output-contains: ['terraform workspace list', 'production']
+      - output-contains: ['terraform workspace show', '^production$']
     solution:
       - terraform workspace new production
-  - texte: 'Dans `production`, applique : `terraform apply -auto-approve`. Le fichier `keycloak-backup-production.txt` doit contenir `replicas = 2`'
-    apres: [2]
-    indice: 'Le nom du fichier vient de `terraform.workspace`. Affiche-le avec `cat keycloak-backup-production.txt`.'
-    verif:
-      - fichier-contient-dans-env: [keycloak-backup-production.txt, 'replicas = 2']
-      - commande-reussit: 'grep -q "local_file" terraform.tfstate.d/production/terraform.tfstate'
+  - text: 'Dans `production`, applique : `terraform apply -auto-approve`. Le fichier `keycloak-backup-production.txt` doit contenir `replicas = 2`'
+    after: [2]
+    hint: 'Le nom du fichier vient de `terraform.workspace`. Affiche-le avec `cat keycloak-backup-production.txt`.'
+    checks:
+      - env-file-contains: [keycloak-backup-production.txt, 'replicas = 2']
+      - command-succeeds: 'grep -q "local_file" terraform.tfstate.d/production/terraform.tfstate'
     solution:
       - terraform apply -auto-approve
-  - texte: 'Crée un second workspace `essai` (`terraform workspace new essai`) et applique-y : `keycloak-backup-essai.txt` doit contenir `replicas = 1`'
-    apres: [3]
-    indice: 'Même code, autre workspace : autre nom de fichier, autre nombre de réplicas (la valeur par défaut de `lookup`).'
-    verif:
-      - fichier-contient-dans-env: [keycloak-backup-essai.txt, 'replicas = 1']
-      - commande-reussit: 'grep -q "local_file" terraform.tfstate.d/essai/terraform.tfstate'
+  - text: 'Crée un second workspace `essai` (`terraform workspace new essai`) et applique-y : `keycloak-backup-essai.txt` doit contenir `replicas = 1`'
+    after: [3]
+    hint: 'Même code, autre workspace : autre nom de fichier, autre nombre de réplicas (la valeur par défaut de `lookup`).'
+    checks:
+      - env-file-contains: [keycloak-backup-essai.txt, 'replicas = 1']
+      - command-succeeds: 'grep -q "local_file" terraform.tfstate.d/essai/terraform.tfstate'
     solution:
       - terraform workspace new essai
       - terraform apply -auto-approve
-  - texte: 'Reviens dans `production` avec `terraform workspace select production`, puis vérifie avec `terraform workspace show`. Regarde aussi `ls terraform.tfstate.d` : un dossier d''état par workspace'
-    apres: [4]
-    indice: 'Fais-le avant chaque `plan` ou `apply` : le piège classique est de lancer une commande dans le mauvais workspace.'
-    verif:
-      - sortie-contient: ['terraform workspace show', '^production$']
+  - text: 'Reviens dans `production` avec `terraform workspace select production`, puis vérifie avec `terraform workspace show`. Regarde aussi `ls terraform.tfstate.d` : un dossier d''état par workspace'
+    after: [4]
+    hint: 'Fais-le avant chaque `plan` ou `apply` : le piège classique est de lancer une commande dans le mauvais workspace.'
+    checks:
+      - output-contains: ['terraform workspace show', '^production$']
     solution:
       - terraform workspace select production
-  - texte: 'Nettoie `essai` : sélectionne-le, détruis ce qu''il a créé (`terraform destroy -auto-approve`), reviens dans `production`, puis supprime le workspace (`terraform workspace delete essai`)'
-    apres: [5]
-    indice: 'On ne peut pas supprimer le workspace où l''on se trouve, ni (sans option `-force`) un workspace dont l''état contient encore des ressources. Ordre : select essai, destroy, select production, delete essai.'
-    verif:
-      - fichier-absent-dans-env: keycloak-backup-essai.txt
-      - commande-echoue: 'terraform workspace list | grep -q essai'
-      - fichier-existe-dans-env: keycloak-backup-production.txt
-      - sortie-contient: ['terraform workspace show', '^production$']
+  - text: 'Nettoie `essai` : sélectionne-le, détruis ce qu''il a créé (`terraform destroy -auto-approve`), reviens dans `production`, puis supprime le workspace (`terraform workspace delete essai`)'
+    after: [5]
+    hint: 'On ne peut pas supprimer le workspace où l''on se trouve, ni (sans option `-force`) un workspace dont l''état contient encore des ressources. Ordre : select essai, destroy, select production, delete essai.'
+    checks:
+      - env-file-absent: keycloak-backup-essai.txt
+      - command-fails: 'terraform workspace list | grep -q essai'
+      - env-file-exists: keycloak-backup-production.txt
+      - output-contains: ['terraform workspace show', '^production$']
     solution:
       - terraform workspace select essai
       - terraform destroy -auto-approve

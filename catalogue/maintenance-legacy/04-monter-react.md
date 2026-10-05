@@ -1,9 +1,9 @@
 ---
 id: monter-react
-titre: "Quitter react-scripts et mettre à jour React"
-resume: "Remplacer l'outil de construction du front, puis monter React et Material-UI par étapes."
-duree: 35
-objectifs:
+title: "Quitter react-scripts et mettre à jour React"
+summary: "Remplacer l'outil de construction du front, puis monter React et Material-UI par étapes."
+minutes: 35
+objectives:
   - Expliquer ce que fait `react-scripts` et pourquoi on le remplace
   - Migrer un front vers Vite en vérifiant que le build fonctionne
   - Ordonner les montées de React et de Material-UI
@@ -135,17 +135,17 @@ Planning dépend à la fois de Material-UI et de `reactstrap` (Bootstrap). Au mo
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Les fichiers du front de Planning sont dans ton dossier de travail : `package.json`, `public/index.html` et le code dans `src/`. **Node.js n'est pas installé dans cet environnement** : tu ne lances donc ni `npm` ni `vite build`. Tu prépares la migration vers Vite en modifiant les fichiers, et le serveur vérifie leur contenu. Le vrai build se fait ensuite sur ton poste.
-commandes:
+commands:
   - cp -R /opt/exercices/04-react/. .
-etapes:
-  - texte: 'Dans `package.json`, remplace les scripts `react-scripts` : `start` lance `vite`, `build` lance `vite build`, et le script `test` disparaît'
-    indice: 'Édite le bloc `scripts` avec `nano package.json`. Il ne doit rester que `"start": "vite"` et `"build": "vite build"`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react scripts'
+steps:
+  - text: 'Dans `package.json`, remplace les scripts `react-scripts` : `start` lance `vite`, `build` lance `vite build`, et le script `test` disparaît'
+    hint: 'Édite le bloc `scripts` avec `nano package.json`. Il ne doit rester que `"start": "vite"` et `"build": "vite build"`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react scripts'
     solution:
       - |-
         python3 - <<'PY'
@@ -155,10 +155,10 @@ etapes:
         json.dump(d, open("package.json", "w"), indent=2)
         PY
 
-  - texte: 'Retire `react-scripts` des `dependencies` de `package.json`, puis ajoute `vite` et `@vitejs/plugin-react` dans un bloc `devDependencies`'
-    indice: 'Les versions de la leçon : `"@vitejs/plugin-react": "^4.3.4"` et `"vite": "^6.0.0"`. Garde un JSON valide (virgules !).'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react deps'
+  - text: 'Retire `react-scripts` des `dependencies` de `package.json`, puis ajoute `vite` et `@vitejs/plugin-react` dans un bloc `devDependencies`'
+    hint: 'Les versions de la leçon : `"@vitejs/plugin-react": "^4.3.4"` et `"vite": "^6.0.0"`. Garde un JSON valide (virgules !).'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react deps'
     solution:
       - |-
         python3 - <<'PY'
@@ -169,12 +169,12 @@ etapes:
         json.dump(d, open("package.json", "w"), indent=2)
         PY
 
-  - texte: 'Crée `vite.config.js` à la racine : il déclare le greffon React et garde `build` comme dossier de sortie'
-    indice: 'Reprends le fichier de la leçon : `defineConfig`, `plugins: [react()]` et `build: { outDir: "build" }`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react vite'
+  - text: 'Crée `vite.config.js` à la racine : il déclare le greffon React et garde `build` comme dossier de sortie'
+    hint: 'Reprends le fichier de la leçon : `defineConfig`, `plugins: [react()]` et `build: { outDir: "build" }`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react vite'
     solution:
-      - ecrire:
+      - write:
           vite.config.js: |
             import { defineConfig } from "vite";
             import react from "@vitejs/plugin-react";
@@ -184,28 +184,28 @@ etapes:
               build: { outDir: "build" },
             });
 
-  - texte: 'Déplace `public/index.html` à la racine du projet et fais-lui charger `/src/index.jsx` avec une balise `<script type="module">`'
-    indice: '`mv public/index.html index.html`, puis ajoute `<script type="module" src="/src/index.jsx"></script>` juste avant `</body>`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react index-html'
+  - text: 'Déplace `public/index.html` à la racine du projet et fais-lui charger `/src/index.jsx` avec une balise `<script type="module">`'
+    hint: '`mv public/index.html index.html`, puis ajoute `<script type="module" src="/src/index.jsx"></script>` juste avant `</body>`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react index-html'
     solution:
       - mv public/index.html index.html
       - |-
         sed -i 's#</body>#    <script type="module" src="/src/index.jsx"></script>\n  </body>#' index.html
 
-  - texte: 'Renomme `src/index.js` en `src/index.jsx` et `src/App.js` en `src/App.jsx`, puisqu''ils contiennent du JSX'
-    indice: '`mv src/index.js src/index.jsx` et `mv src/App.js src/App.jsx`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react renommage'
+  - text: 'Renomme `src/index.js` en `src/index.jsx` et `src/App.js` en `src/App.jsx`, puisqu''ils contiennent du JSX'
+    hint: '`mv src/index.js src/index.jsx` et `mv src/App.js src/App.jsx`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react renommage'
     solution:
       - mv src/index.js src/index.jsx
       - mv src/App.js src/App.jsx
 
-  - texte: 'Dans `src/App.jsx`, remplace la variable `process.env.REACT_APP_API_URL` par `import.meta.env.VITE_API_URL`'
-    indice: 'Avec Vite, la variable s''appelle `VITE_API_URL` et se lit avec `import.meta.env`. Contrôle qu''il ne reste aucun `REACT_APP` : `grep -rn REACT_APP src`.'
-    apres: [5]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy react variable'
+  - text: 'Dans `src/App.jsx`, remplace la variable `process.env.REACT_APP_API_URL` par `import.meta.env.VITE_API_URL`'
+    hint: 'Avec Vite, la variable s''appelle `VITE_API_URL` et se lit avec `import.meta.env`. Contrôle qu''il ne reste aucun `REACT_APP` : `grep -rn REACT_APP src`.'
+    after: [5]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy react variable'
     solution:
       - sed -i 's/process.env.REACT_APP_API_URL/import.meta.env.VITE_API_URL/' src/App.jsx
 :::

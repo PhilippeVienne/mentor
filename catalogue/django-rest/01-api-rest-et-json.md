@@ -1,9 +1,9 @@
 ---
 id: api-rest-et-json
-titre: "À quoi sert une API REST ?"
-resume: "Comprendre ce qu'est une API, une requête HTTP, du JSON, et ce que Django REST framework t'apporte."
-duree: 35
-objectifs:
+title: "À quoi sert une API REST ?"
+summary: "Comprendre ce qu'est une API, une requête HTTP, du JSON, et ce que Django REST framework t'apporte."
+minutes: 35
+objectives:
   - Expliquer ce qu'est une API et pourquoi on en construit
   - Lire une requête et une réponse HTTP (verbe, URL, code de statut, corps)
   - Reconnaître du JSON et une URL « REST »
@@ -117,20 +117,20 @@ Un navigateur fait un `GET` à chaque fois que tu ouvres une adresse. DRF fourni
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Une petite API d'événements est déjà écrite dans ton dossier de travail. Ton rôle est celui du **client** : tu vas écrire les requêtes HTTP qui l'interrogent, dans le fichier `requetes.py`, avec le client de test de Django REST framework (il envoie des requêtes à l'API sans lancer de serveur). Chaque fonction que tu écris retourne la **réponse** reçue, dont tu pourras lire `status_code` (le code de statut) et `json()` (le corps).
 
   Les tests sont lancés avec **pytest**, un outil qui exécute des fonctions de test et affiche `.` pour un test réussi et `F` pour un test en échec : `pytest -q` lance tous les tests, `pytest -q -k lister` un seul. Pour modifier un fichier, ouvre-le avec `nano requetes.py` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou avec VS Code.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/01-api-rest-et-json/. .
-etapes:
-  - texte: 'Dans `requetes.py`, ajoute la fonction `lister()` qui envoie un `GET` sur `/v1/evenements/` et retourne la réponse : le test `test_lister` doit passer'
-    indice: 'Le client sait envoyer chaque verbe : `client.get("/v1/evenements/")`. N''oublie pas le `return`. Puis `pytest -q -k lister`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_lister'
+steps:
+  - text: 'Dans `requetes.py`, ajoute la fonction `lister()` qui envoie un `GET` sur `/v1/evenements/` et retourne la réponse : le test `test_lister` doit passer'
+    hint: 'Le client sait envoyer chaque verbe : `client.get("/v1/evenements/")`. N''oublie pas le `return`. Puis `pytest -q -k lister`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_lister'
     solution:
       - |
         cat >> requetes.py <<'EOF'
@@ -138,10 +138,10 @@ etapes:
             """Retourne la réponse à GET /v1/evenements/."""
             return client.get("/v1/evenements/")
         EOF
-  - texte: 'Ajoute `lire(pk)` : un `GET` sur `/v1/evenements/<pk>/` (par exemple `/v1/evenements/1/`). Le test vérifie le code `200` et le titre dans le JSON'
-    indice: 'Une chaîne f-string insère le numéro dans l''URL : `client.get(f"/v1/evenements/{pk}/")`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_lire'
+  - text: 'Ajoute `lire(pk)` : un `GET` sur `/v1/evenements/<pk>/` (par exemple `/v1/evenements/1/`). Le test vérifie le code `200` et le titre dans le JSON'
+    hint: 'Une chaîne f-string insère le numéro dans l''URL : `client.get(f"/v1/evenements/{pk}/")`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_lire'
     solution:
       - |
         cat >> requetes.py <<'EOF'
@@ -151,10 +151,10 @@ etapes:
             """Retourne la réponse à GET /v1/evenements/<pk>/."""
             return client.get(f"/v1/evenements/{pk}/")
         EOF
-  - texte: 'Ajoute `creer(corps)` : un `POST` sur `/v1/evenements/` qui envoie `corps` **encodé en JSON**. Le serveur doit répondre `201` (créé)'
-    indice: 'Le client de test accepte un dictionnaire et un format : `client.post(url, corps, format="json")`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_creer'
+  - text: 'Ajoute `creer(corps)` : un `POST` sur `/v1/evenements/` qui envoie `corps` **encodé en JSON**. Le serveur doit répondre `201` (créé)'
+    hint: 'Le client de test accepte un dictionnaire et un format : `client.post(url, corps, format="json")`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_creer'
     solution:
       - |
         cat >> requetes.py <<'EOF'
@@ -164,11 +164,11 @@ etapes:
             """Envoie `corps` en JSON avec POST /v1/evenements/ et retourne la réponse."""
             return client.post("/v1/evenements/", corps, format="json")
         EOF
-  - texte: 'Ajoute `supprimer(pk)` : un `DELETE` sur `/v1/evenements/<pk>/`. Le serveur répond `204`, et l''événement doit ensuite être introuvable'
-    indice: 'Même forme que `lire`, avec le verbe `delete` : `client.delete(f"/v1/evenements/{pk}/")`.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_supprimer'
+  - text: 'Ajoute `supprimer(pk)` : un `DELETE` sur `/v1/evenements/<pk>/`. Le serveur répond `204`, et l''événement doit ensuite être introuvable'
+    hint: 'Même forme que `lire`, avec le verbe `delete` : `client.delete(f"/v1/evenements/{pk}/")`.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_supprimer'
     solution:
       - |
         cat >> requetes.py <<'EOF'
@@ -178,10 +178,10 @@ etapes:
             """Retourne la réponse à DELETE /v1/evenements/<pk>/."""
             return client.delete(f"/v1/evenements/{pk}/")
         EOF
-  - texte: 'Ajoute `introuvable()` : un `GET` sur l''événement numéro `9999`, qui n''existe pas. Le serveur répond `404`'
-    indice: 'L''URL est `/v1/evenements/9999/`. Tu n''as rien de spécial à écrire : c''est le serveur qui dit « introuvable ».'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_introuvable'
+  - text: 'Ajoute `introuvable()` : un `GET` sur l''événement numéro `9999`, qui n''existe pas. Le serveur répond `404`'
+    hint: 'L''URL est `/v1/evenements/9999/`. Tu n''as rien de spécial à écrire : c''est le serveur qui dit « introuvable ».'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_introuvable'
     solution:
       - |
         cat >> requetes.py <<'EOF'
@@ -191,12 +191,12 @@ etapes:
             """Retourne la réponse à la lecture d'un événement qui n'existe pas (numéro 9999)."""
             return client.get("/v1/evenements/9999/")
         EOF
-  - texte: 'Ajoute `invalide()` : un `POST` dont le corps est incomplet (seulement `{"asso": "Fanfare"}`, sans titre ni date). Le serveur répond `400` et nomme le champ fautif'
-    indice: 'Comme `creer`, avec un corps réduit : `client.post("/v1/evenements/", {"asso": "Fanfare"}, format="json")`. Observe ensuite `reponse.json()` : une clé par champ en erreur.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 01-api-rest-et-json test_invalide'
+  - text: 'Ajoute `invalide()` : un `POST` dont le corps est incomplet (seulement `{"asso": "Fanfare"}`, sans titre ni date). Le serveur répond `400` et nomme le champ fautif'
+    hint: 'Comme `creer`, avec un corps réduit : `client.post("/v1/evenements/", {"asso": "Fanfare"}, format="json")`. Observe ensuite `reponse.json()` : une clé par champ en erreur.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 01-api-rest-et-json test_invalide'
     solution:
-      - |
+      - |-
         cat >> requetes.py <<'EOF'
 
 

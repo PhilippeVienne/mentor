@@ -1,9 +1,9 @@
 ---
 id: etat-evenements
-titre: "L'état et les événements"
-resume: "Faire réagir un composant aux clics grâce à `useState`, sans jamais modifier les données en place."
-duree: 35
-objectifs:
+title: "L'état et les événements"
+summary: "Faire réagir un composant aux clics grâce à `useState`, sans jamais modifier les données en place."
+minutes: 35
+objectives:
   - Expliquer la différence entre une prop et un état
   - Utiliser `useState` et réagir à un événement (`onClick`)
   - Mettre à jour un tableau ou un objet de l'état sans le modifier en place
@@ -145,25 +145,25 @@ Si plusieurs composants éloignés ont besoin du même état (le panier est affi
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Tu vas écrire la logique d'un panier de goodies (`src/panier.ts`) puis un sélecteur de quantité (`src/ChoixQuantite.tsx`), avec `nano` (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte).
 
   Il n'y a pas de navigateur ici : des **tests** (de petits programmes qui vérifient ton travail) cliquent à ta place sur les boutons de ta page fictive, avec `@testing-library`, et regardent ce qui s'affiche. `npx vitest run panier-ajouter` lance les tests dont le nom de fichier contient `panier-ajouter`. Les tests de la logique du panier **gèlent** leurs données (`Object.freeze`) : si ton code modifie un tableau en place au lieu d'en fabriquer un nouveau, JavaScript lève une erreur et le test échoue.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/02-etat-evenements/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/panier.ts`, écris `ajouter(panier, entree)` : elle renvoie un **nouveau** tableau. Un stock nul ou négatif ne change rien ; un article absent du panier devient une ligne de quantité 1 ; un article déjà présent gagne une unité, sans jamais dépasser son stock. Vérifie avec `npx vitest run panier-ajouter`.
-    indice: >-
+    hint: >-
       Cherche l'article avec `panier.findIndex(…)`. S'il est absent : `[...panier, { ...entree, quantite: 1 }]`. Sinon : `panier.map((l, i) => i === index ? { ...l, quantite: Math.min(l.quantite + 1, l.stock) } : l)`.
-    verif:
-      - commande-reussit: controler tests 02-etat-evenements panier-ajouter
+    checks:
+      - command-succeeds: controler tests 02-etat-evenements panier-ajouter
     solution:
-      - ecrire:
+      - write:
           'src/panier.ts': |
             // La logique du panier, écrite comme des fonctions pures : elles ne modifient jamais leurs arguments.
             export type Ligne = { id: number; nom: string; prixCents: number; stock: number; quantite: number };
@@ -186,14 +186,14 @@ etapes:
 
             export const totalArticles = (panier: Ligne[]): number => 0;
             export const totalCents = (panier: Ligne[]): number => 0;
-  - texte: >-
+  - text: >-
       Toujours dans `src/panier.ts`, écris `retirer(panier, id)` (un nouveau tableau sans la ligne d'identifiant `id`), puis `totalArticles` et `totalCents`, qui **calculent** le nombre d'articles et le prix total à partir du panier (sans rien stocker). Vérifie avec `npx vitest run panier-totaux`.
-    indice: >-
+    hint: >-
       `retirer` utilise `panier.filter((l) => l.id !== id)`. Les totaux utilisent `panier.reduce((somme, l) => somme + …, 0)` : `l.quantite` pour le nombre d'articles, `l.prixCents * l.quantite` pour le prix.
-    verif:
-      - commande-reussit: controler tests 02-etat-evenements panier-totaux
+    checks:
+      - command-succeeds: controler tests 02-etat-evenements panier-totaux
     solution:
-      - ecrire:
+      - write:
           'src/panier.ts': |
             // La logique du panier, écrite comme des fonctions pures : elles ne modifient jamais leurs arguments.
             export type Ligne = { id: number; nom: string; prixCents: number; stock: number; quantite: number };
@@ -217,15 +217,15 @@ etapes:
             export const totalArticles = (panier: Ligne[]): number => panier.reduce((somme, l) => somme + l.quantite, 0);
             export const totalCents = (panier: Ligne[]): number =>
               panier.reduce((somme, l) => somme + l.prixCents * l.quantite, 0);
-  - texte: >-
+  - text: >-
       Dans `src/ChoixQuantite.tsx`, ajoute un état `quantite` avec `useState(1)`. Affiche-le dans le `<span>`, fais monter la quantité d'une unité au clic sur `+` et descendre au clic sur `−`, en passant une **fonction** à `setQuantite`. Vérifie avec `npx vitest run quantite-clics`.
-    indice: >-
+    hint: >-
       `const [quantite, setQuantite] = useState(1);` puis `onClick={() => setQuantite((q) => q + 1)}` sur le bouton `+` (et `q - 1` sur le bouton `−`). N'oublie pas `import { useState } from "react";`.
-    verif:
-      - commande-reussit: controler tests 02-etat-evenements quantite-clics
-      - commande-reussit: contient src/ChoixQuantite.tsx 'useState\s*(<[^>]*>)?\s*\(\s*1\s*\)'
+    checks:
+      - command-succeeds: controler tests 02-etat-evenements quantite-clics
+      - command-succeeds: contient src/ChoixQuantite.tsx 'useState\s*(<[^>]*>)?\s*\(\s*1\s*\)'
     solution:
-      - ecrire:
+      - write:
           'src/ChoixQuantite.tsx': |
             import { useState } from "react";
 
@@ -250,16 +250,16 @@ etapes:
                 </div>
               );
             }
-  - texte: >-
+  - text: >-
       Empêche les quantités absurdes : `−` est désactivé (`disabled`) quand la quantité vaut 1, `+` l'est quand elle atteint le `stock`, et la quantité ne sort jamais de l'intervalle de 1 à `stock`. L'état n'est pas dupliqué : l'affichage se **déduit** de `quantite`. Vérifie avec `npx vitest run quantite-bornes`.
-    indice: >-
+    hint: >-
       Ajoute `disabled={quantite <= 1}` au bouton `−` et `disabled={quantite >= stock}` au bouton `+`, et protège les calculs avec `Math.max(1, q - 1)` et `Math.min(stock, q + 1)`.
-    verif:
-      - commande-reussit: controler tests 02-etat-evenements quantite-bornes
-      - commande-reussit: contient src/ChoixQuantite.tsx '\bdisabled\b'
-    apres: [3]
+    checks:
+      - command-succeeds: controler tests 02-etat-evenements quantite-bornes
+      - command-succeeds: contient src/ChoixQuantite.tsx '\bdisabled\b'
+    after: [3]
     solution:
-      - ecrire:
+      - write:
           'src/ChoixQuantite.tsx': |
             import { useState } from "react";
 
@@ -284,18 +284,18 @@ etapes:
                 </div>
               );
             }
-  - texte: >-
+  - text: >-
       Branche le bouton « Ajouter au panier » : au clic, il appelle `onAjouter` avec la quantité choisie (les données descendent par les props, les événements remontent par les fonctions), puis remet la quantité à 1. Vérifie avec `npx vitest run quantite-ajout`, puis lance toute la suite avec `npx vitest run`.
-    indice: >-
+    hint: >-
       Le gestionnaire est `onClick={() => { onAjouter(quantite); setQuantite(1); }}`.
-    verif:
-      - commande-reussit: controler tests 02-etat-evenements
-      - commande-reussit: controler types 02-etat-evenements
-      - commande-reussit: contient src/ChoixQuantite.tsx '\bonAjouter\s*\('
-    apres: [1, 2, 3, 4]
+    checks:
+      - command-succeeds: controler tests 02-etat-evenements
+      - command-succeeds: controler types 02-etat-evenements
+      - command-succeeds: contient src/ChoixQuantite.tsx '\bonAjouter\s*\('
+    after: [1, 2, 3, 4]
     solution:
-      - ecrire:
-          'src/ChoixQuantite.tsx': |
+      - write:
+          'src/ChoixQuantite.tsx': |-
             import { useState } from "react";
 
             export function ChoixQuantite({

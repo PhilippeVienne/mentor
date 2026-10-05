@@ -1,9 +1,9 @@
 ---
 id: vues-viewsets-routeurs
-titre: "Vues, viewsets et routeurs"
-resume: "Brancher un sérialiseur sur des URL : liste, détail, création, modification, suppression."
-duree: 45
-objectifs:
+title: "Vues, viewsets et routeurs"
+summary: "Brancher un sérialiseur sur des URL : liste, détail, création, modification, suppression."
+minutes: 45
+objectives:
   - Expliquer le rôle d'une vue dans une API
   - Écrire un `ModelViewSet` et le brancher avec un routeur
   - Choisir entre `ModelViewSet` et `ReadOnlyModelViewSet`
@@ -154,18 +154,18 @@ Un viewset complet expose `DELETE` dès qu'il est enregistré. Si une ressource 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le sérialiseur est déjà écrit. Dans ton dossier de travail, `agenda/views.py` et `agenda/urls.py` sont presque vides : à toi de brancher le sérialiseur sur de vraies URL, puis de personnaliser la vue. Les tests (`pytest -q test_vues.py`) appellent l'API comme un vrai client ; ils échouent tous au départ.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/03-vues-viewsets-routeurs/. .
-etapes:
-  - texte: 'Dans `agenda/views.py`, écris `EvenementViewSet` : un `ModelViewSet` avec un `queryset` (événements triés par date, avec `select_related("asso")`) et `serializer_class = EvenementSerializer`. `test_evenement_viewset` doit passer'
-    indice: 'Deux attributs suffisent : `queryset = Evenement.objects.select_related("asso").order_by("date")` et `serializer_class = EvenementSerializer`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_evenement_viewset'
+steps:
+  - text: 'Dans `agenda/views.py`, écris `EvenementViewSet` : un `ModelViewSet` avec un `queryset` (événements triés par date, avec `select_related("asso")`) et `serializer_class = EvenementSerializer`. `test_evenement_viewset` doit passer'
+    hint: 'Deux attributs suffisent : `queryset = Evenement.objects.select_related("asso").order_by("date")` et `serializer_class = EvenementSerializer`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_evenement_viewset'
     solution:
       - |
         cat >> agenda/views.py <<'EOF'
@@ -175,13 +175,13 @@ etapes:
             queryset = Evenement.objects.select_related("asso").order_by("date")
             serializer_class = EvenementSerializer
         EOF
-  - texte: 'Dans `agenda/urls.py`, enregistre le viewset auprès du routeur : `router.register("evenements", views.EvenementViewSet)`. L''API doit alors répondre à `GET`, `POST` et `DELETE` sur `/v1/evenements/` et afficher sa page racine sur `/v1/`. `test_evenements_branches` doit passer'
-    indice: 'La ligne `router.register(...)` se place après la création du routeur et avant `urlpatterns`.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_evenements_branches'
+  - text: 'Dans `agenda/urls.py`, enregistre le viewset auprès du routeur : `router.register("evenements", views.EvenementViewSet)`. L''API doit alors répondre à `GET`, `POST` et `DELETE` sur `/v1/evenements/` et afficher sa page racine sur `/v1/`. `test_evenements_branches` doit passer'
+    hint: 'La ligne `router.register(...)` se place après la création du routeur et avant `urlpatterns`.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_evenements_branches'
     solution:
-      - ecrire:
+      - write:
           agenda/urls.py: |
             from django.urls import include, path
             from rest_framework import routers
@@ -194,11 +194,11 @@ etapes:
             urlpatterns = [
                 path("v1/", include(router.urls)),
             ]
-  - texte: 'Ajoute `AssoViewSet` dans `views.py` en **lecture seule** (`ReadOnlyModelViewSet`, sérialiseur `AssoSerializer`, `queryset = Asso.objects.prefetch_related("evenements").order_by("nom")`) et enregistre-le sous `"assos"`. Un `POST` doit être refusé (`405`). `test_assos_en_lecture_seule` doit passer'
-    indice: 'Même démarche que pour les événements, avec `viewsets.ReadOnlyModelViewSet` comme classe de base, puis `router.register("assos", views.AssoViewSet)`.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_assos'
+  - text: 'Ajoute `AssoViewSet` dans `views.py` en **lecture seule** (`ReadOnlyModelViewSet`, sérialiseur `AssoSerializer`, `queryset = Asso.objects.prefetch_related("evenements").order_by("nom")`) et enregistre-le sous `"assos"`. Un `POST` doit être refusé (`405`). `test_assos_en_lecture_seule` doit passer'
+    hint: 'Même démarche que pour les événements, avec `viewsets.ReadOnlyModelViewSet` comme classe de base, puis `router.register("assos", views.AssoViewSet)`.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_assos'
     solution:
       - |
         cat >> agenda/views.py <<'EOF'
@@ -209,7 +209,7 @@ etapes:
             queryset = Asso.objects.prefetch_related("evenements").order_by("nom")
             serializer_class = AssoSerializer
         EOF
-      - ecrire:
+      - write:
           agenda/urls.py: |
             from django.urls import include, path
             from rest_framework import routers
@@ -223,13 +223,13 @@ etapes:
             urlpatterns = [
                 path("v1/", include(router.urls)),
             ]
-  - texte: 'Dans `EvenementViewSet`, surcharge `get_queryset()` pour que `?a_venir=true` ne garde que les événements dont la date n''est pas passée (`date__gte=timezone.now()`). `test_filtre_a_venir` doit passer'
-    indice: 'Pars de `super().get_queryset()`, lis `self.request.query_params.get("a_venir")` et applique `.filter(date__gte=timezone.now())` si la valeur est `"true"`.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_filtre_a_venir'
+  - text: 'Dans `EvenementViewSet`, surcharge `get_queryset()` pour que `?a_venir=true` ne garde que les événements dont la date n''est pas passée (`date__gte=timezone.now()`). `test_filtre_a_venir` doit passer'
+    hint: 'Pars de `super().get_queryset()`, lis `self.request.query_params.get("a_venir")` et applique `.filter(date__gte=timezone.now())` si la valeur est `"true"`.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_filtre_a_venir'
     solution:
-      - ecrire:
+      - write:
           agenda/views.py: |
             from django.utils import timezone
             from rest_framework import viewsets
@@ -254,14 +254,14 @@ etapes:
             class AssoViewSet(viewsets.ReadOnlyModelViewSet):
                 queryset = Asso.objects.prefetch_related("evenements").order_by("nom")
                 serializer_class = AssoSerializer
-  - texte: 'Ajoute l''action `fermer` : un `@action(detail=True, methods=["post"])` qui passe `ouvert` à `False` et retourne l''événement sérialisé. `POST /v1/evenements/<id>/fermer/` doit répondre `200`, un `GET` doit être refusé. `test_action_fermer` doit passer'
-    indice: 'Récupère l''événement avec `self.get_object()`, modifie-le, enregistre avec `evenement.save(update_fields=["ouvert"])` et retourne `Response(self.get_serializer(evenement).data)`.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_action_fermer'
+  - text: 'Ajoute l''action `fermer` : un `@action(detail=True, methods=["post"])` qui passe `ouvert` à `False` et retourne l''événement sérialisé. `POST /v1/evenements/<id>/fermer/` doit répondre `200`, un `GET` doit être refusé. `test_action_fermer` doit passer'
+    hint: 'Récupère l''événement avec `self.get_object()`, modifie-le, enregistre avec `evenement.save(update_fields=["ouvert"])` et retourne `Response(self.get_serializer(evenement).data)`.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 03-vues-viewsets-routeurs test_action_fermer'
     solution:
-      - ecrire:
-          agenda/views.py: |
+      - write:
+          agenda/views.py: |-
             from django.utils import timezone
             from rest_framework import viewsets
             from rest_framework.decorators import action

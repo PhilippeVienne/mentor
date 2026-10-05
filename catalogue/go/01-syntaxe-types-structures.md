@@ -1,9 +1,9 @@
 ---
 id: syntaxe-types-structures
-titre: "Premiers pas : syntaxe, types et structures"
-resume: "Lancer un premier programme Go et décrire des données avec des types, des structures, des listes et des tables, dans un vrai terminal."
-duree: 45
-objectifs:
+title: "Premiers pas : syntaxe, types et structures"
+summary: "Lancer un premier programme Go et décrire des données avec des types, des structures, des listes et des tables, dans un vrai terminal."
+minutes: 45
+objectives:
   - Expliquer ce qu'est un langage compilé et à quoi sert Go dans l'équipe
   - Lancer un programme avec `go run` et lire sa structure ligne à ligne
   - Déclarer des variables, des structures, des listes (slices) et des tables (maps)
@@ -20,7 +20,7 @@ Le labo de cette leçon te prête un conteneur Linux (un petit ordinateur virtue
 
 Un ordinateur ne comprend pas le texte que tu écris. Il faut le **traduire** en instructions qu'il sait exécuter. Il existe deux grandes manières de le faire :
 
-:::cartes
+:::cards
 ### Langage interprété
 
 Un traducteur lit ton texte pendant que le programme tourne (Python, par exemple). Pour lancer le programme ailleurs, il faut y installer le traducteur.
@@ -186,18 +186,18 @@ Dans `for _, j := range catalogue`, la variable `j` est une **copie** de chaque 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, `jeu.go` décrit un `Jeu`. Les méthodes et fonctions qui s'en servent sont **à écrire**, chacune dans son fichier (`description.go`, `emprunt.go`…) : remplace la ligne `panic("à écrire")` par ton code. Les tests sont dans `jeu_test.go`. Ouvre un fichier avec `nano` ou VS Code, enregistre, puis lance `go test ./...` pour voir ce qui passe. Le premier lancement est un peu long : Go compile ses propres paquets. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/01-syntaxe/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Écris la méthode `Description()` dans `description.go` : elle renvoie par exemple « Azul (4 joueur·se·s) ». Le test `TestDescription` doit passer'
-    indice: 'Remplace `panic("à écrire")` par `return fmt.Sprintf("%s (%d joueur·se·s)", j.Titre, j.Joueurs)` et ajoute `import "fmt"` sous la ligne `package main`. Teste avec `go test -run TestDescription .`'
-    verif:
-      - commande-reussit: "verifier-go tests 01-syntaxe . TestDescription"
+steps:
+  - text: 'Écris la méthode `Description()` dans `description.go` : elle renvoie par exemple « Azul (4 joueur·se·s) ». Le test `TestDescription` doit passer'
+    hint: 'Remplace `panic("à écrire")` par `return fmt.Sprintf("%s (%d joueur·se·s)", j.Titre, j.Joueurs)` et ajoute `import "fmt"` sous la ligne `package main`. Teste avec `go test -run TestDescription .`'
+    checks:
+      - command-succeeds: "verifier-go tests 01-syntaxe . TestDescription"
     solution:
       - |
         cat > description.go <<'EOF'
@@ -210,10 +210,10 @@ etapes:
         	return fmt.Sprintf("%s (%d joueur·se·s)", j.Titre, j.Joueurs)
         }
         EOF
-  - texte: 'Écris la méthode `Emprunter()` dans `emprunt.go` avec un **récepteur pointeur** : elle met `Dispo` à `false` sur le jeu d''origine. `TestEmprunter` doit passer'
-    indice: 'Le récepteur est déjà écrit `(j *Jeu)` : il te reste une ligne, `j.Dispo = false`.'
-    verif:
-      - commande-reussit: "verifier-go tests 01-syntaxe . TestEmprunter"
+  - text: 'Écris la méthode `Emprunter()` dans `emprunt.go` avec un **récepteur pointeur** : elle met `Dispo` à `false` sur le jeu d''origine. `TestEmprunter` doit passer'
+    hint: 'Le récepteur est déjà écrit `(j *Jeu)` : il te reste une ligne, `j.Dispo = false`.'
+    checks:
+      - command-succeeds: "verifier-go tests 01-syntaxe . TestEmprunter"
     solution:
       - |
         cat > emprunt.go <<'EOF'
@@ -224,10 +224,10 @@ etapes:
         	j.Dispo = false
         }
         EOF
-  - texte: 'Écris la fonction `Disponibles` dans `disponibles.go` : elle renvoie une nouvelle slice avec les jeux dont `Dispo` vaut `true`, dans le même ordre. `TestDisponibles` doit passer'
-    indice: 'Déclare `var res []Jeu`, parcours `catalogue` avec `for _, j := range catalogue`, et fais `res = append(res, j)` quand `j.Dispo` est vrai. Termine par `return res`.'
-    verif:
-      - commande-reussit: "verifier-go tests 01-syntaxe . TestDisponibles"
+  - text: 'Écris la fonction `Disponibles` dans `disponibles.go` : elle renvoie une nouvelle slice avec les jeux dont `Dispo` vaut `true`, dans le même ordre. `TestDisponibles` doit passer'
+    hint: 'Déclare `var res []Jeu`, parcours `catalogue` avec `for _, j := range catalogue`, et fais `res = append(res, j)` quand `j.Dispo` est vrai. Termine par `return res`.'
+    checks:
+      - command-succeeds: "verifier-go tests 01-syntaxe . TestDisponibles"
     solution:
       - |
         cat > disponibles.go <<'EOF'
@@ -244,10 +244,10 @@ etapes:
         	return res
         }
         EOF
-  - texte: 'Écris `IndexParTitre` dans `index.go` : elle renvoie une **map** qui associe chaque titre à son jeu. `TestIndexParTitre` doit passer'
-    indice: 'Crée la table avec `index := map[string]Jeu{}`, remplis-la dans une boucle avec `index[j.Titre] = j`, puis renvoie-la.'
-    verif:
-      - commande-reussit: "verifier-go tests 01-syntaxe . TestIndexParTitre"
+  - text: 'Écris `IndexParTitre` dans `index.go` : elle renvoie une **map** qui associe chaque titre à son jeu. `TestIndexParTitre` doit passer'
+    hint: 'Crée la table avec `index := map[string]Jeu{}`, remplis-la dans une boucle avec `index[j.Titre] = j`, puis renvoie-la.'
+    checks:
+      - command-succeeds: "verifier-go tests 01-syntaxe . TestIndexParTitre"
     solution:
       - |
         cat > index.go <<'EOF'
@@ -262,11 +262,11 @@ etapes:
         	return index
         }
         EOF
-  - texte: 'Écris `EmprunterTous` dans `tous.go` : elle doit modifier **les vrais jeux** du catalogue reçu. Attention au piège de la copie dans `range`. `TestEmprunterTous` doit passer'
-    indice: 'Parcours les positions avec `for i := range catalogue` et appelle `catalogue[i].Emprunter()`. Avec `for _, j := range`, tu modifierais une copie.'
-    apres: [2]
-    verif:
-      - commande-reussit: "verifier-go tests 01-syntaxe . TestEmprunterTous"
+  - text: 'Écris `EmprunterTous` dans `tous.go` : elle doit modifier **les vrais jeux** du catalogue reçu. Attention au piège de la copie dans `range`. `TestEmprunterTous` doit passer'
+    hint: 'Parcours les positions avec `for i := range catalogue` et appelle `catalogue[i].Emprunter()`. Avec `for _, j := range`, tu modifierais une copie.'
+    after: [2]
+    checks:
+      - command-succeeds: "verifier-go tests 01-syntaxe . TestEmprunterTous"
     solution:
       - |
         cat > tous.go <<'EOF'
@@ -279,12 +279,12 @@ etapes:
         	}
         }
         EOF
-  - texte: 'Compile le programme en un exécutable nommé `ludotheque` avec `go build -o ludotheque .`, puis lance-le avec `./ludotheque` : la dernière ligne affichée doit être `0 jeu disponible sur 2`'
-    indice: '`main.go` est déjà écrit : il utilise toutes tes fonctions. Quand les cinq étapes précédentes sont faites, `go build -o ludotheque .` crée le fichier `ludotheque`, que tu lances avec `./ludotheque`. (`go run .` ferait les deux d''un coup, sans garder le fichier.)'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: 'verifier-go binaire 01-syntaxe ludotheque'
-      - commande-reussit: "verifier-go lancer 01-syntaxe '^0 jeu disponible sur 2$'"
+  - text: 'Compile le programme en un exécutable nommé `ludotheque` avec `go build -o ludotheque .`, puis lance-le avec `./ludotheque` : la dernière ligne affichée doit être `0 jeu disponible sur 2`'
+    hint: '`main.go` est déjà écrit : il utilise toutes tes fonctions. Quand les cinq étapes précédentes sont faites, `go build -o ludotheque .` crée le fichier `ludotheque`, que tu lances avec `./ludotheque`. (`go run .` ferait les deux d''un coup, sans garder le fichier.)'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: 'verifier-go binaire 01-syntaxe ludotheque'
+      - command-succeeds: "verifier-go lancer 01-syntaxe '^0 jeu disponible sur 2$'"
     solution:
       - go build -o ludotheque .
       - ./ludotheque

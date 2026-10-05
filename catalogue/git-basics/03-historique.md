@@ -1,9 +1,9 @@
 ---
 id: historique
-titre: Explorer et annuler
-resume: "Lire l'historique, comparer, et corriger ses erreurs sans paniquer."
-duree: 15
-objectifs:
+title: Explorer et annuler
+summary: "Lire l'historique, comparer, et corriger ses erreurs sans paniquer."
+minutes: 15
+objectives:
   - "Lire l'historique avec `git log` et `git show`"
   - "Comparer des versions avec `git diff`"
   - "Choisir le bon outil pour annuler : `restore`, `reset`, `revert`"
@@ -77,11 +77,11 @@ flowchart TD
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet a 3 commits… et le dernier contient un fichier `secret.txt` qui n'aurait jamais dû être commité. Heureusement, il n'a pas encore été publié.
-commandes:
+commands:
   - git init -q
   - 'echo "# Projet Mentor" > README.md'
   - 'git add . && git commit -q -m "Initialise le projet"'
@@ -89,40 +89,40 @@ commandes:
   - 'git add . && git commit -q -m "Ajoute le script principal"'
   - 'echo "MOT_DE_PASSE=hunter2" > secret.txt'
   - 'git add . && git commit -q -m "WIP"'
-etapes:
-  - texte: "Affiche l'historique compact avec `git log --oneline`, puis enregistre-le avec `git log --oneline > historique.txt`"
-    indice: git log --oneline > historique.txt
-    verif:
-      - fichier-contient-dans-env: [historique.txt, 'WIP']
+steps:
+  - text: "Affiche l'historique compact avec `git log --oneline`, puis enregistre-le avec `git log --oneline > historique.txt`"
+    hint: git log --oneline > historique.txt
+    checks:
+      - env-file-contains: [historique.txt, 'WIP']
     solution:
       - git log --oneline
       - git log --oneline > historique.txt
-  - texte: 'Modifie `README.md` (par exemple `echo "ligne" >> README.md`), puis observe avec `git diff`'
-    indice: 'echo "Une ligne en plus" >> README.md puis git diff'
-    verif:
-      - commande-reussit: '! git diff --quiet -- README.md'
+  - text: 'Modifie `README.md` (par exemple `echo "ligne" >> README.md`), puis observe avec `git diff`'
+    hint: 'echo "Une ligne en plus" >> README.md puis git diff'
+    checks:
+      - command-succeeds: '! git diff --quiet -- README.md'
     solution:
       - 'echo "Une ligne en plus" >> README.md'
       - git diff
-  - texte: 'Annule cette modification avec `git restore README.md`'
-    indice: git restore README.md
-    apres: [2]
-    verif:
-      - commande-reussit: 'git diff --quiet -- README.md'
+  - text: 'Annule cette modification avec `git restore README.md`'
+    hint: git restore README.md
+    after: [2]
+    checks:
+      - command-succeeds: 'git diff --quiet -- README.md'
     solution:
       - git restore README.md
-  - texte: 'Défais le commit « WIP » sans perdre tes fichiers : `git reset HEAD~1`'
-    indice: git reset HEAD~1  — secret.txt redevient « non suivi ».
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count HEAD)" -eq 2'
-      - fichier-existe-dans-env: secret.txt
+  - text: 'Défais le commit « WIP » sans perdre tes fichiers : `git reset HEAD~1`'
+    hint: git reset HEAD~1  — secret.txt redevient « non suivi ».
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count HEAD)" -eq 2'
+      - env-file-exists: secret.txt
     solution:
       - git reset HEAD~1
-  - texte: 'Supprime `secret.txt` du dossier avec `rm secret.txt`'
-    indice: rm secret.txt
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count HEAD)" -eq 2'
-      - fichier-absent-dans-env: secret.txt
+  - text: 'Supprime `secret.txt` du dossier avec `rm secret.txt`'
+    hint: rm secret.txt
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count HEAD)" -eq 2'
+      - env-file-absent: secret.txt
     solution:
       - rm secret.txt
 :::

@@ -1,9 +1,9 @@
 ---
 id: jwt-authentification
-titre: "Authentification par JWT"
-resume: "Vérifier qui se connecte grâce à un jeton signé (JWT) : signature, expiration et algorithme imposé, avec golang-jwt."
-duree: 45
-objectifs:
+title: "Authentification par JWT"
+summary: "Vérifier qui se connecte grâce à un jeton signé (JWT) : signature, expiration et algorithme imposé, avec golang-jwt."
+minutes: 45
+objectives:
   - Décrire les trois parties d'un JWT et ce que sa signature garantit (et ne garantit pas)
   - Lire une structure qui en embarque une autre (`jwt.RegisteredClaims`)
   - Vérifier un jeton avec `golang-jwt` en imposant l'algorithme et l'expiration
@@ -124,18 +124,18 @@ s.Ajoute(conn, claims.Nom)
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu écris le module de vérification des jetons. `claims.go` (la structure `Claims`) et `signe.go` (la fabrication d'un jeton) sont déjà écrits. À toi d'écrire `Initialise` (`secret.go`), `ARole` (`role.go`) et `Verifie` (`verifie.go`), en trois temps pour `Verifie`. Les tests sont dans `jetons_test.go` et utilisent une clé factice. La bibliothèque `golang-jwt` est déjà installée dans l'environnement. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/05-jwt/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Dans `secret.go`, écris `Initialise` : elle refuse une clé vide (erreur) et enregistre sinon la clé dans `secret`. `TestInitialise` doit passer'
-    indice: 'Teste `len(cle) == 0` et renvoie `errors.New("la clé est vide")` (import `errors`) ; sinon `secret = cle` puis `return nil`.'
-    verif:
-      - commande-reussit: "verifier-go tests 05-jwt . TestInitialise"
+steps:
+  - text: 'Dans `secret.go`, écris `Initialise` : elle refuse une clé vide (erreur) et enregistre sinon la clé dans `secret`. `TestInitialise` doit passer'
+    hint: 'Teste `len(cle) == 0` et renvoie `errors.New("la clé est vide")` (import `errors`) ; sinon `secret = cle` puis `return nil`.'
+    checks:
+      - command-succeeds: "verifier-go tests 05-jwt . TestInitialise"
     solution:
       - |
         cat > secret.go <<'EOF'
@@ -155,10 +155,10 @@ etapes:
         	return nil
         }
         EOF
-  - texte: 'Dans `role.go`, écris `ARole` : elle renvoie `true` si le rôle est dans `c.Roles`, `false` sinon. `TestARole` doit passer'
-    indice: 'Boucle `for _, r := range c.Roles` ; `if r == role { return true }` ; `return false` après la boucle.'
-    verif:
-      - commande-reussit: "verifier-go tests 05-jwt . TestARole"
+  - text: 'Dans `role.go`, écris `ARole` : elle renvoie `true` si le rôle est dans `c.Roles`, `false` sinon. `TestARole` doit passer'
+    hint: 'Boucle `for _, r := range c.Roles` ; `if r == role { return true }` ; `return false` après la boucle.'
+    checks:
+      - command-succeeds: "verifier-go tests 05-jwt . TestARole"
     solution:
       - |
         cat > role.go <<'EOF'
@@ -174,11 +174,11 @@ etapes:
         	return false
         }
         EOF
-  - texte: 'Dans `verifie.go`, écris une première version de `Verifie` avec `jwt.ParseWithClaims` et une fonction anonyme qui renvoie `secret`. `TestVerifieValide` doit passer : un jeton valide est accepté, un jeton signé avec une autre clé est refusé'
-    indice: 'Reprends le code de la leçon sans les deux options à la fin. Imports : `github.com/golang-jwt/jwt/v5`.'
-    apres: [1]
-    verif:
-      - commande-reussit: "verifier-go tests 05-jwt . TestVerifieValide"
+  - text: 'Dans `verifie.go`, écris une première version de `Verifie` avec `jwt.ParseWithClaims` et une fonction anonyme qui renvoie `secret`. `TestVerifieValide` doit passer : un jeton valide est accepté, un jeton signé avec une autre clé est refusé'
+    hint: 'Reprends le code de la leçon sans les deux options à la fin. Imports : `github.com/golang-jwt/jwt/v5`.'
+    after: [1]
+    checks:
+      - command-succeeds: "verifier-go tests 05-jwt . TestVerifieValide"
     solution:
       - |
         cat > verifie.go <<'EOF'
@@ -198,11 +198,11 @@ etapes:
         	return claims, nil
         }
         EOF
-  - texte: 'Exige une date d''expiration : ajoute l''option `jwt.WithExpirationRequired()` à `ParseWithClaims`. `TestVerifieSansExpiration` et `TestVerifieExpire` doivent passer'
-    indice: 'Ajoute-la après la fonction anonyme, séparée par une virgule : `…}, jwt.WithExpirationRequired())`.'
-    apres: [3]
-    verif:
-      - commande-reussit: "verifier-go tests 05-jwt . TestVerifieSansExpiration TestVerifieExpire"
+  - text: 'Exige une date d''expiration : ajoute l''option `jwt.WithExpirationRequired()` à `ParseWithClaims`. `TestVerifieSansExpiration` et `TestVerifieExpire` doivent passer'
+    hint: 'Ajoute-la après la fonction anonyme, séparée par une virgule : `…}, jwt.WithExpirationRequired())`.'
+    after: [3]
+    checks:
+      - command-succeeds: "verifier-go tests 05-jwt . TestVerifieSansExpiration TestVerifieExpire"
     solution:
       - |
         cat > verifie.go <<'EOF'
@@ -222,11 +222,11 @@ etapes:
         	return claims, nil
         }
         EOF
-  - texte: 'Impose l''algorithme : ajoute `jwt.WithValidMethods([]string{"HS256"})`. Un jeton signé avec la même clé mais en HS512 doit être refusé. `TestVerifieAlgorithme` doit passer'
-    indice: 'Une deuxième option, après la première, séparée par une virgule.'
-    apres: [4]
-    verif:
-      - commande-reussit: "verifier-go tests 05-jwt . TestVerifieAlgorithme"
+  - text: 'Impose l''algorithme : ajoute `jwt.WithValidMethods([]string{"HS256"})`. Un jeton signé avec la même clé mais en HS512 doit être refusé. `TestVerifieAlgorithme` doit passer'
+    hint: 'Une deuxième option, après la première, séparée par une virgule.'
+    after: [4]
+    checks:
+      - command-succeeds: "verifier-go tests 05-jwt . TestVerifieAlgorithme"
     solution:
       - |
         cat > verifie.go <<'EOF'
@@ -246,14 +246,14 @@ etapes:
         	return claims, nil
         }
         EOF
-  - texte: 'Compile le programme avec `go build -o jetons .`, puis lance-le avec une clé factice : `JWT_SECRET=cle-factice ./jetons` affiche « jeton accepté pour Camille », alors que `./jetons` sans la variable échoue. `go vet ./...` et `go test ./...` passent aussi'
-    indice: 'Tout est déjà écrit dans `main.go`. Essaie `go build -o jetons .`, puis `JWT_SECRET=cle-factice ./jetons`, puis `./jetons`, et enfin `go vet ./... && go test ./...`.'
-    apres: [1, 2, 3, 4, 5]
-    verif:
-      - commande-reussit: 'verifier-go binaire 05-jwt jetons'
-      - commande-reussit: "verifier-go lancer 05-jwt 'jeton accepté pour Camille - bureau : true' JWT_SECRET=cle-factice"
-      - commande-reussit: 'verifier-go lancer-echoue 05-jwt'
-      - commande-reussit: 'verifier-go tout 05-jwt'
+  - text: 'Compile le programme avec `go build -o jetons .`, puis lance-le avec une clé factice : `JWT_SECRET=cle-factice ./jetons` affiche « jeton accepté pour Camille », alors que `./jetons` sans la variable échoue. `go vet ./...` et `go test ./...` passent aussi'
+    hint: 'Tout est déjà écrit dans `main.go`. Essaie `go build -o jetons .`, puis `JWT_SECRET=cle-factice ./jetons`, puis `./jetons`, et enfin `go vet ./... && go test ./...`.'
+    after: [1, 2, 3, 4, 5]
+    checks:
+      - command-succeeds: 'verifier-go binaire 05-jwt jetons'
+      - command-succeeds: "verifier-go lancer 05-jwt 'jeton accepté pour Camille - bureau : true' JWT_SECRET=cle-factice"
+      - command-succeeds: 'verifier-go lancer-echoue 05-jwt'
+      - command-succeeds: 'verifier-go tout 05-jwt'
     solution:
       - go build -o jetons .
       - JWT_SECRET=cle-factice ./jetons

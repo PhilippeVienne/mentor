@@ -1,9 +1,9 @@
 ---
 id: jointures
-titre: "Jointures : croiser plusieurs tables"
-resume: "Recomposer l'information répartie entre les tables avec JOIN et LEFT JOIN."
-duree: 30
-objectifs:
+title: "Jointures : croiser plusieurs tables"
+summary: "Recomposer l'information répartie entre les tables avec JOIN et LEFT JOIN."
+minutes: 30
+objectives:
   - Écrire un `JOIN` en reliant clé étrangère et clé primaire
   - Choisir entre `JOIN` et `LEFT JOIN`
   - Traverser une table de liaison pour relier deux entités
@@ -159,42 +159,42 @@ Oublier le `ON` (ou écrire `FROM adherents, assos` sans `WHERE`) produit un **p
 
 Comme à la leçon précédente, tu écris chaque requête dans un fichier `.sql` (`echo "SELECT …;" > fichier.sql`, ou `nano fichier.sql`) et le serveur l'exécute pour la vérifier. Teste-la toi-même avec `psql -At -f fichier.sql` : `-f` exécute le fichier, `-A -t` ne gardent que les valeurs séparées par `|`.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Les quatre tables sont chargées dans la base `asso`. Pour chaque étape, écris la jointure demandée dans le fichier `.sql` indiqué et teste-la avec `psql -At -f fichier.sql`. Le serveur exécute lui-même ton fichier et compare son résultat ; une réponse recopiée à la main ne passe pas. Respecte l'**ordre des colonnes** et le **tri** demandés.
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
   - psql -q -v ON_ERROR_STOP=1 -f /opt/exercices/schema.sql -f /opt/exercices/donnees.sql
-etapes:
-  - texte: 'Avec un `JOIN`, écris dans `adherents-asso.sql` une requête qui donne le prénom puis le nom de l''association de chaque adhérent·e qui en a une, triés par `adherents.id`'
-    indice: 'Écris `SELECT a.prenom, s.nom FROM adherents a JOIN assos s ON s.id = a.asso_id ORDER BY a.id;` dans le fichier (avec `nano` ou `echo "…" > adherents-asso.sql`), puis teste avec `psql -At -f adherents-asso.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py adherents-asso.sql 'Alice|Ciné-club\nBilal|Ciné-club\nChloé|Robotique\nDavid|Robotique' 'ALICE|CINÉ-CLUB\nBILAL|CINÉ-CLUB\nCHLOÉ|ROBOTIQUE\nDAVID|ROBOTIQUE\nZOÉ|ROBOTIQUE'
+steps:
+  - text: 'Avec un `JOIN`, écris dans `adherents-asso.sql` une requête qui donne le prénom puis le nom de l''association de chaque adhérent·e qui en a une, triés par `adherents.id`'
+    hint: 'Écris `SELECT a.prenom, s.nom FROM adherents a JOIN assos s ON s.id = a.asso_id ORDER BY a.id;` dans le fichier (avec `nano` ou `echo "…" > adherents-asso.sql`), puis teste avec `psql -At -f adherents-asso.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py adherents-asso.sql 'Alice|Ciné-club\nBilal|Ciné-club\nChloé|Robotique\nDavid|Robotique' 'ALICE|CINÉ-CLUB\nBILAL|CINÉ-CLUB\nCHLOÉ|ROBOTIQUE\nDAVID|ROBOTIQUE\nZOÉ|ROBOTIQUE'
     solution:
       - printf '%s\n' "SELECT a.prenom, s.nom FROM adherents a JOIN assos s ON s.id = a.asso_id ORDER BY a.id;" > adherents-asso.sql
-  - texte: 'Refais la même liste dans `tous.sql` mais avec un `LEFT JOIN`, pour **garder Emma** (son association restera vide)'
-    indice: 'Remplace `JOIN` par `LEFT JOIN` : la dernière ligne de la sortie de `psql -At -f tous.sql` doit être `Emma|`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py tous.sql 'Alice|Ciné-club\nBilal|Ciné-club\nChloé|Robotique\nDavid|Robotique\nEmma|' 'ALICE|CINÉ-CLUB\nBILAL|CINÉ-CLUB\nCHLOÉ|ROBOTIQUE\nDAVID|ROBOTIQUE\nEMMA|\nZOÉ|ROBOTIQUE'
+  - text: 'Refais la même liste dans `tous.sql` mais avec un `LEFT JOIN`, pour **garder Emma** (son association restera vide)'
+    hint: 'Remplace `JOIN` par `LEFT JOIN` : la dernière ligne de la sortie de `psql -At -f tous.sql` doit être `Emma|`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py tous.sql 'Alice|Ciné-club\nBilal|Ciné-club\nChloé|Robotique\nDavid|Robotique\nEmma|' 'ALICE|CINÉ-CLUB\nBILAL|CINÉ-CLUB\nCHLOÉ|ROBOTIQUE\nDAVID|ROBOTIQUE\nEMMA|\nZOÉ|ROBOTIQUE'
     solution:
       - printf '%s\n' "SELECT a.prenom, s.nom FROM adherents a LEFT JOIN assos s ON s.id = a.asso_id ORDER BY a.id;" > tous.sql
-  - texte: 'Écris dans `sans-inscription.sql` une requête qui donne le prénom et le nom des adhérent·e·s qui **n''ont aucune inscription**'
-    indice: 'Un `LEFT JOIN inscriptions i ON i.adherent_id = a.id`, puis `WHERE i.adherent_id IS NULL`. Teste avec `psql -At -f sans-inscription.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py sans-inscription.sql 'Emma|Petit' 'EMMA|PETIT'
+  - text: 'Écris dans `sans-inscription.sql` une requête qui donne le prénom et le nom des adhérent·e·s qui **n''ont aucune inscription**'
+    hint: 'Un `LEFT JOIN inscriptions i ON i.adherent_id = a.id`, puis `WHERE i.adherent_id IS NULL`. Teste avec `psql -At -f sans-inscription.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py sans-inscription.sql 'Emma|Petit' 'EMMA|PETIT'
     solution:
       - printf '%s\n' "SELECT a.prenom, a.nom FROM adherents a LEFT JOIN inscriptions i ON i.adherent_id = a.id WHERE i.adherent_id IS NULL;" > sans-inscription.sql
-  - texte: 'Avec deux jointures à travers `inscriptions`, écris dans `qui-vient.sql` une requête qui donne le prénom puis le titre de l''événement de chaque inscription, triés par `evenements.debut` puis par prénom'
-    indice: 'Pars de `inscriptions i`, joins `adherents a ON a.id = i.adherent_id` puis `evenements e ON e.id = i.evenement_id`, et termine par `ORDER BY e.debut, a.prenom`. Teste avec `psql -At -f qui-vient.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py qui-vient.sql 'Alice|Soirée Kubrick\nBilal|Soirée Kubrick\nChloé|Coupe de robotique\nDavid|Coupe de robotique\nAlice|Courts-métrages\nChloé|Atelier soudure' 'ALICE|SOIRÉE KUBRICK\nBILAL|SOIRÉE KUBRICK\nCHLOÉ|COUPE DE ROBOTIQUE\nDAVID|COUPE DE ROBOTIQUE\nZOÉ|COUPE DE ROBOTIQUE\nALICE|COURTS-MÉTRAGES\nCHLOÉ|ATELIER SOUDURE'
+  - text: 'Avec deux jointures à travers `inscriptions`, écris dans `qui-vient.sql` une requête qui donne le prénom puis le titre de l''événement de chaque inscription, triés par `evenements.debut` puis par prénom'
+    hint: 'Pars de `inscriptions i`, joins `adherents a ON a.id = i.adherent_id` puis `evenements e ON e.id = i.evenement_id`, et termine par `ORDER BY e.debut, a.prenom`. Teste avec `psql -At -f qui-vient.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py qui-vient.sql 'Alice|Soirée Kubrick\nBilal|Soirée Kubrick\nChloé|Coupe de robotique\nDavid|Coupe de robotique\nAlice|Courts-métrages\nChloé|Atelier soudure' 'ALICE|SOIRÉE KUBRICK\nBILAL|SOIRÉE KUBRICK\nCHLOÉ|COUPE DE ROBOTIQUE\nDAVID|COUPE DE ROBOTIQUE\nZOÉ|COUPE DE ROBOTIQUE\nALICE|COURTS-MÉTRAGES\nCHLOÉ|ATELIER SOUDURE'
     solution:
       - printf '%s\n' "SELECT a.prenom, e.titre FROM inscriptions i JOIN adherents a ON a.id = i.adherent_id JOIN evenements e ON e.id = i.evenement_id ORDER BY e.debut, a.prenom;" > qui-vient.sql
-  - texte: 'Écris dans `effectifs.sql` une requête qui donne le nom de chaque association (y compris `Jazz`, qui n''a personne) et son nombre d''adhérent·e·s, triés par nom d''association'
-    indice: 'Pars de `assos s LEFT JOIN adherents a ON a.asso_id = s.id`, regroupe avec `GROUP BY s.nom` et compte `count(a.id)` (pas `count(*)`). Teste avec `psql -At -f effectifs.sql`.'
-    verif:
-      - commande-reussit: python3 /opt/exercices/verif-requete.py effectifs.sql 'Ciné-club|2\nJazz|0\nRobotique|2' 'CINÉ-CLUB|2\nJAZZ|0\nROBOTIQUE|3'
+  - text: 'Écris dans `effectifs.sql` une requête qui donne le nom de chaque association (y compris `Jazz`, qui n''a personne) et son nombre d''adhérent·e·s, triés par nom d''association'
+    hint: 'Pars de `assos s LEFT JOIN adherents a ON a.asso_id = s.id`, regroupe avec `GROUP BY s.nom` et compte `count(a.id)` (pas `count(*)`). Teste avec `psql -At -f effectifs.sql`.'
+    checks:
+      - command-succeeds: python3 /opt/exercices/verif-requete.py effectifs.sql 'Ciné-club|2\nJazz|0\nRobotique|2' 'CINÉ-CLUB|2\nJAZZ|0\nROBOTIQUE|3'
     solution:
       - printf '%s\n' "SELECT s.nom, count(a.id) FROM assos s LEFT JOIN adherents a ON a.asso_id = s.id GROUP BY s.nom ORDER BY s.nom;" > effectifs.sql
 :::

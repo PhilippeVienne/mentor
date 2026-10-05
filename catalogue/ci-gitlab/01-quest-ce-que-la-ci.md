@@ -1,9 +1,9 @@
 ---
 id: quest-ce-que-la-ci
-titre: "Qu'est-ce que la CI ?"
-resume: "Intégration continue, livraison et déploiement continus : à quoi ça sert, comment ça fonctionne, et ton premier pipeline."
-duree: 25
-objectifs:
+title: "Qu'est-ce que la CI ?"
+summary: "Intégration continue, livraison et déploiement continus : à quoi ça sert, comment ça fonctionne, et ton premier pipeline."
+minutes: 25
+objectives:
   - Expliquer ce qu'est l'intégration continue et le problème qu'elle résout
   - Distinguer CI, livraison continue et déploiement continu
   - Citer les acteurs d'un pipeline GitLab (dépôt, pipeline, job, runner)
@@ -43,7 +43,7 @@ flowchart LR
 
 Le sigle **CI/CD** regroupe trois idées qui s'enchaînent (**déployer** veut dire mettre une version en ligne, pour que les utilisateur·rice·s s'en servent) :
 
-:::cartes
+:::cards
 ### Intégration continue (CI)
 
 Construire et tester chaque modification automatiquement.
@@ -115,28 +115,28 @@ Une CI n'est pas un juge : elle ne prouve pas que ton code est bon, seulement q
 Un vrai pipeline a besoin d'un serveur GitLab et d'un runner. Ton conteneur n'a ni l'un ni l'autre (et pas de réseau). À la place, tu disposes de `verifier-ci`, un petit outil de l'équipe qui lit un `.gitlab-ci.yml` et en vérifie la **structure** comme GitLab le ferait avant de créer le pipeline : stages déclarés, jobs rattachés à un stage connu, `script` présent, clés inconnues. Il n'exécute **aucun** job. C'est un bon filet pour repérer une faute avant de pousser, mais le dernier mot reste à GitLab (son éditeur de pipeline, menu *Build*).
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu as un vrai terminal Linux. Pour afficher un fichier, tape `cat nom-du-fichier`. Pour en créer ou en modifier un, tape `nano nom-du-fichier` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou utilise l'éditeur de VS Code si le portail te le propose. Dans ton dossier de travail : `exemple-minishop.yml` (la CI de MiniShop, simplifiée), `pipeline-casse.yml` (un pipeline à réparer) et le dossier `app` (une minuscule application avec ses tests). La commande `verifier-ci fichier.yml` diagnostique un pipeline ; avec l'option `--montrer`, elle affiche les stages et les jobs.
-commandes:
+commands:
   - cp -R /opt/exercices/01-premier-pipeline/. .
-etapes:
-  - texte: 'Compte les jobs du stage `quality` dans `exemple-minishop.yml`, puis écris ce nombre dans un fichier `reponse.txt` (avec `echo NOMBRE > reponse.txt`, en remplaçant NOMBRE)'
-    indice: 'Lance `verifier-ci --montrer exemple-minishop.yml` : chaque ligne `[quality] nom` est un job du stage `quality`.'
-    verif:
-      - fichier-contient-dans-env: [reponse.txt, '^\s*3\s*$']
+steps:
+  - text: 'Compte les jobs du stage `quality` dans `exemple-minishop.yml`, puis écris ce nombre dans un fichier `reponse.txt` (avec `echo NOMBRE > reponse.txt`, en remplaçant NOMBRE)'
+    hint: 'Lance `verifier-ci --montrer exemple-minishop.yml` : chaque ligne `[quality] nom` est un job du stage `quality`.'
+    checks:
+      - env-file-contains: [reponse.txt, '^\s*3\s*$']
     solution:
       - echo 3 > reponse.txt
-  - texte: 'Écris un `.gitlab-ci.yml` à deux stages, `build` puis `test`, avec un job `compiler` dans `build` et un job `tests` dans `test` ; chacun a un `script` (une seule commande suffit, par exemple `echo "ok"`)'
-    indice: 'Reprends la forme du cours : `stages:` avec deux éléments, puis `compiler:` et `tests:` avec leur `stage:` et leur `script:`. Contrôle avec `verifier-ci .gitlab-ci.yml`.'
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --stages build,test"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job compiler --stage build --cree"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job tests --stage test --cree"
+  - text: 'Écris un `.gitlab-ci.yml` à deux stages, `build` puis `test`, avec un job `compiler` dans `build` et un job `tests` dans `test` ; chacun a un `script` (une seule commande suffit, par exemple `echo "ok"`)'
+    hint: 'Reprends la forme du cours : `stages:` avec deux éléments, puis `compiler:` et `tests:` avec leur `stage:` et leur `script:`. Contrôle avec `verifier-ci .gitlab-ci.yml`.'
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --stages build,test"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job compiler --stage build --cree"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job tests --stage test --cree"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - build
@@ -151,15 +151,15 @@ etapes:
               stage: test
               script:
                 - echo "ok"
-  - texte: 'Fais lancer à ton job `tests` les vrais tests de l''application : sa commande doit être `sh app/tests.sh` (essaie-la d''abord dans ton terminal : c''est exactement ce que ferait le runner)'
-    indice: 'Dans le job `tests`, remplace la commande de `script` par `- sh app/tests.sh`. Relance ensuite `verifier-ci .gitlab-ci.yml`.'
-    apres: [2]
-    verif:
-      - commande-reussit: sh app/tests.sh
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job tests --cree --script-lance 'sh app/tests.sh'"
-      - commande-reussit: verifier-ci .gitlab-ci.yml
+  - text: 'Fais lancer à ton job `tests` les vrais tests de l''application : sa commande doit être `sh app/tests.sh` (essaie-la d''abord dans ton terminal : c''est exactement ce que ferait le runner)'
+    hint: 'Dans le job `tests`, remplace la commande de `script` par `- sh app/tests.sh`. Relance ensuite `verifier-ci .gitlab-ci.yml`.'
+    after: [2]
+    checks:
+      - command-succeeds: sh app/tests.sh
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job tests --cree --script-lance 'sh app/tests.sh'"
+      - command-succeeds: verifier-ci .gitlab-ci.yml
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - build
@@ -174,15 +174,15 @@ etapes:
               stage: test
               script:
                 - sh app/tests.sh
-  - texte: 'Lance `verifier-ci pipeline-casse.yml` : il signale deux erreurs. Corrige le fichier `pipeline-casse.yml` jusqu''à ce que `verifier-ci --strict pipeline-casse.yml` réussisse, sans supprimer de job'
-    indice: 'Le premier message cite le stage `biuld` (une faute de frappe) ; le second dit qu''un job n''a pas de `script`. Ajoute par exemple `script:` puis `- sh app/tests.sh` au job `tests`.'
-    verif:
-      - commande-reussit: verifier-ci --strict pipeline-casse.yml
-      - sortie-contient: ['verifier-ci --montrer pipeline-casse.yml', '\[build\] compiler']
-      - sortie-contient: ['verifier-ci --montrer pipeline-casse.yml', '\[test\] tests']
+  - text: 'Lance `verifier-ci pipeline-casse.yml` : il signale deux erreurs. Corrige le fichier `pipeline-casse.yml` jusqu''à ce que `verifier-ci --strict pipeline-casse.yml` réussisse, sans supprimer de job'
+    hint: 'Le premier message cite le stage `biuld` (une faute de frappe) ; le second dit qu''un job n''a pas de `script`. Ajoute par exemple `script:` puis `- sh app/tests.sh` au job `tests`.'
+    checks:
+      - command-succeeds: verifier-ci --strict pipeline-casse.yml
+      - output-contains: ['verifier-ci --montrer pipeline-casse.yml', '\[build\] compiler']
+      - output-contains: ['verifier-ci --montrer pipeline-casse.yml', '\[test\] tests']
     solution:
-      - ecrire:
-          pipeline-casse.yml: |
+      - write:
+          pipeline-casse.yml: |-
             stages:
               - build
               - test

@@ -1,9 +1,9 @@
 ---
 id: tests-avant-de-toucher
-titre: "Écrire des tests avant de toucher au code"
-resume: "Poser un filet de sécurité de tests de caractérisation pour savoir si une montée de version a cassé quelque chose."
-duree: 35
-objectifs:
+title: "Écrire des tests avant de toucher au code"
+summary: "Poser un filet de sécurité de tests de caractérisation pour savoir si une montée de version a cassé quelque chose."
+minutes: 35
+objectives:
   - Expliquer à quoi sert un test avant une montée de version
   - Écrire un test de caractérisation avec le `TestCase` de Django
   - Repérer ce qui est testé (ou non) dans les projets de l'équipe et décider par où commencer
@@ -165,27 +165,27 @@ Si les tests d'Adhésion exigent un serveur Keycloak, ils échoueront en CI mêm
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet `adherents` (en Django 3.1, comme PlanningAPI) est dans ton dossier de travail. Son fichier `adherents/tests.py` ne contient que le commentaire généré par Django : la CI serait verte, mais rien n'est protégé. Tu poses le filet de sécurité avec le Python de l'environnement `django31` : `/opt/venvs/django31/bin/python manage.py test`. Les commandes fonctionnent hors ligne, et il n'existe aucun serveur Keycloak.
-commandes:
+commands:
   - cp -R /opt/exercices/projet-legacy/. .
-etapes:
-  - texte: 'Mesure la couverture actuelle du projet et écris le rapport dans `couverture-avant.txt`'
-    indice: 'Lance d''abord `/opt/venvs/django31/bin/python -m coverage run manage.py test`, puis `/opt/venvs/django31/bin/python -m coverage report > couverture-avant.txt`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy couverture couverture-avant.txt'
+steps:
+  - text: 'Mesure la couverture actuelle du projet et écris le rapport dans `couverture-avant.txt`'
+    hint: 'Lance d''abord `/opt/venvs/django31/bin/python -m coverage run manage.py test`, puis `/opt/venvs/django31/bin/python -m coverage report > couverture-avant.txt`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy couverture couverture-avant.txt'
     solution:
       - /opt/venvs/django31/bin/python -m coverage run manage.py test
       - /opt/venvs/django31/bin/python -m coverage report > couverture-avant.txt
 
-  - texte: 'Dans `adherents/tests.py`, écris le test de caractérisation de `nom_complet` (celui de la leçon) et fais-le passer'
-    indice: 'Reprends la classe `NomCompletTests` de la leçon, avec ses deux `import`. Lance ensuite `/opt/venvs/django31/bin/python manage.py test` : tu dois lire `Ran 1 test` puis `OK`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy tests 2 1'
+  - text: 'Dans `adherents/tests.py`, écris le test de caractérisation de `nom_complet` (celui de la leçon) et fais-le passer'
+    hint: 'Reprends la classe `NomCompletTests` de la leçon, avec ses deux `import`. Lance ensuite `/opt/venvs/django31/bin/python manage.py test` : tu dois lire `Ran 1 test` puis `OK`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy tests 2 1'
     solution:
-      - ecrire:
+      - write:
           adherents/tests.py: |
             from django.test import TestCase
 
@@ -197,13 +197,13 @@ etapes:
                     adherent = Adherent.objects.create(nom="  marie curie ")
                     self.assertEqual(adherent.nom_complet(), "Marie Curie")
 
-  - texte: 'Ajoute un test de l''URL `/adherents/` : crée un adhérent, appelle la page avec `self.client.get` et vérifie le code `200` et le nom renvoyé'
-    indice: 'Une seconde classe de test, avec `reponse = self.client.get("/adherents/")`, puis `self.assertEqual(reponse.status_code, 200)` et `self.assertEqual(reponse.json(), {"adherents": ["Marie Curie"]})`.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy tests 3 2'
+  - text: 'Ajoute un test de l''URL `/adherents/` : crée un adhérent, appelle la page avec `self.client.get` et vérifie le code `200` et le nom renvoyé'
+    hint: 'Une seconde classe de test, avec `reponse = self.client.get("/adherents/")`, puis `self.assertEqual(reponse.status_code, 200)` et `self.assertEqual(reponse.json(), {"adherents": ["Marie Curie"]})`.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy tests 3 2'
     solution:
-      - ecrire:
+      - write:
           adherents/tests.py: |
             from django.test import TestCase
 
@@ -223,13 +223,13 @@ etapes:
                     self.assertEqual(reponse.status_code, 200)
                     self.assertEqual(reponse.json(), {"adherents": ["Marie Curie"]})
 
-  - texte: 'Teste `/adherents/prive/` sans serveur Keycloak : remplace `verifier_jeton` par un faux avec `patch`'
-    indice: 'Importe `from unittest.mock import patch` et décore le test avec `@patch("adherents.views.verifier_jeton", return_value=True)`. Le test reçoit le faux en argument. Sans faux, l''appel réseau échoue.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy tests 4 3'
+  - text: 'Teste `/adherents/prive/` sans serveur Keycloak : remplace `verifier_jeton` par un faux avec `patch`'
+    hint: 'Importe `from unittest.mock import patch` et décore le test avec `@patch("adherents.views.verifier_jeton", return_value=True)`. Le test reçoit le faux en argument. Sans faux, l''appel réseau échoue.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy tests 4 3'
     solution:
-      - ecrire:
+      - write:
           adherents/tests.py: |
             from unittest.mock import patch
 
@@ -260,11 +260,11 @@ etapes:
                     self.assertEqual(reponse.json(), {"nombre": 1})
                     faux_jeton.assert_called_once_with("Bearer faux")
 
-  - texte: 'Mesure la couverture avec ces tests, écris le rapport dans `couverture-apres.txt` et vérifie qu''elle atteint au moins 80 %'
-    indice: 'Relance `/opt/venvs/django31/bin/python -m coverage run manage.py test`, puis `/opt/venvs/django31/bin/python -m coverage report > couverture-apres.txt`. L''option `--fail-under=80` de `coverage report` échoue sous 80 %.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy couverture couverture-apres.txt --avec-tests --minimum 80'
+  - text: 'Mesure la couverture avec ces tests, écris le rapport dans `couverture-apres.txt` et vérifie qu''elle atteint au moins 80 %'
+    hint: 'Relance `/opt/venvs/django31/bin/python -m coverage run manage.py test`, puis `/opt/venvs/django31/bin/python -m coverage report > couverture-apres.txt`. L''option `--fail-under=80` de `coverage report` échoue sous 80 %.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy couverture couverture-apres.txt --avec-tests --minimum 80'
     solution:
       - /opt/venvs/django31/bin/python -m coverage run manage.py test
       - /opt/venvs/django31/bin/python -m coverage report > couverture-apres.txt

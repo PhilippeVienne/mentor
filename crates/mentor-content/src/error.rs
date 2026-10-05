@@ -2,7 +2,7 @@ use std::path::Path;
 
 /// Content error: the message is prefixed with the offending file.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("{path} : {message}")]
+#[error("{path}: {message}")]
 pub struct ContentError {
     pub path: String,
     pub message: String,

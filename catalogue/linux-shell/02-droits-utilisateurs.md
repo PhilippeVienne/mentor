@@ -1,9 +1,9 @@
 ---
 id: droits-utilisateurs
-titre: "Droits, utilisateurs et groupes"
-resume: "Lire les droits d'un fichier, les modifier avec chmod et comprendre le rôle de root."
-duree: 25
-objectifs:
+title: "Droits, utilisateurs et groupes"
+summary: "Lire les droits d'un fichier, les modifier avec chmod et comprendre le rôle de root."
+minutes: 25
+objectives:
   - Lire la ligne de droits renvoyée par `ls -l`
   - Modifier des droits avec `chmod` (notation symbolique et octale)
   - Expliquer ce que change `sudo` et pourquoi l'éviter par défaut
@@ -71,45 +71,45 @@ Ton terminal du labo n'a volontairement **pas** `sudo` : tu travailles avec un 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, tu trouves trois fichiers : `deploy.sh` (un script de déploiement simulé), `secret.env` (un fichier qui contient un faux mot de passe d'exemple) et `rapport.txt`. Observe leurs droits avec `ls -l`, puis corrige-les. Les droits de départ sont `rw-r--r--` (644) pour chacun.
-commandes:
+commands:
   - cp -R /opt/exercices/02-droits/. .
-etapes:
-  - texte: 'Rends `deploy.sh` exécutable pour toi (son propriétaire)'
-    indice: 'Essaie d''abord `./deploy.sh` : tu obtiens « Permission denied ». Puis `chmod u+x deploy.sh` ajoute le droit d''exécution au propriétaire.'
-    verif:
-      - sortie-contient: ['stat -c %A deploy.sh', '^-..x']
+steps:
+  - text: 'Rends `deploy.sh` exécutable pour toi (son propriétaire)'
+    hint: 'Essaie d''abord `./deploy.sh` : tu obtiens « Permission denied ». Puis `chmod u+x deploy.sh` ajoute le droit d''exécution au propriétaire.'
+    checks:
+      - output-contains: ['stat -c %A deploy.sh', '^-..x']
     solution:
       - chmod u+x deploy.sh
-  - texte: 'Lance `./deploy.sh` : il doit créer le fichier `deploiement.txt`'
-    indice: 'Le `./` devant le nom dit au shell « le script qui est dans le dossier courant ».'
-    apres: [1]
-    verif:
-      - commande-reussit: 'T=$(sed -n "s/^Déploiement simulé terminé le \\([0-9]*\\) (empreinte .*/\\1/p" deploiement.txt) && test -n "$T" && grep -q "(empreinte $(printf "%s demo-deploy" "$T" | sha256sum | cut -c1-12))" deploiement.txt'
+  - text: 'Lance `./deploy.sh` : il doit créer le fichier `deploiement.txt`'
+    hint: 'Le `./` devant le nom dit au shell « le script qui est dans le dossier courant ».'
+    after: [1]
+    checks:
+      - command-succeeds: 'T=$(sed -n "s/^Déploiement simulé terminé le \\([0-9]*\\) (empreinte .*/\\1/p" deploiement.txt) && test -n "$T" && grep -q "(empreinte $(printf "%s demo-deploy" "$T" | sha256sum | cut -c1-12))" deploiement.txt'
     solution:
       - ./deploy.sh
-  - texte: '`secret.env` est lisible par tout le monde, ce qui n''est pas acceptable : ne laisse des droits qu''à son propriétaire (lecture et écriture, `rw-------`)'
-    indice: 'En notation octale : 6 (rw-) pour le propriétaire, 0 pour le groupe et 0 pour les autres. Contrôle avec `ls -l secret.env`.'
-    verif:
-      - sortie-contient: ['stat -c %a secret.env', '^600$']
-      - commande-reussit: 'cmp -s secret.env /opt/exercices/02-droits/secret.env'
+  - text: '`secret.env` est lisible par tout le monde, ce qui n''est pas acceptable : ne laisse des droits qu''à son propriétaire (lecture et écriture, `rw-------`)'
+    hint: 'En notation octale : 6 (rw-) pour le propriétaire, 0 pour le groupe et 0 pour les autres. Contrôle avec `ls -l secret.env`.'
+    checks:
+      - output-contains: ['stat -c %a secret.env', '^600$']
+      - command-succeeds: 'cmp -s secret.env /opt/exercices/02-droits/secret.env'
     solution:
       - chmod 600 secret.env
-  - texte: 'Mets `rapport.txt` en lecture seule pour tout le monde, toi compris (droits `r--r--r--`, soit 444)'
-    indice: 'Soit `chmod 444 rapport.txt`, soit `chmod a-w rapport.txt` (retire l''écriture, `w`, pour tous : `a`).'
-    verif:
-      - sortie-contient: ['stat -c %a rapport.txt', '^444$']
-      - commande-reussit: 'cmp -s rapport.txt /opt/exercices/02-droits/rapport.txt'
+  - text: 'Mets `rapport.txt` en lecture seule pour tout le monde, toi compris (droits `r--r--r--`, soit 444)'
+    hint: 'Soit `chmod 444 rapport.txt`, soit `chmod a-w rapport.txt` (retire l''écriture, `w`, pour tous : `a`).'
+    checks:
+      - output-contains: ['stat -c %a rapport.txt', '^444$']
+      - command-succeeds: 'cmp -s rapport.txt /opt/exercices/02-droits/rapport.txt'
     solution:
       - chmod a-w rapport.txt
-  - texte: 'Crée un dossier `partage` dont toi seul·e peux tout faire, que le groupe peut lire et traverser, et dont les autres ne peuvent rien faire (`rwxr-x---`, soit 750)'
-    indice: '`mkdir partage` puis `chmod 750 partage` : 7 = 4+2+1, 5 = 4+1, 0 = rien.'
-    verif:
-      - sortie-contient: ['stat -c %a partage', '^750$']
-      - commande-reussit: 'test -d partage'
+  - text: 'Crée un dossier `partage` dont toi seul·e peux tout faire, que le groupe peut lire et traverser, et dont les autres ne peuvent rien faire (`rwxr-x---`, soit 750)'
+    hint: '`mkdir partage` puis `chmod 750 partage` : 7 = 4+2+1, 5 = 4+1, 0 = rien.'
+    checks:
+      - output-contains: ['stat -c %a partage', '^750$']
+      - command-succeeds: 'test -d partage'
     solution:
       - mkdir partage
       - chmod 750 partage

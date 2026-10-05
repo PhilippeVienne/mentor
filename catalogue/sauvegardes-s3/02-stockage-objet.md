@@ -1,9 +1,9 @@
 ---
 id: stockage-objet
-titre: "Le stockage objet : S3, MinIO et Swift"
-resume: "Comprendre buckets, objets et clés d'accès, et créer toi-même un bucket, une politique et un compte limité sur un MinIO de labo."
-duree: 30
-objectifs:
+title: "Le stockage objet : S3, MinIO et Swift"
+summary: "Comprendre buckets, objets et clés d'accès, et créer toi-même un bucket, une politique et un compte limité sur un MinIO de labo."
+minutes: 30
+objectives:
   - Expliquer ce qu'est un bucket et un objet
   - Utiliser `mc` ou `aws` avec un point d'accès personnalisé
   - Créer un bucket, une politique d'accès et un utilisateur dédié avec MinIO
@@ -126,32 +126,32 @@ AWS_ACCESS_KEY_ID=app-sauvegarde AWS_SECRET_ACCESS_KEY=secret-factice-42 aws s3 
 - `AWS_ACCESS_KEY_ID=…` et `AWS_SECRET_ACCESS_KEY=…` : les variables que l'AWS CLI lit pour s'identifier. Placées devant la commande, elles ne valent que pour elle.
 - `aws s3 cp notes.txt s3://sauvegardes-asso/notes.txt` : copie le fichier local `notes.txt` vers l'objet `notes.txt` du bucket (`s3://bucket/clé` est la façon d'écrire l'adresse d'un objet).
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Un MinIO fictif tourne dans ton conteneur ; l'alias `labo` le désigne avec le compte administrateur factice du labo, et le bucket `prive` existe déjà. Tu crées un bucket, une politique de moindre privilège et un compte dédié, puis tu prouves qu'il est bien limité. Dans la réalité, ces commandes passent par les modules Terraform de l'équipe. Les étapes sont vérifiées par le serveur du portail sur l'état du MinIO.
-fichiers:
+files:
   notes.txt: |
     Notes de l'association (contenu fictif).
-commandes:
+commands:
   - demarrer-minio
   - mc mb --ignore-existing labo/prive
-etapes:
-  - texte: 'Crée le bucket `sauvegardes-asso` avec `mc mb`'
-    indice: 'mc mb labo/sauvegardes-asso'
-    verif:
-      - commande-reussit: mc ls labo/sauvegardes-asso
+steps:
+  - text: 'Crée le bucket `sauvegardes-asso` avec `mc mb`'
+    hint: 'mc mb labo/sauvegardes-asso'
+    checks:
+      - command-succeeds: mc ls labo/sauvegardes-asso
     solution:
       - mc mb labo/sauvegardes-asso
-  - texte: 'Écris le fichier `politique.json` : les actions `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` sur les objets de `sauvegardes-asso` et `s3:ListBucket` sur le bucket lui-même, sans jamais utiliser `s3:*`'
-    indice: 'Recopie le JSON de la section « Un accès par bucket » avec nano politique.json. Le nom du bucket doit être sauvegardes-asso partout.'
-    verif:
-      - commande-reussit: python3 -m json.tool politique.json
-      - fichier-contient-dans-env: [politique.json, 'arn:aws:s3:::sauvegardes-asso/\*']
-      - fichier-contient-dans-env: [politique.json, 's3:PutObject']
-      - commande-echoue: grep -q '"s3:\*"' politique.json
+  - text: 'Écris le fichier `politique.json` : les actions `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` sur les objets de `sauvegardes-asso` et `s3:ListBucket` sur le bucket lui-même, sans jamais utiliser `s3:*`'
+    hint: 'Recopie le JSON de la section « Un accès par bucket » avec nano politique.json. Le nom du bucket doit être sauvegardes-asso partout.'
+    checks:
+      - command-succeeds: python3 -m json.tool politique.json
+      - env-file-contains: [politique.json, 'arn:aws:s3:::sauvegardes-asso/\*']
+      - env-file-contains: [politique.json, 's3:PutObject']
+      - command-fails: grep -q '"s3:\*"' politique.json
     solution:
-      - ecrire:
+      - write:
           politique.json: |
             {
               "Version": "2012-10-17",
@@ -168,36 +168,36 @@ etapes:
                 }
               ]
             }
-  - texte: 'Enregistre cette politique dans MinIO sous le nom `pol-sauvegardes`, avec `mc admin policy create`'
-    indice: 'mc admin policy create labo pol-sauvegardes politique.json'
-    apres: [2]
-    verif:
-      - commande-reussit: mc admin policy info labo pol-sauvegardes
+  - text: 'Enregistre cette politique dans MinIO sous le nom `pol-sauvegardes`, avec `mc admin policy create`'
+    hint: 'mc admin policy create labo pol-sauvegardes politique.json'
+    after: [2]
+    checks:
+      - command-succeeds: mc admin policy info labo pol-sauvegardes
     solution:
       - mc admin policy create labo pol-sauvegardes politique.json
-  - texte: 'Crée l''utilisateur `app-sauvegarde` (mot de passe `secret-factice-42`) puis rattache-lui la politique `pol-sauvegardes` avec `mc admin policy attach`'
-    indice: 'mc admin user add labo app-sauvegarde secret-factice-42, puis mc admin policy attach labo pol-sauvegardes --user app-sauvegarde'
-    apres: [3]
-    verif:
-      - sortie-contient:
+  - text: 'Crée l''utilisateur `app-sauvegarde` (mot de passe `secret-factice-42`) puis rattache-lui la politique `pol-sauvegardes` avec `mc admin policy attach`'
+    hint: 'mc admin user add labo app-sauvegarde secret-factice-42, puis mc admin policy attach labo pol-sauvegardes --user app-sauvegarde'
+    after: [3]
+    checks:
+      - output-contains:
           - mc admin user info labo app-sauvegarde
           - 'pol-sauvegardes'
     solution:
       - mc admin user add labo app-sauvegarde secret-factice-42
       - mc admin policy attach labo pol-sauvegardes --user app-sauvegarde
-  - texte: 'Avec les identifiants de `app-sauvegarde`, envoie `notes.txt` dans le bucket `sauvegardes-asso`'
-    indice: 'AWS_ACCESS_KEY_ID=app-sauvegarde AWS_SECRET_ACCESS_KEY=secret-factice-42 aws s3 cp notes.txt s3://sauvegardes-asso/notes.txt'
-    apres: [4]
-    verif:
-      - commande-reussit: mc stat labo/sauvegardes-asso/notes.txt
+  - text: 'Avec les identifiants de `app-sauvegarde`, envoie `notes.txt` dans le bucket `sauvegardes-asso`'
+    hint: 'AWS_ACCESS_KEY_ID=app-sauvegarde AWS_SECRET_ACCESS_KEY=secret-factice-42 aws s3 cp notes.txt s3://sauvegardes-asso/notes.txt'
+    after: [4]
+    checks:
+      - command-succeeds: mc stat labo/sauvegardes-asso/notes.txt
     solution:
       - AWS_ACCESS_KEY_ID=app-sauvegarde AWS_SECRET_ACCESS_KEY=secret-factice-42 aws s3 cp notes.txt s3://sauvegardes-asso/notes.txt
-  - texte: 'Avec le même compte, tente d''envoyer `notes.txt` dans le bucket `prive` en gardant le message d''erreur dans `refus.txt` (la commande doit être refusée)'
-    indice: 'Ajoute 2> refus.txt à la fin de la commande : 2> redirige les messages d''erreur vers un fichier.'
-    apres: [5]
-    verif:
-      - fichier-contient-dans-env: [refus.txt, 'AccessDenied|Access Denied']
-      - commande-echoue: mc stat labo/prive/notes.txt
+  - text: 'Avec le même compte, tente d''envoyer `notes.txt` dans le bucket `prive` en gardant le message d''erreur dans `refus.txt` (la commande doit être refusée)'
+    hint: 'Ajoute 2> refus.txt à la fin de la commande : 2> redirige les messages d''erreur vers un fichier.'
+    after: [5]
+    checks:
+      - env-file-contains: [refus.txt, 'AccessDenied|Access Denied']
+      - command-fails: mc stat labo/prive/notes.txt
     solution:
       - AWS_ACCESS_KEY_ID=app-sauvegarde AWS_SECRET_ACCESS_KEY=secret-factice-42 aws s3 cp notes.txt s3://prive/notes.txt 2> refus.txt || true
 :::

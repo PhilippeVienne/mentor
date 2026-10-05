@@ -1,9 +1,9 @@
 ---
 id: premier-conteneur
-titre: Ton premier conteneur
-resume: 'docker run en détail : commande, mode détaché, ports et logs.'
-duree: 15
-objectifs:
+title: Ton premier conteneur
+summary: 'docker run en détail : commande, mode détaché, ports et logs.'
+minutes: 15
+objectives:
   - "Lire et écrire la commande `docker run [options] IMAGE [commande]`"
   - "Lancer un service en arrière-plan avec `-d`, `--name` et `-p`"
   - "Vérifier qu'un conteneur tourne avec `docker ps`, `curl` et `docker logs`"
@@ -91,43 +91,43 @@ Si le port 8080 de ta machine est déjà utilisé, Docker refuse de démarrer le
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Lance une commande ponctuelle, puis un vrai serveur web nginx accessible depuis ton « navigateur » (`curl`).
-etapes:
-  - texte: 'Affiche « Bonjour » depuis un conteneur `alpine` avec `echo`'
-    indice: "Format `docker run IMAGE commande` : l'image est `alpine`, la commande est `echo` suivi du texte entre guillemets."
-    verif:
-      - commande: '^docker run .*alpine echo'
-      - conteneur-image: alpine
+steps:
+  - text: 'Affiche « Bonjour » depuis un conteneur `alpine` avec `echo`'
+    hint: "Format `docker run IMAGE commande` : l'image est `alpine`, la commande est `echo` suivi du texte entre guillemets."
+    checks:
+      - command: '^docker run .*alpine echo'
+      - container-image: alpine
     solution:
       - 'docker run alpine echo "Bonjour"'
-  - texte: 'Démarre nginx détaché, nommé `web`, port `8080` → `80`'
-    indice: "Trois options à combiner avant le nom de l'image `nginx` : détaché, nom `web`, et la redirection `hôte:conteneur` 8080 → 80."
-    verif:
-      - conteneur-actif: web
-      - conteneur-port: [web, '8080:80']
+  - text: 'Démarre nginx détaché, nommé `web`, port `8080` → `80`'
+    hint: "Trois options à combiner avant le nom de l'image `nginx` : détaché, nom `web`, et la redirection `hôte:conteneur` 8080 → 80."
+    checks:
+      - container-running: web
+      - container-port: [web, '8080:80']
     solution:
       - 'docker run -d --name web -p 8080:80 nginx'
-  - texte: "Vérifie qu'il tourne avec `docker ps`"
-    indice: "Sans option : seuls les conteneurs en cours d'exécution sont listés."
-    apres: [2]
-    verif:
-      - commande: ^docker ps
+  - text: "Vérifie qu'il tourne avec `docker ps`"
+    hint: "Sans option : seuls les conteneurs en cours d'exécution sont listés."
+    after: [2]
+    checks:
+      - command: ^docker ps
     solution:
       - docker ps
-  - texte: 'Visite-le avec `curl localhost:8080`'
-    indice: "Interroge ta machine sur le port que tu as publié (celui de gauche dans `-p`)."
-    apres: [2]
-    verif:
-      - commande: '^curl .*8080'
+  - text: 'Visite-le avec `curl localhost:8080`'
+    hint: "Interroge ta machine sur le port que tu as publié (celui de gauche dans `-p`)."
+    after: [2]
+    checks:
+      - command: '^curl .*8080'
     solution:
       - 'curl localhost:8080'
-  - texte: 'Lis ses journaux avec `docker logs web`'
-    indice: "La sous-commande `logs` attend le nom du conteneur."
-    apres: [2]
-    verif:
-      - commande: ^docker logs web
+  - text: 'Lis ses journaux avec `docker logs web`'
+    hint: "La sous-commande `logs` attend le nom du conteneur."
+    after: [2]
+    checks:
+      - command: ^docker logs web
     solution:
       - docker logs web
 :::

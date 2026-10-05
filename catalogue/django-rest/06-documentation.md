@@ -1,9 +1,9 @@
 ---
 id: documentation
-titre: "Documenter son API"
-resume: "Docstrings, schéma OpenAPI, page Swagger et document partagé : donner aux autres de quoi utiliser ton API."
-duree: 35
-objectifs:
+title: "Documenter son API"
+summary: "Docstrings, schéma OpenAPI, page Swagger et document partagé : donner aux autres de quoi utiliser ton API."
+minutes: 35
+objectives:
   - Expliquer pourquoi et pour qui on documente une API
   - Écrire des docstrings qui alimentent la documentation
   - Générer un schéma OpenAPI avec `generateschema`
@@ -141,20 +141,20 @@ En relisant le code actuel d'Adhésion, on constate un écart : le document ext
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   L'API des événements fonctionne, mais elle n'est pas documentée : ses vues n'ont aucune docstring, et la commande `generateschema` plante. Tu vas ajouter les docstrings, contourner le plantage, produire le schéma OpenAPI et rédiger la fiche d'un point d'accès pour un partenaire. Les deux premières étapes sont vérifiées par `pytest -q test_documentation.py` ; les suivantes par des commandes et par le contenu des fichiers que tu crées.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/06-documentation/. .
-etapes:
-  - texte: 'Ajoute à `AssoViewSet` la docstring `"""Associations et leurs événements."""`, juste sous la ligne `class`. Une requête `OPTIONS /v1/assos/` doit la renvoyer comme description : `test_docstring_des_assos` doit passer'
-    indice: 'La docstring est la première chose dans le corps de la classe, entre triples guillemets. Elle s''écrit avant `queryset`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 06-documentation docstring_des_assos'
+steps:
+  - text: 'Ajoute à `AssoViewSet` la docstring `"""Associations et leurs événements."""`, juste sous la ligne `class`. Une requête `OPTIONS /v1/assos/` doit la renvoyer comme description : `test_docstring_des_assos` doit passer'
+    hint: 'La docstring est la première chose dans le corps de la classe, entre triples guillemets. Elle s''écrit avant `queryset`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 06-documentation docstring_des_assos'
     solution:
-      - ecrire:
+      - write:
           agenda/views.py: |
             import csv
 
@@ -211,13 +211,13 @@ etapes:
                     for e in self.filter_queryset(self.get_queryset()):
                         writer.writerow([e.titre, e.asso.nom, e.date.isoformat()])
                     return reponse
-  - texte: 'Ajoute une docstring à `EvenementViewSet` et à son action `fermer`. `test_docstrings_des_evenements` doit passer'
-    indice: 'Pour la méthode `fermer`, la docstring se place juste sous la ligne `def`, avant le code.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 06-documentation docstrings_des_evenements'
+  - text: 'Ajoute une docstring à `EvenementViewSet` et à son action `fermer`. `test_docstrings_des_evenements` doit passer'
+    hint: 'Pour la méthode `fermer`, la docstring se place juste sous la ligne `def`, avant le code.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 06-documentation docstrings_des_evenements'
     solution:
-      - ecrire:
+      - write:
           agenda/views.py: |
             import csv
 
@@ -277,12 +277,12 @@ etapes:
                     for e in self.filter_queryset(self.get_queryset()):
                         writer.writerow([e.titre, e.asso.nom, e.date.isoformat()])
                     return reponse
-  - texte: 'Lance `python manage.py generateschema --title "API Agenda" --api_version 1.0.0` : la commande plante (`AttributeError ... get_schema_operation_parameters`). Crée `agenda/schema.py` avec une sous-classe d''`AutoSchema` qui ignore les filtres sans cette méthode, et déclare-la avec `DEFAULT_SCHEMA_CLASS` dans `REST_FRAMEWORK`. La commande doit alors réussir'
-    indice: 'Le code de la sous-classe est donné dans la leçon (encart sur `DjangoFilterBackend`). Le réglage se met dans `projet/settings.py` : `"DEFAULT_SCHEMA_CLASS": "agenda.schema.SchemaAgenda"`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-doc-api schema'
+  - text: 'Lance `python manage.py generateschema --title "API Agenda" --api_version 1.0.0` : la commande plante (`AttributeError ... get_schema_operation_parameters`). Crée `agenda/schema.py` avec une sous-classe d''`AutoSchema` qui ignore les filtres sans cette méthode, et déclare-la avec `DEFAULT_SCHEMA_CLASS` dans `REST_FRAMEWORK`. La commande doit alors réussir'
+    hint: 'Le code de la sous-classe est donné dans la leçon (encart sur `DjangoFilterBackend`). Le réglage se met dans `projet/settings.py` : `"DEFAULT_SCHEMA_CLASS": "agenda.schema.SchemaAgenda"`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-doc-api schema'
     solution:
-      - ecrire:
+      - write:
           agenda/schema.py: |
             from rest_framework.schemas.openapi import AutoSchema
 
@@ -298,7 +298,7 @@ etapes:
                         if hasattr(backend, "get_schema_operation_parameters"):
                             parametres += backend().get_schema_operation_parameters(self.view)
                     return parametres
-      - ecrire:
+      - write:
           projet/settings.py: |
             """Réglages du projet « Agenda des associations » (domaine fictif de la formation)."""
             from pathlib import Path
@@ -351,20 +351,20 @@ etapes:
                 "PAGE_SIZE": 20,
                 "DEFAULT_SCHEMA_CLASS": "agenda.schema.SchemaAgenda",
             }
-  - texte: 'Génère le fichier `schema.yml` avec `python manage.py generateschema --title "API Agenda" --api_version 1.0.0 > schema.yml`, puis ouvre-le : il décrit `/v1/evenements/` et reprend la docstring des associations'
-    indice: 'La commande est celle de l''étape précédente, avec `> schema.yml` à la fin pour enregistrer la sortie dans un fichier. Regarde-le avec `less schema.yml` (touche `q` pour quitter).'
-    apres: [1, 3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-doc-api schema-fichier'
+  - text: 'Génère le fichier `schema.yml` avec `python manage.py generateschema --title "API Agenda" --api_version 1.0.0 > schema.yml`, puis ouvre-le : il décrit `/v1/evenements/` et reprend la docstring des associations'
+    hint: 'La commande est celle de l''étape précédente, avec `> schema.yml` à la fin pour enregistrer la sortie dans un fichier. Regarde-le avec `less schema.yml` (touche `q` pour quitter).'
+    after: [1, 3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-doc-api schema-fichier'
     solution:
       - 'python manage.py generateschema --title "API Agenda" --api_version 1.0.0 > schema.yml'
-  - texte: 'Rédige `API_DOC_EXTERN.md`, la fiche du point d''accès `POST /v1/evenements/` pour un partenaire : l''URL et la méthode, la protection (jeton `Bearer`), le rôle requis (`staff`), le `Content-Type`, un exemple de requête et la réponse `201`'
-    indice: 'Reprends le modèle de la leçon : une ligne « Point d''accès », une ligne « Protection », une ligne « Méthodes », puis un exemple de requête JSON et un exemple de réponse.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-doc-api fiche'
+  - text: 'Rédige `API_DOC_EXTERN.md`, la fiche du point d''accès `POST /v1/evenements/` pour un partenaire : l''URL et la méthode, la protection (jeton `Bearer`), le rôle requis (`staff`), le `Content-Type`, un exemple de requête et la réponse `201`'
+    hint: 'Reprends le modèle de la leçon : une ligne « Point d''accès », une ligne « Protection », une ligne « Méthodes », puis un exemple de requête JSON et un exemple de réponse.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-doc-api fiche'
     solution:
-      - ecrire:
-          API_DOC_EXTERN.md: |
+      - write:
+          API_DOC_EXTERN.md: |-
             # API Agenda : documentation pour les partenaires
 
             ## Créer un événement

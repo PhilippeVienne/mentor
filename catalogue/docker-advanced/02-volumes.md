@@ -1,9 +1,9 @@
 ---
 id: volumes
-titre: Volumes et persistance
-resume: 'Garder ses données quand un conteneur disparaît, et éditer en direct avec un bind mount.'
-duree: 15
-objectifs:
+title: Volumes et persistance
+summary: 'Garder ses données quand un conteneur disparaît, et éditer en direct avec un bind mount.'
+minutes: 15
+objectives:
   - "Expliquer pourquoi le système de fichiers d'un conteneur est éphémère"
   - "Persister des données avec un volume nommé"
   - "Utiliser un bind mount pour développer avec édition en direct"
@@ -11,7 +11,7 @@ objectifs:
 
 Le système de fichiers d'un conteneur est **éphémère** : supprime le conteneur, tu perds tout ce qu'il contenait. Pour une base de données, c'est un problème ! Docker propose deux mécanismes.
 
-:::cartes
+:::cards
 ### Volume nommé
 
 Géré par Docker. `-v donnees:/data`. Idéal pour les **données** (bases, uploads) : indépendant du dossier de ton projet.
@@ -81,47 +81,47 @@ Le `docker-compose.yml` de Vitrine monte à la fois du code en bind mount (pour 
 
 ## Entraîne-toi
 
-:::labo
+:::lab
 intro: |
   Prouve que les données survivent à la suppression des conteneurs, puis sers ta propre page avec nginx.
-fichiers:
+files:
   index.html: |
     <h1>Mon site Mentor</h1>
-etapes:
-  - texte: 'Crée le volume `donnees`'
-    indice: "Le sous-ensemble `volume` de la CLI a une action `create`."
-    verif:
-      - volume-existe: donnees
+steps:
+  - text: 'Crée le volume `donnees`'
+    hint: "Le sous-ensemble `volume` de la CLI a une action `create`."
+    checks:
+      - volume-exists: donnees
     solution:
       - docker volume create donnees
-  - texte: 'Écris `hello.txt` dans le volume depuis un conteneur `alpine` jetable'
-    indice: "`-v nom-du-volume:/data` monte le volume ; la commande `sh -c \"…\"` écrit un fichier dans `/data` avec `echo … > fichier`."
-    verif:
-      - volume-contient: [donnees, hello.txt]
+  - text: 'Écris `hello.txt` dans le volume depuis un conteneur `alpine` jetable'
+    hint: "`-v nom-du-volume:/data` monte le volume ; la commande `sh -c \"…\"` écrit un fichier dans `/data` avec `echo … > fichier`."
+    checks:
+      - volume-contains: [donnees, hello.txt]
     solution:
       - 'docker run --rm -v donnees:/data alpine sh -c "echo Mentor > /data/hello.txt"'
-  - texte: 'Relis-le depuis un *autre* conteneur avec `cat`'
-    indice: "Même montage `-v`, mais cette fois la commande lit le fichier au lieu de l'écrire."
-    apres: [2]
-    verif:
-      - commande: '^docker run .*cat /data/hello\.txt'
+  - text: 'Relis-le depuis un *autre* conteneur avec `cat`'
+    hint: "Même montage `-v`, mais cette fois la commande lit le fichier au lieu de l'écrire."
+    after: [2]
+    checks:
+      - command: '^docker run .*cat /data/hello\.txt'
     solution:
       - 'docker run --rm -v donnees:/data alpine cat /data/hello.txt'
-  - texte: 'Sers ton dossier avec nginx (bind mount) sur le port `8081`'
-    indice: "Le bind mount est un `-v` dont la source est un chemin de ta machine : `$(pwd)` désigne le dossier courant."
-    verif:
-      - conteneur-actif: site
-      - conteneur-bind: site
+  - text: 'Sers ton dossier avec nginx (bind mount) sur le port `8081`'
+    hint: "Le bind mount est un `-v` dont la source est un chemin de ta machine : `$(pwd)` désigne le dossier courant."
+    checks:
+      - container-running: site
+      - container-bind: site
     solution:
       - 'docker run -d --name site -p 8081:80 -v $(pwd):/usr/share/nginx/html nginx'
-  - texte: 'Modifie `index.html` puis vérifie avec `curl localhost:8081` : le changement est instantané'
-    indice: "Modifie `index.html` avec l'éditeur du labo, puis refais le `curl` : aucun rebuild nécessaire."
-    apres: [4]
-    verif:
-      - fichier-modifie: index.html
-      - commande: '^curl .*8081'
+  - text: 'Modifie `index.html` puis vérifie avec `curl localhost:8081` : le changement est instantané'
+    hint: "Modifie `index.html` avec l'éditeur du labo, puis refais le `curl` : aucun rebuild nécessaire."
+    after: [4]
+    checks:
+      - file-modified: index.html
+      - command: '^curl .*8081'
     solution:
-      - ecrire:
+      - write:
           index.html: |
             <h1>Bonjour l'équipe</h1>
       - 'curl localhost:8081'

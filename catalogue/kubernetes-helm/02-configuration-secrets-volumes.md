@@ -1,9 +1,9 @@
 ---
 id: configuration-secrets-volumes
-titre: "Configuration, secrets et volumes"
-resume: "Sortir la configuration de l'image avec ConfigMap et Secret, et garder les fichiers avec un volume persistant."
-duree: 45
-objectifs:
+title: "Configuration, secrets et volumes"
+summary: "Sortir la configuration de l'image avec ConfigMap et Secret, et garder les fichiers avec un volume persistant."
+minutes: 45
+objectives:
   - Choisir entre ConfigMap et Secret pour une variable d'environnement
   - Expliquer pourquoi un Secret n'est pas chiffré par défaut
   - Lire un PersistentVolumeClaim et distinguer ReadWriteOnce de ReadWriteMany
@@ -137,43 +137,43 @@ Où sont conservés les secrets de production, comment sont-ils transmis à `hel
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Même atelier que pour la leçon 1 : `kubectl`, `kubeconform` et `verifier-k8s`, **sans cluster** (aucun objet n'est vraiment créé). Dans ton dossier de travail, `deployment.yaml` est un déploiement très simplifié de Vitrine qui cite un ConfigMap et un Secret **qui n'existent pas encore**. Écris-les, puis vérifie que tout est cohérent. Toutes les valeurs sont factices.
-commandes:
+commands:
   - cp /opt/exercices/02-configuration/deployment.yaml .
-etapes:
-  - texte: 'Fabrique le ConfigMap `vitrine-configmap` dans `configmap.yaml`, avec `SITE_URL` égale à `https://portail.example.org` et `APP_DEBUG` égale à `False` : `kubectl create configmap vitrine-configmap --from-literal=SITE_URL=… --from-literal=APP_DEBUG=False --dry-run=client -o yaml > configmap.yaml` (complète les `…`)'
-    indice: 'Chaque `--from-literal=NOM=valeur` ajoute une entrée dans `data`. Contrôle ensuite avec `cat configmap.yaml`.'
-    verif:
-      - commande-reussit: 'kubeconform configmap.yaml'
-      - commande-reussit: "verifier-k8s champ --kind ConfigMap --nom vitrine-configmap --chemin 'data.SITE_URL' --texte https://portail.example.org configmap.yaml"
-      - commande-reussit: "verifier-k8s champ --kind ConfigMap --nom vitrine-configmap --chemin 'data.APP_DEBUG' --texte False configmap.yaml"
+steps:
+  - text: 'Fabrique le ConfigMap `vitrine-configmap` dans `configmap.yaml`, avec `SITE_URL` égale à `https://portail.example.org` et `APP_DEBUG` égale à `False` : `kubectl create configmap vitrine-configmap --from-literal=SITE_URL=… --from-literal=APP_DEBUG=False --dry-run=client -o yaml > configmap.yaml` (complète les `…`)'
+    hint: 'Chaque `--from-literal=NOM=valeur` ajoute une entrée dans `data`. Contrôle ensuite avec `cat configmap.yaml`.'
+    checks:
+      - command-succeeds: 'kubeconform configmap.yaml'
+      - command-succeeds: "verifier-k8s champ --kind ConfigMap --nom vitrine-configmap --chemin 'data.SITE_URL' --texte https://portail.example.org configmap.yaml"
+      - command-succeeds: "verifier-k8s champ --kind ConfigMap --nom vitrine-configmap --chemin 'data.APP_DEBUG' --texte False configmap.yaml"
     solution:
       - kubectl create configmap vitrine-configmap --from-literal=SITE_URL=https://portail.example.org --from-literal=APP_DEBUG=False --dry-run=client -o yaml > configmap.yaml
-  - texte: 'Fabrique de la même façon le Secret `vitrine-secret` dans `secret.yaml`, avec une clé `MAILJET_API_KEY` valant `cle-factice-a-remplacer` : `kubectl create secret generic vitrine-secret --from-literal=… --dry-run=client -o yaml > secret.yaml`'
-    indice: 'Regarde le résultat avec `cat secret.yaml` : la valeur n''est plus lisible. Kubernetes l''a encodée en base64.'
-    verif:
-      - commande-reussit: 'kubeconform secret.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Secret --nom vitrine-secret --chemin 'data.MAILJET_API_KEY' --decode-base64 --texte cle-factice-a-remplacer secret.yaml"
+  - text: 'Fabrique de la même façon le Secret `vitrine-secret` dans `secret.yaml`, avec une clé `MAILJET_API_KEY` valant `cle-factice-a-remplacer` : `kubectl create secret generic vitrine-secret --from-literal=… --dry-run=client -o yaml > secret.yaml`'
+    hint: 'Regarde le résultat avec `cat secret.yaml` : la valeur n''est plus lisible. Kubernetes l''a encodée en base64.'
+    checks:
+      - command-succeeds: 'kubeconform secret.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Secret --nom vitrine-secret --chemin 'data.MAILJET_API_KEY' --decode-base64 --texte cle-factice-a-remplacer secret.yaml"
     solution:
       - kubectl create secret generic vitrine-secret --from-literal=MAILJET_API_KEY=cle-factice-a-remplacer --dry-run=client -o yaml > secret.yaml
-  - texte: 'Prouve que base64 n''est pas du chiffrement : extrais la valeur de `MAILJET_API_KEY` dans `secret.yaml`, décode-la avec `base64 -d` et écris le résultat dans `decode.txt` (par exemple `grep MAILJET_API_KEY secret.yaml | awk ''{print $2}'' | base64 -d > decode.txt`)'
-    indice: '`awk ''{print $2}''` garde le deuxième mot de la ligne (la valeur encodée) ; `base64 -d` la décode. Ouvre `decode.txt` avec `cat`.'
-    apres: [2]
-    verif:
-      - commande-reussit: "verifier-k8s champ --kind Secret --nom vitrine-secret --chemin 'data.MAILJET_API_KEY' --decode-base64 --fichier decode.txt secret.yaml"
+  - text: 'Prouve que base64 n''est pas du chiffrement : extrais la valeur de `MAILJET_API_KEY` dans `secret.yaml`, décode-la avec `base64 -d` et écris le résultat dans `decode.txt` (par exemple `grep MAILJET_API_KEY secret.yaml | awk ''{print $2}'' | base64 -d > decode.txt`)'
+    hint: '`awk ''{print $2}''` garde le deuxième mot de la ligne (la valeur encodée) ; `base64 -d` la décode. Ouvre `decode.txt` avec `cat`.'
+    after: [2]
+    checks:
+      - command-succeeds: "verifier-k8s champ --kind Secret --nom vitrine-secret --chemin 'data.MAILJET_API_KEY' --decode-base64 --fichier decode.txt secret.yaml"
     solution:
       - "grep MAILJET_API_KEY secret.yaml | awk '{print $2}' | base64 -d > decode.txt"
-  - texte: 'Écris à la main (avec `nano pvc.yaml`) le PersistentVolumeClaim `vitrine-mediafiles-pvc` : 5 Gio (`5Gi`) en `ReadWriteMany`, comme dans la leçon'
-    indice: 'Les clés sont `apiVersion: v1`, `kind: PersistentVolumeClaim`, `metadata.name`, puis `spec.accessModes` (une liste) et `spec.resources.requests.storage`. Valide avec `kubeconform pvc.yaml`.'
-    verif:
-      - commande-reussit: 'kubeconform pvc.yaml'
-      - commande-reussit: "verifier-k8s champ --kind PersistentVolumeClaim --nom vitrine-mediafiles-pvc --chemin 'spec.accessModes' --egal '[ReadWriteMany]' pvc.yaml"
-      - commande-reussit: "verifier-k8s champ --kind PersistentVolumeClaim --nom vitrine-mediafiles-pvc --chemin 'spec.resources.requests.storage' --texte 5Gi pvc.yaml"
+  - text: 'Écris à la main (avec `nano pvc.yaml`) le PersistentVolumeClaim `vitrine-mediafiles-pvc` : 5 Gio (`5Gi`) en `ReadWriteMany`, comme dans la leçon'
+    hint: 'Les clés sont `apiVersion: v1`, `kind: PersistentVolumeClaim`, `metadata.name`, puis `spec.accessModes` (une liste) et `spec.resources.requests.storage`. Valide avec `kubeconform pvc.yaml`.'
+    checks:
+      - command-succeeds: 'kubeconform pvc.yaml'
+      - command-succeeds: "verifier-k8s champ --kind PersistentVolumeClaim --nom vitrine-mediafiles-pvc --chemin 'spec.accessModes' --egal '[ReadWriteMany]' pvc.yaml"
+      - command-succeeds: "verifier-k8s champ --kind PersistentVolumeClaim --nom vitrine-mediafiles-pvc --chemin 'spec.resources.requests.storage' --texte 5Gi pvc.yaml"
     solution:
-      - ecrire:
+      - write:
           pvc.yaml: |
             apiVersion: v1
             kind: PersistentVolumeClaim
@@ -185,17 +185,17 @@ etapes:
               resources:
                 requests:
                   storage: 5Gi
-  - texte: 'Dans `deployment.yaml`, monte ce volume : déclare-le dans `volumes` (nom `media-volume`, relié au PVC par `claimName`), puis ajoute au conteneur un `volumeMounts` avec `mountPath: /app/mediafiles`. Lance enfin `verifier-k8s references deployment.yaml configmap.yaml secret.yaml pvc.yaml`'
-    indice: '`volumes` est une liste placée sous `spec` du pod (au même niveau que `containers`) ; `volumeMounts` est sous le conteneur. Le `name` du montage doit reprendre celui du volume.'
-    apres: [1, 2, 4]
-    verif:
-      - commande-reussit: 'kubeconform deployment.yaml configmap.yaml secret.yaml pvc.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.volumes[name=media-volume].persistentVolumeClaim.claimName' --texte vitrine-mediafiles-pvc deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].volumeMounts[name=media-volume].mountPath' --texte /app/mediafiles deployment.yaml"
-      - commande-reussit: 'verifier-k8s references deployment.yaml configmap.yaml secret.yaml pvc.yaml'
+  - text: 'Dans `deployment.yaml`, monte ce volume : déclare-le dans `volumes` (nom `media-volume`, relié au PVC par `claimName`), puis ajoute au conteneur un `volumeMounts` avec `mountPath: /app/mediafiles`. Lance enfin `verifier-k8s references deployment.yaml configmap.yaml secret.yaml pvc.yaml`'
+    hint: '`volumes` est une liste placée sous `spec` du pod (au même niveau que `containers`) ; `volumeMounts` est sous le conteneur. Le `name` du montage doit reprendre celui du volume.'
+    after: [1, 2, 4]
+    checks:
+      - command-succeeds: 'kubeconform deployment.yaml configmap.yaml secret.yaml pvc.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.volumes[name=media-volume].persistentVolumeClaim.claimName' --texte vitrine-mediafiles-pvc deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].volumeMounts[name=media-volume].mountPath' --texte /app/mediafiles deployment.yaml"
+      - command-succeeds: 'verifier-k8s references deployment.yaml configmap.yaml secret.yaml pvc.yaml'
     solution:
-      - ecrire:
-          deployment.yaml: |
+      - write:
+          deployment.yaml: |-
             apiVersion: apps/v1
             kind: Deployment
             metadata:

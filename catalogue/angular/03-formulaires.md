@@ -1,9 +1,9 @@
 ---
 id: formulaires
-titre: "Formulaires et validation"
-resume: "Construire un formulaire réactif typé, le valider et afficher les erreurs, y compris celles de l'API."
-duree: 40
-objectifs:
+title: "Formulaires et validation"
+summary: "Construire un formulaire réactif typé, le valider et afficher les erreurs, y compris celles de l'API."
+minutes: 40
+objectives:
   - Construire un `FormGroup` typé avec ses `FormControl`
   - Brancher le formulaire sur un gabarit avec `[formGroup]` et `formControlName`
   - Utiliser les validateurs intégrés et lire l'état d'un champ
@@ -153,26 +153,26 @@ Vérifie `form.invalid` dans la méthode d'envoi, pas seulement avec `[disabled]
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet de `/workspace` contient un composant d'inscription `InscriptionComponent` à moitié écrit : sa classe est dans `src/app/inscription.ts`, son gabarit dans `src/app/inscription.html`. Le fichier `src/app/inscription.spec.ts` décrit tout ce qu'il doit faire : ne le modifie pas (`tester` remet de toute façon la version d'origine), fais-le passer groupe par groupe avec `tester inscription -t "mot-du-groupe"`.
 
   Le `MembresService` fourni est une version simulée (elle répond toujours « bien ») : tu n'as pas besoin de réseau, ni de serveur.
-commandes:
+commands:
   - cp -R /opt/exercices/03-formulaires/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/app/inscription.ts`, remplace `new FormGroup({})` par un `FormGroup` de trois `FormControl` typés, tous avec `{ nonNullable: true }` : `prenom` (obligatoire), `email` (obligatoire et de forme e-mail) et `telephone` (un `+` suivi de chiffres : `Validators.pattern(/^\+[0-9]*$/)`). Importe `FormControl`, `FormGroup` et `Validators` depuis `@angular/forms`. Vérifie avec `tester inscription -t validation`.
-    indice: >-
+    hint: >-
       `prenom: new FormControl('', { nonNullable: true, validators: [Validators.required] })`, et pareil pour `email` (avec `Validators.required, Validators.email`) et `telephone`.
-    verif:
-      - commande-reussit: tester inscription -t validation
-      - commande-reussit: contient src/app/inscription.ts 'nonNullable\s*:\s*true'
-      - commande-reussit: contient src/app/inscription.ts 'Validators\.email'
+    checks:
+      - command-succeeds: tester inscription -t validation
+      - command-succeeds: contient src/app/inscription.ts 'nonNullable\s*:\s*true'
+      - command-succeeds: contient src/app/inscription.ts 'Validators\.email'
     solution:
-      - ecrire:
+      - write:
           src/app/inscription.ts: |
             import { Component, inject } from '@angular/core';
             import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -198,17 +198,17 @@ etapes:
                 // À FAIRE (étapes 4 et 5)
               }
             }
-  - texte: >-
+  - text: >-
       Dans `src/app/inscription.html`, relie le formulaire : `<form [formGroup]="form" (ngSubmit)="enregistrer()">`, puis un `<input formControlName="…">` pour chacun des trois champs (`prenom`, `email`, `telephone`) et un bouton `type="submit"` grisé tant que le formulaire est invalide (`[disabled]="form.invalid"`). Garde le bloc `@if (reussi)` en bas. Vérifie avec `tester inscription -t liaison`.
-    indice: >-
+    hint: >-
       `<input formControlName="prenom" type="text" />` : la valeur de `formControlName` est le nom du contrôle dans le `FormGroup`.
-    apres: [1]
-    verif:
-      - commande-reussit: tester inscription -t liaison
-      - commande-reussit: contient src/app/inscription.html '\[formGroup\]\s*=\s*.form.'
-      - commande-reussit: contient src/app/inscription.html '\[disabled\]\s*=\s*.form\.invalid.'
+    after: [1]
+    checks:
+      - command-succeeds: tester inscription -t liaison
+      - command-succeeds: contient src/app/inscription.html '\[formGroup\]\s*=\s*.form.'
+      - command-succeeds: contient src/app/inscription.html '\[disabled\]\s*=\s*.form\.invalid.'
     solution:
-      - ecrire:
+      - write:
           src/app/inscription.html: |
             <form [formGroup]="form" (ngSubmit)="enregistrer()">
               <label>
@@ -231,16 +231,16 @@ etapes:
             @if (reussi) {
               <p class="succes">Membre enregistré.</p>
             }
-  - texte: >-
+  - text: >-
       Affiche les messages d'erreur, mais seulement quand la personne a quitté le champ (`touched`) : sous le prénom `<p class="erreur">Le prénom est obligatoire.</p>` (si l'erreur `required` est présente), sous l'e-mail `<p class="erreur">Saisis une adresse e-mail valide.</p>` (si le champ est invalide). Vérifie avec `tester inscription -t messages`.
-    indice: >-
+    hint: >-
       `@if (form.controls.prenom.touched && form.controls.prenom.hasError('required')) { <p class="erreur">…</p> }` juste après le `<label>` du prénom ; même idée avec `form.controls.email.invalid` pour l'e-mail.
-    apres: [2]
-    verif:
-      - commande-reussit: tester inscription -t messages
-      - commande-reussit: contient src/app/inscription.html 'touched'
+    after: [2]
+    checks:
+      - command-succeeds: tester inscription -t messages
+      - command-succeeds: contient src/app/inscription.html 'touched'
     solution:
-      - ecrire:
+      - write:
           src/app/inscription.html: |
             <form [formGroup]="form" (ngSubmit)="enregistrer()">
               <label>
@@ -269,16 +269,16 @@ etapes:
             @if (reussi) {
               <p class="succes">Membre enregistré.</p>
             }
-  - texte: >-
+  - text: >-
       Écris la méthode `enregistrer()` : si `this.form.invalid`, elle ne fait rien (`return`) ; sinon elle appelle `this.membres.creer(this.form.getRawValue())` et, dans `subscribe({ next: … })`, passe `this.reussi` à `true`. Vérifie avec `tester inscription -t envoi`.
-    indice: >-
+    hint: >-
       `if (this.form.invalid) { return; }` puis `this.membres.creer(this.form.getRawValue()).subscribe({ next: () => { this.reussi = true; } });`
-    apres: [3]
-    verif:
-      - commande-reussit: tester inscription -t envoi
-      - commande-reussit: contient src/app/inscription.ts 'this\.membres\.creer\s*\(\s*this\.form\.getRawValue\(\)\s*\)'
+    after: [3]
+    checks:
+      - command-succeeds: tester inscription -t envoi
+      - command-succeeds: contient src/app/inscription.ts 'this\.membres\.creer\s*\(\s*this\.form\.getRawValue\(\)\s*\)'
     solution:
-      - ecrire:
+      - write:
           src/app/inscription.ts: |
             import { Component, inject } from '@angular/core';
             import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -311,18 +311,18 @@ etapes:
                 });
               }
             }
-  - texte: >-
+  - text: >-
       Gère l'échec de l'API : ajoute à `subscribe` une clause `error: (reponse) => { … }` qui parcourt `Object.keys(reponse.error)` et, pour chaque champ cité, appelle `this.form.get(champ)?.setErrors({ serveur: reponse.error[champ][0] })`. Dans le gabarit, après le champ e-mail, affiche `form.controls.email.getError('serveur')` dans un `<p class="erreur">` quand `hasError('serveur')` est vrai. Puis lance `tester inscription` (tous les groupes).
-    indice: >-
+    hint: >-
       La clause `error` s'écrit comme la clause `next`, dans le même objet. Dans le gabarit : `@if (form.controls.email.hasError('serveur')) { <p class="erreur">{{ form.controls.email.getError('serveur') }}</p> }`.
-    apres: [4]
-    verif:
-      - commande-reussit: tester inscription
-      - commande-reussit: tester --compile-seul
-      - commande-reussit: contient src/app/inscription.ts 'setErrors\s*\('
-      - commande-reussit: contient src/app/inscription.html 'getError\s*\(\s*[\x27\"]serveur'
+    after: [4]
+    checks:
+      - command-succeeds: tester inscription
+      - command-succeeds: tester --compile-seul
+      - command-succeeds: contient src/app/inscription.ts 'setErrors\s*\('
+      - command-succeeds: contient src/app/inscription.html 'getError\s*\(\s*[\x27\"]serveur'
     solution:
-      - ecrire:
+      - write:
           src/app/inscription.ts: |
             import { Component, inject } from '@angular/core';
             import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -360,8 +360,8 @@ etapes:
                 });
               }
             }
-      - ecrire:
-          src/app/inscription.html: |
+      - write:
+          src/app/inscription.html: |-
             <form [formGroup]="form" (ngSubmit)="enregistrer()">
               <label>
                 Prénom

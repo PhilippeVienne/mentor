@@ -1,9 +1,9 @@
 ---
 id: websocket-jwt
-titre: "WebSocket : une connexion qui reste ouverte"
-resume: "Garder une connexion ouverte avec un navigateur (WebSocket), vérifier d'où il vient (Origin) et diffuser un message à tout le monde."
-duree: 45
-objectifs:
+title: "WebSocket : une connexion qui reste ouverte"
+summary: "Garder une connexion ouverte avec un navigateur (WebSocket), vérifier d'où il vient (Origin) et diffuser un message à tout le monde."
+minutes: 45
+objectives:
   - Expliquer la différence entre une requête HTTP et une connexion WebSocket
   - Expliquer ce que sont une origine, l'en-tête `Origin` et le CORS, et pourquoi un serveur WebSocket doit vérifier l'origine
   - Diffuser un message à plusieurs connexions sans conflit grâce à un mutex
@@ -149,18 +149,18 @@ Dans les fichiers de `mgmt` que nous avons lus, les listes `loggers`, `watchers`
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu écris le salon de discussion. `salle.go` (la structure `Salle` et le handler `Ws`) est déjà écrit. Il te reste trois morceaux, chacun dans son fichier : le contrôle de l'origine (`origine.go`), l'enregistrement des connexions (`registre.go`) et la diffusion (`diffusion.go`). Remplace les `panic("à écrire")`. Les tests (`salle_test.go`) démarrent un vrai serveur sur ta machine, ouvrent de vraies connexions WebSocket et envoient de vrais messages. Lance-les avec `go test ./...`. Les tests fournis sont vérifiés tels quels.
-commandes:
+commands:
   - cp -R /opt/exercices/04-websocket/. .
   - go vet ./... >/dev/null 2>&1 || true
-etapes:
-  - texte: 'Dans `origine.go`, complète la **fonction anonyme** `CheckOrigin` : elle renvoie `true` seulement si l''en-tête `Origin` vaut `OrigineAttendue`. `TestOrigine` doit passer (une autre origine reçoit `403`)'
-    indice: 'Remplace les deux lignes du corps de la fonction par `return r.Header.Get("Origin") == OrigineAttendue`.'
-    verif:
-      - commande-reussit: "verifier-go tests 04-websocket . TestOrigine"
+steps:
+  - text: 'Dans `origine.go`, complète la **fonction anonyme** `CheckOrigin` : elle renvoie `true` seulement si l''en-tête `Origin` vaut `OrigineAttendue`. `TestOrigine` doit passer (une autre origine reçoit `403`)'
+    hint: 'Remplace les deux lignes du corps de la fonction par `return r.Header.Get("Origin") == OrigineAttendue`.'
+    checks:
+      - command-succeeds: "verifier-go tests 04-websocket . TestOrigine"
     solution:
       - |
         cat > origine.go <<'EOF'
@@ -182,10 +182,10 @@ etapes:
         	},
         }
         EOF
-  - texte: 'Dans `registre.go`, écris `Ajoute` et `Retire`, protégées par le mutex. `TestRegistre` doit passer (il lance 200 goroutines en même temps)'
-    indice: 'Dans chaque méthode : `s.mu.Lock()` puis `defer s.mu.Unlock()`. Ensuite `s.conns[c] = nom` pour `Ajoute`, et `delete(s.conns, c)` pour `Retire`.'
-    verif:
-      - commande-reussit: "verifier-go tests 04-websocket . TestRegistre"
+  - text: 'Dans `registre.go`, écris `Ajoute` et `Retire`, protégées par le mutex. `TestRegistre` doit passer (il lance 200 goroutines en même temps)'
+    hint: 'Dans chaque méthode : `s.mu.Lock()` puis `defer s.mu.Unlock()`. Ensuite `s.conns[c] = nom` pour `Ajoute`, et `delete(s.conns, c)` pour `Retire`.'
+    checks:
+      - command-succeeds: "verifier-go tests 04-websocket . TestRegistre"
     solution:
       - |
         cat > registre.go <<'EOF'
@@ -207,11 +207,11 @@ etapes:
         	delete(s.conns, c)
         }
         EOF
-  - texte: 'Dans `diffusion.go`, écris `Diffuse` : elle envoie le message à toutes les connexions de la salle, sous verrou. `TestDiffuse` doit passer (deux personnes se connectent, l''une écrit, les deux reçoivent « Camille : salut »)'
-    indice: 'Verrou et `defer`, puis `for c := range s.conns { if err := c.WriteMessage(websocket.TextMessage, msg); err != nil { log.Println("écriture :", err) } }`. Imports : `log` et `github.com/gorilla/websocket`.'
-    apres: [1, 2]
-    verif:
-      - commande-reussit: "verifier-go tests 04-websocket . TestDiffuse"
+  - text: 'Dans `diffusion.go`, écris `Diffuse` : elle envoie le message à toutes les connexions de la salle, sous verrou. `TestDiffuse` doit passer (deux personnes se connectent, l''une écrit, les deux reçoivent « Camille : salut »)'
+    hint: 'Verrou et `defer`, puis `for c := range s.conns { if err := c.WriteMessage(websocket.TextMessage, msg); err != nil { log.Println("écriture :", err) } }`. Imports : `log` et `github.com/gorilla/websocket`.'
+    after: [1, 2]
+    checks:
+      - command-succeeds: "verifier-go tests 04-websocket . TestDiffuse"
     solution:
       - |
         cat > diffusion.go <<'EOF'
@@ -234,12 +234,12 @@ etapes:
         	}
         }
         EOF
-  - texte: 'Vérifie l''ensemble : compile le salon dans un exécutable `salon` avec `go build -o salon .`, puis `go vet ./...` ne signale rien (il repère par exemple un mutex copié par erreur) et `go test ./...` passe en entier'
-    indice: 'Lance `go build -o salon . && go vet ./... && go test ./...`.'
-    apres: [1, 2, 3]
-    verif:
-      - commande-reussit: 'verifier-go binaire 04-websocket salon'
-      - commande-reussit: 'verifier-go tout 04-websocket'
+  - text: 'Vérifie l''ensemble : compile le salon dans un exécutable `salon` avec `go build -o salon .`, puis `go vet ./...` ne signale rien (il repère par exemple un mutex copié par erreur) et `go test ./...` passe en entier'
+    hint: 'Lance `go build -o salon . && go vet ./... && go test ./...`.'
+    after: [1, 2, 3]
+    checks:
+      - command-succeeds: 'verifier-go binaire 04-websocket salon'
+      - command-succeeds: 'verifier-go tout 04-websocket'
     solution:
       - go build -o salon . && go vet ./... && go test ./...
 :::

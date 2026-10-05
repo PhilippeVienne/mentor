@@ -1,9 +1,9 @@
 ---
 id: services-et-injection
-titre: "Services et injection de dépendances"
-resume: "Sortir la logique des composants dans des services et laisser Angular les fournir."
-duree: 35
-objectifs:
+title: "Services et injection de dépendances"
+summary: "Sortir la logique des composants dans des services et laisser Angular les fournir."
+minutes: 35
+objectives:
   - Expliquer à quoi sert un service et ce qu'est l'injection de dépendances
   - Écrire un service avec `@Injectable` et l'injecter avec `inject()` ou le constructeur
   - "Savoir où un service est fourni (`providedIn: 'root'` ou `providers` d'un module)"
@@ -79,7 +79,7 @@ Les deux donnent le même résultat. Le code d'Adhésion mélange les deux : `M
 
 Pour qu'Angular sache fabriquer un service, il faut le **fournir** quelque part : lui dire « voici la recette de cet objet, et son périmètre ». Un `providers` est cette liste de recettes. Deux manières :
 
-:::cartes
+:::cards
 ### `providedIn: 'root'`
 
 ```ts
@@ -145,25 +145,25 @@ Si tu injectes un service qui n'est pas fourni, l'application plante au chargeme
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Même principe qu'à la leçon précédente : un petit projet Angular est prêt dans `/workspace`, avec des tests (`*.spec.ts`) que tu ne modifies pas (`tester` remet de toute façon les tests d'origine dans une copie : les modifier ne servirait à rien). Tu écris les services et les réglages pour les faire passer. Lance-les avec `tester` suivi d'une partie du nom du fichier de test (par exemple `tester entete`) ; sans argument, `tester` joue tous les tests du projet.
 
   Les tests demandent des services à Angular comme le ferait l'application : ils ne fabriquent rien avec `new`.
-commandes:
+commands:
   - cp -R /opt/exercices/02-services-et-injection/. .
   - /opt/angular/preparer
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Crée `src/app/compteur-visites.service.ts` : une classe `CompteurVisites`, décorée par `@Injectable({ providedIn: 'root' })`, avec une propriété `visites` (qui vaut `0` au départ) et une méthode `enregistrer()` qui ajoute 1 à `visites` puis **renvoie** la nouvelle valeur. Vérifie avec `tester compteur-visites`.
-    indice: >-
+    hint: >-
       `visites = 0;` puis `enregistrer(): number { this.visites = this.visites + 1; return this.visites; }`. N'oublie pas `import { Injectable } from '@angular/core';`.
-    verif:
-      - commande-reussit: tester compteur-visites
-      - commande-reussit: contient src/app/compteur-visites.service.ts '@Injectable\s*\(\s*\{\s*providedIn\s*:\s*[\x27\"]root[\x27\"]'
+    checks:
+      - command-succeeds: tester compteur-visites
+      - command-succeeds: contient src/app/compteur-visites.service.ts '@Injectable\s*\(\s*\{\s*providedIn\s*:\s*[\x27\"]root[\x27\"]'
     solution:
-      - ecrire:
+      - write:
           src/app/compteur-visites.service.ts: |
             import { Injectable } from '@angular/core';
 
@@ -176,17 +176,17 @@ etapes:
                 return this.visites;
               }
             }
-  - texte: >-
+  - text: >-
       Dans `src/app/entete.ts`, demande le service à Angular avec `inject(CompteurVisites)` (sans `new`), puis, dans le constructeur du composant, appelle `enregistrer()` et garde le résultat dans `visites`. Deux composants doivent se partager le même compteur. Vérifie avec `tester entete`.
-    indice: >-
+    hint: >-
       `private readonly compteur = inject(CompteurVisites);` puis `constructor() { this.visites = this.compteur.enregistrer(); }`. Importe `inject` depuis `@angular/core`.
-    apres: [1]
-    verif:
-      - commande-reussit: tester entete
-      - commande-reussit: contient src/app/entete.ts 'inject\s*\(\s*CompteurVisites\s*\)'
-      - commande-reussit: contient -v src/app/entete.ts 'new\s+CompteurVisites'
+    after: [1]
+    checks:
+      - command-succeeds: tester entete
+      - command-succeeds: contient src/app/entete.ts 'inject\s*\(\s*CompteurVisites\s*\)'
+      - command-succeeds: contient -v src/app/entete.ts 'new\s+CompteurVisites'
     solution:
-      - ecrire:
+      - write:
           src/app/entete.ts: |
             import { Component, inject } from '@angular/core';
             import { CompteurVisites } from './compteur-visites.service';
@@ -203,31 +203,31 @@ etapes:
                 this.visites = this.compteur.enregistrer();
               }
             }
-  - texte: >-
+  - text: >-
       Dans `src/app/fournisseurs.ts`, ajoute à la liste la recette `{ provide: Notifications, useClass: NotificationsSilencieuses }` (importe les deux classes depuis `./notifications`) : quand on demande `Notifications`, Angular doit fabriquer la version silencieuse. Vérifie avec `tester notifications`.
-    indice: >-
+    hint: >-
       `export const fournisseurs: Provider[] = [{ provide: Notifications, useClass: NotificationsSilencieuses }];`
-    apres: [2]
-    verif:
-      - commande-reussit: tester notifications
-      - commande-reussit: contient src/app/fournisseurs.ts 'provide\s*:\s*Notifications\s*,\s*useClass\s*:\s*NotificationsSilencieuses'
+    after: [2]
+    checks:
+      - command-succeeds: tester notifications
+      - command-succeeds: contient src/app/fournisseurs.ts 'provide\s*:\s*Notifications\s*,\s*useClass\s*:\s*NotificationsSilencieuses'
     solution:
-      - ecrire:
+      - write:
           src/app/fournisseurs.ts: |
             import { Provider } from '@angular/core';
             import { Notifications, NotificationsSilencieuses } from './notifications';
 
             export const fournisseurs: Provider[] = [{ provide: Notifications, useClass: NotificationsSilencieuses }];
-  - texte: >-
+  - text: >-
       Lance `tester ecran` : tu obtiens une `NullInjectorError: No provider for UiService`. `UiService` est un `@Injectable()` simple, et personne ne l'a fourni. Corrige `src/app/ui.service.ts` pour qu'Angular le fournisse tout seul à toute l'application, puis relance `tester ecran`.
-    indice: >-
+    hint: >-
       Remplace `@Injectable()` par `@Injectable({ providedIn: 'root' })` dans `src/app/ui.service.ts`.
-    apres: [3]
-    verif:
-      - commande-reussit: tester ecran
-      - commande-reussit: contient src/app/ui.service.ts '@Injectable\s*\(\s*\{[^}]*providedIn'
+    after: [3]
+    checks:
+      - command-succeeds: tester ecran
+      - command-succeeds: contient src/app/ui.service.ts '@Injectable\s*\(\s*\{[^}]*providedIn'
     solution:
-      - ecrire:
+      - write:
           src/app/ui.service.ts: |
             import { Injectable } from '@angular/core';
             import { Observable, Subject } from 'rxjs';
@@ -244,18 +244,18 @@ etapes:
                 return this.subject.asObservable();
               }
             }
-  - texte: >-
+  - text: >-
       Modernise `src/app/ecran.ts` : remplace le paramètre de constructeur `private ui: UiService` par `private readonly ui = inject(UiService);` et garde un constructeur vide de paramètre qui appelle `this.ui.setTitle('Membres')`. `tester ecran` doit rester vert et le fichier ne doit plus contenir `constructor(private`.
-    indice: >-
+    hint: >-
       `private readonly ui = inject(UiService);` puis `constructor() { this.ui.setTitle('Membres'); }` ; importe `inject` depuis `@angular/core`.
-    apres: [4]
-    verif:
-      - commande-reussit: tester ecran
-      - commande-reussit: contient src/app/ecran.ts 'inject\(UiService\)'
-      - commande-reussit: contient -v src/app/ecran.ts 'constructor\s*\(\s*private'
+    after: [4]
+    checks:
+      - command-succeeds: tester ecran
+      - command-succeeds: contient src/app/ecran.ts 'inject\(UiService\)'
+      - command-succeeds: contient -v src/app/ecran.ts 'constructor\s*\(\s*private'
     solution:
-      - ecrire:
-          src/app/ecran.ts: |
+      - write:
+          src/app/ecran.ts: |-
             import { Component, inject } from '@angular/core';
             import { UiService } from './ui.service';
 

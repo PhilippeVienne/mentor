@@ -1,9 +1,9 @@
 ---
 id: deboguer-pipeline
-titre: "Déboguer un pipeline en échec"
-resume: "Une méthode en quatre temps pour passer du rouge au vert sans deviner."
-duree: 30
-objectifs:
+title: "Déboguer un pipeline en échec"
+summary: "Une méthode en quatre temps pour passer du rouge au vert sans deviner."
+minutes: 30
+objectives:
   - Retrouver le job et la ligne qui font échouer un pipeline
   - Identifier les causes fréquentes (YAML, `rules`, variables, image)
   - Diagnostiquer une erreur à partir de son message
@@ -71,26 +71,26 @@ Pour voir une variable, `echo "$MON_SECRET"` est tentant. Ne le fais pas : le l
 Il n'y a pas de runner dans ce labo : tu ne verras pas de vrais logs produits par GitLab. Tu as à la place des logs d'exemple (dossier `logs`) et des pipelines cassés, que `verifier-ci` sait diagnostiquer. Il reconnaît des erreurs de structure (stage inconnu, YAML invalide, variable mal orthographiée, commande absente de l'image) ; il ne reproduit pas les erreurs qui n'arrivent qu'à l'exécution (réseau, droits, tests qui échouent).
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient des logs d'exemple dans `logs/` et quatre pipelines cassés : `pipeline-image.yml`, `pipeline-yaml.yml`, `pipeline-absent.yml` et `pipeline-variable.yml`. Pour lire un log : `cat logs/job-lint.log`. Pour chercher un mot : `grep -n "not found" logs/job-lint.log`. Pour diagnostiquer un pipeline : `verifier-ci pipeline-image.yml`. Modifie les fichiers avec `nano` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code.
-commandes:
+commands:
   - cp -R /opt/exercices/07-debogage/. .
-etapes:
-  - texte: 'Lis `logs/job-lint.log` : quel est le nom de la commande introuvable ? Écris-le dans un fichier `commande.txt`'
-    indice: 'Cherche la ligne qui contient `not found` : le nom de la commande se trouve juste avant. Écris-le avec `echo NOM > commande.txt`.'
-    verif:
-      - fichier-contient-dans-env: [commande.txt, '^\s*npm\s*$']
+steps:
+  - text: 'Lis `logs/job-lint.log` : quel est le nom de la commande introuvable ? Écris-le dans un fichier `commande.txt`'
+    hint: 'Cherche la ligne qui contient `not found` : le nom de la commande se trouve juste avant. Écris-le avec `echo NOM > commande.txt`.'
+    checks:
+      - env-file-contains: [commande.txt, '^\s*npm\s*$']
     solution:
       - echo npm > commande.txt
-  - texte: 'Ce log vient du pipeline `pipeline-image.yml` : le code de sortie 127 pointe l''`image`. Lance `verifier-ci pipeline-image.yml`, corrige le fichier (sans retirer le job `lint`) jusqu''à ce que `verifier-ci --strict pipeline-image.yml` réussisse'
-    indice: 'Le job lance `npm`, mais l''image `python:3.13` ne contient que Python. Remplace-la par une image qui contient Node, par exemple `node:24-alpine`.'
-    verif:
-      - commande-reussit: verifier-ci --strict pipeline-image.yml
-      - sortie-contient: ['verifier-ci --montrer pipeline-image.yml', '\[quality\] lint']
+  - text: 'Ce log vient du pipeline `pipeline-image.yml` : le code de sortie 127 pointe l''`image`. Lance `verifier-ci pipeline-image.yml`, corrige le fichier (sans retirer le job `lint`) jusqu''à ce que `verifier-ci --strict pipeline-image.yml` réussisse'
+    hint: 'Le job lance `npm`, mais l''image `python:3.13` ne contient que Python. Remplace-la par une image qui contient Node, par exemple `node:24-alpine`.'
+    checks:
+      - command-succeeds: verifier-ci --strict pipeline-image.yml
+      - output-contains: ['verifier-ci --montrer pipeline-image.yml', '\[quality\] lint']
     solution:
-      - ecrire:
+      - write:
           pipeline-image.yml: |
             stages:
               - quality
@@ -101,14 +101,14 @@ etapes:
               script:
                 - npm ci
                 - npm run lint
-  - texte: 'Le log `logs/pipeline-invalide.log` annonce « yaml invalid » à la ligne 9 du fichier `pipeline-yaml.yml`. Repère la commande fautive, entoure-la de guillemets, jusqu''à ce que `verifier-ci pipeline-yaml.yml` réussisse'
-    indice: 'La ligne 9 est `- echo Version: 1.0` : le `: ` (deux-points suivi d''une espace) est pris pour une clé YAML. Écris `- ''echo Version: 1.0''`.'
-    verif:
-      - commande-reussit: verifier-ci pipeline-yaml.yml
-      - commande-reussit: "verifier-ci pipeline-yaml.yml --job build --cree --script-lance 'echo :: Version: 1.0'"
-      - sortie-contient: ['verifier-ci --montrer pipeline-yaml.yml', '\[build\] build']
+  - text: 'Le log `logs/pipeline-invalide.log` annonce « yaml invalid » à la ligne 9 du fichier `pipeline-yaml.yml`. Repère la commande fautive, entoure-la de guillemets, jusqu''à ce que `verifier-ci pipeline-yaml.yml` réussisse'
+    hint: 'La ligne 9 est `- echo Version: 1.0` : le `: ` (deux-points suivi d''une espace) est pris pour une clé YAML. Écris `- ''echo Version: 1.0''`.'
+    checks:
+      - command-succeeds: verifier-ci pipeline-yaml.yml
+      - command-succeeds: "verifier-ci pipeline-yaml.yml --job build --cree --script-lance 'echo :: Version: 1.0'"
+      - output-contains: ['verifier-ci --montrer pipeline-yaml.yml', '\[build\] build']
     solution:
-      - ecrire:
+      - write:
           pipeline-yaml.yml: |
             stages:
               - build
@@ -120,14 +120,14 @@ etapes:
                 - echo "Début"
                 - 'echo Version: 1.0'
                 - echo "Fin"
-  - texte: 'Le job `deploiement` de `pipeline-absent.yml` n''apparaît jamais sur la branche `main`. Teste avec `verifier-ci --contexte CI_COMMIT_BRANCH=main pipeline-absent.yml`, corrige la règle : il doit exister sur `main` et seulement sur `main`'
-    indice: 'Regarde le nom de branche écrit dans la condition : la branche principale s''appelle `main`, pas `master`.'
-    verif:
-      - commande-reussit: verifier-ci pipeline-absent.yml
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main pipeline-absent.yml | grep -q '^+ \[deploy\] deploiement'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x pipeline-absent.yml | grep -q '^- deploiement'
+  - text: 'Le job `deploiement` de `pipeline-absent.yml` n''apparaît jamais sur la branche `main`. Teste avec `verifier-ci --contexte CI_COMMIT_BRANCH=main pipeline-absent.yml`, corrige la règle : il doit exister sur `main` et seulement sur `main`'
+    hint: 'Regarde le nom de branche écrit dans la condition : la branche principale s''appelle `main`, pas `master`.'
+    checks:
+      - command-succeeds: verifier-ci pipeline-absent.yml
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main pipeline-absent.yml | grep -q '^+ \[deploy\] deploiement'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x pipeline-absent.yml | grep -q '^- deploiement'
     solution:
-      - ecrire:
+      - write:
           pipeline-absent.yml: |
             stages:
               - build
@@ -146,14 +146,14 @@ etapes:
                 - echo "Déploiement"
               rules:
                 - if: '$CI_COMMIT_BRANCH == "main"'
-  - texte: 'Le log `logs/job-push.log` montre un `docker build -t ":main"` : le début du nom d''image est vide. Dans `pipeline-variable.yml`, `verifier-ci` repère une variable qui n''existe pas. Corrige-la partout jusqu''à ce que `verifier-ci --strict pipeline-variable.yml` réussisse'
-    indice: 'La variable prédéfinie s''appelle `CI_REGISTRY_IMAGE` (avec un E à la fin). Une variable inconnue est simplement vide, sans erreur : d''où le nom d''image bancal.'
-    verif:
-      - commande-reussit: verifier-ci --strict pipeline-variable.yml
-      - commande-reussit: "verifier-ci pipeline-variable.yml --job build --cree --script-lance 'docker push :: $CI_REGISTRY_IMAGE:'"
+  - text: 'Le log `logs/job-push.log` montre un `docker build -t ":main"` : le début du nom d''image est vide. Dans `pipeline-variable.yml`, `verifier-ci` repère une variable qui n''existe pas. Corrige-la partout jusqu''à ce que `verifier-ci --strict pipeline-variable.yml` réussisse'
+    hint: 'La variable prédéfinie s''appelle `CI_REGISTRY_IMAGE` (avec un E à la fin). Une variable inconnue est simplement vide, sans erreur : d''où le nom d''image bancal.'
+    checks:
+      - command-succeeds: verifier-ci --strict pipeline-variable.yml
+      - command-succeeds: "verifier-ci pipeline-variable.yml --job build --cree --script-lance 'docker push :: $CI_REGISTRY_IMAGE:'"
     solution:
-      - ecrire:
-          pipeline-variable.yml: |
+      - write:
+          pipeline-variable.yml: |-
             stages:
               - build
 

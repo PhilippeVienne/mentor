@@ -1,9 +1,9 @@
 ---
 id: premier-commit
-titre: Ton premier commit
-resume: 'Le cycle de base : modifier, indexer (add), valider (commit).'
-duree: 15
-objectifs:
+title: Ton premier commit
+summary: 'Le cycle de base : modifier, indexer (add), valider (commit).'
+minutes: 15
+objectives:
   - "Décrire les trois zones de Git : dossier de travail, index, dépôt"
   - "Enchaîner `git status`, `git add` et `git commit`"
   - Écrire un message de commit clair
@@ -71,39 +71,39 @@ Fichiers non suivis :
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le dépôt est initialisé et contient deux fichiers non suivis. Fais-en un historique !
-commandes:
+commands:
   - git init -q
   - 'echo "<h1>Bienvenue</h1>" > index.html'
   - 'echo "body { font-family: sans-serif; }" > style.css'
-etapes:
-  - texte: "Ajoute `index.html` à l'index avec `git add`"
-    indice: git add index.html
-    verif:
-      - sortie-contient: ['git diff --cached --name-only', '(?m)^index\.html$']
+steps:
+  - text: "Ajoute `index.html` à l'index avec `git add`"
+    hint: git add index.html
+    checks:
+      - output-contains: ['git diff --cached --name-only', '(?m)^index\.html$']
     solution:
       - git add index.html
-  - texte: 'Crée ton premier commit avec `git commit -m "…"`'
-    indice: "git commit -m \"Ajoute la page d'accueil\""
-    verif:
-      - commande-reussit: 'git rev-parse --verify -q HEAD'
+  - text: 'Crée ton premier commit avec `git commit -m "…"`'
+    hint: "git commit -m \"Ajoute la page d'accueil\""
+    checks:
+      - command-succeeds: 'git rev-parse --verify -q HEAD'
     solution:
       - "git commit -m \"Ajoute la page d'accueil\""
-  - texte: 'Ajoute `style.css` puis fais un second commit'
-    indice: 'git add style.css puis git commit -m "Ajoute le style"'
-    verif:
-      - commande-reussit: 'test "$(git rev-list --count HEAD)" -ge 2 && git cat-file -e HEAD:style.css'
+  - text: 'Ajoute `style.css` puis fais un second commit'
+    hint: 'git add style.css puis git commit -m "Ajoute le style"'
+    checks:
+      - command-succeeds: 'test "$(git rev-list --count HEAD)" -ge 2 && git cat-file -e HEAD:style.css'
     solution:
       - git add style.css
       - 'git commit -m "Ajoute le style"'
-  - texte: "Vérifie que tout est propre avec `git status`, puis enregistre l'historique avec `git log --oneline > historique.txt`"
-    indice: 'Deux commandes : git status, puis git log --oneline > historique.txt'
-    apres: [3]
-    verif:
-      - fichier-contient-dans-env: [historique.txt, 'Ajoute le style']
+  - text: "Vérifie que tout est propre avec `git status`, puis enregistre l'historique avec `git log --oneline > historique.txt`"
+    hint: 'Deux commandes : git status, puis git log --oneline > historique.txt'
+    after: [3]
+    checks:
+      - env-file-contains: [historique.txt, 'Ajoute le style']
     solution:
       - git status
       - git log --oneline > historique.txt

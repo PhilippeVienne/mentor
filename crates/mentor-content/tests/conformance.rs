@@ -1,7 +1,8 @@
 //! Conformance with v1: the catalogue compiled here is compared with the JSON produced by
 //! `manage.py export_catalogue` (`conformance/v1-catalogue.json`, source commit in `conformance/V1_COMMIT`).
 //!
-//! Two levels:
+//! The v1 export uses the French names of the v1 format; it is first rewritten with the English names of
+//! `conformance/v1-names.json` (the table the migration tool uses), then compared on two levels:
 //! - **structure** (identifiers, order, durations, labs, checks, solutions, correct answers): strict equality;
 //! - **HTML**: markup differs (another Markdown engine, no server-side highlighting), so the **text** of each
 //!   fragment is compared, with tags and whitespace removed.
@@ -17,7 +18,7 @@ static SPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap())
 
 /// Fields whose value is rendered HTML.
 const HTML_FIELDS: [&str; 10] =
-    ["description_html", "cheatsheet_html", "body_html", "intro_html", "intro", "texte", "indice", "question", "html", "explication"];
+    ["description_html", "cheatsheet_html", "body_html", "intro_html", "intro", "text", "hint", "question", "html", "explanation"];
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -84,13 +85,92 @@ fn compare(path: &str, key: &str, v1: &Value, v2: &Value, structure: &mut Vec<St
     }
 }
 
+/// Renames the keys of a JSON object with one section of `conformance/v1-names.json`.
+fn rename(value: &mut Value, names: &Value) {
+    if let Value::Object(map) = value {
+        let renamed =
+            std::mem::take(map).into_iter().map(|(key, v)| (names[&key].as_str().map(str::to_string).unwrap_or(key), v)).collect();
+        *map = renamed;
+    }
+}
+
+fn each(value: &mut Value, mut f: impl FnMut(&mut Value)) {
+    match value {
+        Value::Array(items) => items.iter_mut().for_each(f),
+        Value::Object(map) => map.values_mut().for_each(f),
+        Value::Null => {}
+        other => f(other),
+    }
+}
+
+fn rename_value(value: &mut Value, names: &Value) {
+    if let Some(new) = value.as_str().and_then(|old| names[old].as_str()) {
+        *value = Value::from(new);
+    }
+}
+
+/// A git server description: a list of `{url, commits: [{branch, message, files, author}]}`.
+fn translate_server(server: &mut Value, names: &Value) {
+    each(server, |entry| each(&mut entry["commits"], |commit| rename(commit, &names["commit"])));
+}
+
+/// Rewrites the v1 export with the English names of the v2 format, so that both can be compared.
+fn translate_v1(course: &mut Value, names: &Value) {
+    each(&mut course["scenarios"], |scenario| {
+        rename(scenario, &names["scenario"]);
+        if let Some(server) = scenario.get_mut("server") {
+            translate_server(server, names);
+        }
+    });
+    let quiz_names = serde_json::json!({"explication": "explanation"});
+    if course["exam"].is_object() {
+        rename(&mut course["exam"], &names["exam"]);
+        each(&mut course["exam"]["questions"], |question| rename(question, &quiz_names));
+    }
+    each(&mut course["lessons"], |lesson| {
+        each(&mut lesson["quiz"], |question| rename(question, &quiz_names));
+        let lab = &mut lesson["lab"];
+        if !lab.is_object() {
+            return;
+        }
+        rename(lab, &names["lab"]);
+        rename_value(&mut lab["engine"], &names["engines"]);
+        translate_server(&mut lab["server"], names);
+        each(&mut lab["steps"], |step| {
+            rename(step, &names["step"]);
+            each(&mut step["checks"], |check| {
+                rename(check, &serde_json::json!({"nom": "name"}));
+                rename_value(&mut check["name"], &names["checks"]);
+            });
+            if step["effect"].is_object() {
+                rename(&mut step["effect"], &serde_json::json!({"nom": "name"}));
+                rename_value(&mut step["effect"]["name"], &names["effects"]);
+                rename(&mut step["effect"]["args"], &names["commit"]);
+            }
+            each(&mut step["solution"], |action| rename(action, &names["action"]));
+        });
+    });
+}
+
+fn read_json(relative: &str) -> Value {
+    serde_json::from_str(&std::fs::read_to_string(root().join(relative)).unwrap()).unwrap()
+}
+
 fn report() -> (Vec<String>, Vec<String>, usize) {
-    let v1: Value = serde_json::from_str(&std::fs::read_to_string(root().join("conformance/v1-catalogue.json")).unwrap()).unwrap();
-    let v2 = serde_json::to_value(mentor_content::load_catalogue(&root().join("catalogue")).expect("the catalogue compiles")).unwrap();
+    let names = read_json("conformance/v1-names.json");
+    let mut v1 = read_json("conformance/v1-catalogue.json");
+    let mut v2 = serde_json::to_value(mentor_content::load_catalogue(&root().join("catalogue")).expect("the catalogue compiles")).unwrap();
     let (mut structure, mut html) = (Vec::new(), Vec::new());
-    let (a, b) = (v1["courses"].as_array().unwrap(), v2["courses"].as_array().unwrap());
+    let (a, b) = (v1["courses"].as_array_mut().unwrap(), v2["courses"].as_array_mut().unwrap());
     assert_eq!(a.len(), b.len(), "number of courses");
-    for (x, y) in a.iter().zip(b) {
+    for (x, y) in a.iter_mut().zip(b) {
+        translate_v1(x, &names);
+        // Exam warnings are diagnostics, now in English: only their number is compared.
+        for exam in [&mut x["exam"], &mut y["exam"]] {
+            if exam.is_object() {
+                exam["warnings"] = Value::from(exam["warnings"].as_array().map_or(0, Vec::len));
+            }
+        }
         compare(x["slug"].as_str().unwrap(), "", x, y, &mut structure, &mut html);
     }
     (structure, html, a.len())

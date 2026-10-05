@@ -1,9 +1,9 @@
 ---
 id: premiers-pas
-titre: "Premiers pas avec Python"
-resume: "Écris et lance tes premiers scripts dans un vrai terminal : variables, types, calculs et f-strings."
-duree: 25
-objectifs:
+title: "Premiers pas avec Python"
+summary: "Écris et lance tes premiers scripts dans un vrai terminal : variables, types, calculs et f-strings."
+minutes: 25
+objectives:
   - Lancer un script avec `python3` et lire ce qu'il affiche
   - Utiliser des variables et reconnaître les types de base (`str`, `int`, `float`, `bool`)
   - Formater un texte avec une f-string
@@ -91,26 +91,26 @@ Quand Python plante, il t'affiche une **trace** ; lis-la **de bas en haut** : 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement : les tests de la leçon (`test_premiers_pas.py`) sont déjà dans ton dossier de travail. Écris trois petits scripts, puis lance `pytest -q` pour les valider.
-commandes:
+commands:
   - cp -R /opt/exercices/01-premiers-pas/. .
-etapes:
-  - texte: 'Crée `salut.py` qui affiche exactement `Bonjour Mentor !`'
-    indice: 'Une seule ligne suffit : `print(...)` avec le texte entre guillemets. Lance ensuite `python3 salut.py` pour voir le résultat.'
-    verif:
-      - sortie-contient: ['python3 salut.py', '^Bonjour Mentor !$']
+steps:
+  - text: 'Crée `salut.py` qui affiche exactement `Bonjour Mentor !`'
+    hint: 'Une seule ligne suffit : `print(...)` avec le texte entre guillemets. Lance ensuite `python3 salut.py` pour voir le résultat.'
+    checks:
+      - output-contains: ['python3 salut.py', '^Bonjour Mentor !$']
     solution:
       - |
         cat > salut.py <<'EOF'
         print("Bonjour Mentor !")
         EOF
-  - texte: 'Crée `profil.py` : deux variables (`prenom`, `age`) et une f-string qui affiche `Je m''appelle <prénom> et j''ai <âge> ans`'
-    indice: 'Commence par `prenom = "Ada"` et `age = 36`, puis `print(f"...")` avec `{prenom}` et `{age}` dans le texte.'
-    verif:
-      - sortie-contient: ['python3 profil.py', "^Je m'appelle .+ et j'ai [0-9]+ ans$"]
+  - text: 'Crée `profil.py` : deux variables (`prenom`, `age`) et une f-string qui affiche `Je m''appelle <prénom> et j''ai <âge> ans`'
+    hint: 'Commence par `prenom = "Ada"` et `age = 36`, puis `print(f"...")` avec `{prenom}` et `{age}` dans le texte.'
+    checks:
+      - output-contains: ['python3 profil.py', "^Je m'appelle .+ et j'ai [0-9]+ ans$"]
     solution:
       - |
         cat > profil.py <<'EOF'
@@ -118,10 +118,10 @@ etapes:
         age = 36
         print(f"Je m'appelle {prenom} et j'ai {age} ans")
         EOF
-  - texte: 'Crée `calcul.py` qui affiche `7 // 3`, `7 % 3` et `7 ** 3`, un résultat par ligne'
-    indice: 'Trois appels à `print()`. Tu peux mettre `7` et `3` dans les variables `a` et `b`.'
-    verif:
-      - sortie-contient: ['python3 calcul.py', '^2\n1\n343$']
+  - text: 'Crée `calcul.py` qui affiche `7 // 3`, `7 % 3` et `7 ** 3`, un résultat par ligne'
+    hint: 'Trois appels à `print()`. Tu peux mettre `7` et `3` dans les variables `a` et `b`.'
+    checks:
+      - output-contains: ['python3 calcul.py', '^2\n1\n343$']
     solution:
       - |
         cat > calcul.py <<'EOF'
@@ -131,18 +131,18 @@ etapes:
         print(a % b)   # reste : 1
         print(a ** b)  # puissance : 343
         EOF
-  - texte: 'Écris dans `types.txt` ce qu''affiche `type(3.14)` (avec `python3 -c` et une redirection `>`)'
-    indice: 'Commande de la forme `python3 -c "print(...)" > types.txt`. Tu peux vérifier avec `cat types.txt`.'
-    verif:
-      - fichier-contient-dans-env: [types.txt, 'float']
+  - text: 'Écris dans `types.txt` ce qu''affiche `type(3.14)` (avec `python3 -c` et une redirection `>`)'
+    hint: 'Commande de la forme `python3 -c "print(...)" > types.txt`. Tu peux vérifier avec `cat types.txt`.'
+    checks:
+      - env-file-contains: [types.txt, 'float']
     solution:
       - python3 -c "print(type(3.14))" > types.txt
 
-  - texte: 'Lance les tests de la leçon avec `pytest -q` : ils doivent tous passer'
-    indice: 'Si un test échoue, lis son message : il te dit ce qu''il attendait et ce qu''il a reçu.'
-    apres: [1, 2, 3]
-    verif:
-      - commande-reussit: 'pytest -q test_premiers_pas.py'
+  - text: 'Lance les tests de la leçon avec `pytest -q` : ils doivent tous passer'
+    hint: 'Si un test échoue, lis son message : il te dit ce qu''il attendait et ce qu''il a reçu.'
+    after: [1, 2, 3]
+    checks:
+      - command-succeeds: 'pytest -q test_premiers_pas.py'
     solution:
       - pytest -q
 :::

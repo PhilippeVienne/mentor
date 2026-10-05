@@ -1,9 +1,9 @@
 ---
 id: modules-et-npm
-titre: "Modules JavaScript et outils npm"
-resume: "Découper le code en modules, lire et créer un package.json, installer un paquet et lancer les scripts d'un projet."
-duree: 25
-objectifs:
+title: "Modules JavaScript et outils npm"
+summary: "Découper le code en modules, lire et créer un package.json, installer un paquet et lancer les scripts d'un projet."
+minutes: 25
+objectives:
   - Exporter et importer des fonctions avec `export` et `import`
   - Lire un `package.json` (dépendances et scripts)
   - Utiliser `npm install` et `npm run` sans committer `node_modules`
@@ -118,27 +118,27 @@ Quand tu ouvres un projet inconnu, lis d'abord son `package.json` : les `script
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu pars d'un dossier de travail vide. Tu vas créer un petit projet Node.js : un `package.json`, un module `prix.js` importé par `app.js`, un script `npm run demo`, une dépendance installée avec `npm install` et un `.gitignore`. Écris les fichiers avec `nano`. L'outil de vérification lance tes commandes et regarde ce qu'elles affichent.
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Crée le projet : `npm init -y` génère un `package.json` par défaut. Active ensuite les modules avec `npm pkg set type=module`, ce qui ajoute `"type": "module"` au fichier. Vérifie avec `npm pkg get type` : la commande doit afficher `"module"`.
-    indice: >-
+    hint: >-
       Deux commandes à la suite : `npm init -y` puis `npm pkg set type=module`. Tu peux lire le résultat avec `cat package.json`.
-    verif:
-      - sortie-contient: ['npm pkg get type', '"module"']
+    checks:
+      - output-contains: ['npm pkg get type', '"module"']
     solution:
       - npm init -y
       - npm pkg set type=module
-  - texte: >-
+  - text: >-
       Crée le module `prix.js` (export nommé `prixTotal` et `TVA`, export par défaut `formater`, comme dans la leçon) et `app.js` qui les importe, puis affiche `formater(total)` et `formater(total * (1 + TVA))` pour `prixTotal(4.5, 3)`. `node app.js` doit afficher `13.50 €` puis `16.20 €`.
-    indice: >-
+    hint: >-
       Dans `app.js`, la première ligne est `import formater, { prixTotal, TVA } from "./prix.js";`. Sans `"type": "module"` dans `package.json`, Node refuse `import`.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-web 06 modules'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-web 06 modules'
     solution:
       - |
         cat > prix.js <<'EOF'
@@ -160,31 +160,31 @@ etapes:
         console.log(formater(total));
         console.log(formater(total * (1 + TVA)));
         EOF
-  - texte: >-
+  - text: >-
       Ajoute un script npm nommé `demo` qui lance `node app.js` : édite la section `scripts` de `package.json` avec `nano`, ou utilise `npm pkg set scripts.demo="node app.js"`. Lance-le avec `npm run demo`.
-    indice: >-
+    hint: >-
       Dans `package.json`, la section ressemble à `"scripts": { "demo": "node app.js" }`. N'oublie pas les virgules entre les propriétés si tu édites à la main.
-    apres: [2]
-    verif:
-      - commande-reussit: 'verifier-web 06 script'
+    after: [2]
+    checks:
+      - command-succeeds: 'verifier-web 06 script'
     solution:
       - npm pkg set scripts.demo="node app.js"
-  - texte: >-
+  - text: >-
       Installe le paquet local avec `npm install /opt/paquets/mini-date`. Le paquet doit apparaître dans la section `dependencies` de `package.json` (lis-le avec `cat package.json`) et dans le dossier `node_modules/`.
-    indice: >-
+    hint: >-
       La commande est exactement `npm install /opt/paquets/mini-date`. Elle fonctionne sans Internet parce que le paquet est un dossier local.
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-web 06 paquet'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-web 06 paquet'
     solution:
       - npm install /opt/paquets/mini-date
-  - texte: >-
+  - text: >-
       Utilise le paquet dans `app.js` : ajoute `import { dateFr } from "mini-date";` en haut du fichier, puis `console.log(dateFr(new Date(Date.UTC(2026, 9, 3))));` à la fin (attention : dans `Date.UTC`, les mois commencent à 0, donc `9` est octobre). `node app.js` doit maintenant afficher `03/10/2026` en dernière ligne.
-    indice: >-
+    hint: >-
       Un nom de paquet s'importe sans `./` : `from "mini-date"`. Les deux lignes `import` doivent rester en haut du fichier.
-    apres: [2, 4]
-    verif:
-      - commande-reussit: 'verifier-web 06 utiliser'
+    after: [2, 4]
+    checks:
+      - command-succeeds: 'verifier-web 06 utiliser'
     solution:
       - |
         cat > app.js <<'EOF'
@@ -196,12 +196,12 @@ etapes:
         console.log(formater(total * (1 + TVA)));
         console.log(dateFr(new Date(Date.UTC(2026, 9, 3))));
         EOF
-  - texte: >-
+  - text: >-
       Crée un fichier `.gitignore` qui contient une ligne `node_modules/`, pour que Git n'enregistre jamais le dossier des paquets installés.
-    indice: >-
+    hint: >-
       `echo "node_modules/" > .gitignore` fait le travail en une commande. Vérifie avec `cat .gitignore`.
-    verif:
-      - fichier-contient-dans-env: ['.gitignore', '(?m)^/?node_modules/?\s*$']
+    checks:
+      - env-file-contains: ['.gitignore', '(?m)^/?node_modules/?\s*$']
     solution:
       - echo "node_modules/" > .gitignore
 :::

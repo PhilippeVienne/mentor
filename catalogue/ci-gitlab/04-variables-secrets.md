@@ -1,9 +1,9 @@
 ---
 id: variables-secrets
-titre: "Variables et secrets"
-resume: "Où ranger un mot de passe de CI, et pourquoi jamais dans le dépôt."
-duree: 35
-objectifs:
+title: "Variables et secrets"
+summary: "Où ranger un mot de passe de CI, et pourquoi jamais dans le dépôt."
+minutes: 35
+objectives:
   - Distinguer variable prédéfinie, variable du fichier et variable de projet
   - Protéger et masquer un secret
   - Lire un script qui obtient un jeton d'accès sans rien écrire en clair
@@ -107,22 +107,22 @@ Même masquée, une valeur peut fuiter transformée : le **base64** est un enco
 Dans ce labo, `verifier-ci` lit ton `.gitlab-ci.yml` et signale deux types de problèmes : une variable au nom évocateur (`…TOKEN`, `…PASSWORD`, `…SECRET`) dont la valeur est écrite **en clair** dans le fichier (c'est une erreur), et une commande qui **affiche** un secret dans le log (c'est un avertissement). Il n'a bien sûr aucun accès aux variables de ton vrai projet GitLab, et il ne remplace pas la relecture ni l'outil Secret Detection que tu verras à la leçon suivante. Toutes les valeurs de ce labo sont fausses.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un `.gitlab-ci.yml` à trois jobs (`build`, `deploy`, `notify`) et un fichier `valeurs.txt`. Un secret (faux) est écrit en clair, et un des jobs le laisse fuiter. Modifie les fichiers avec `nano` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code. Commence par `verifier-ci .gitlab-ci.yml` pour lire ce que l'outil signale.
-commandes:
+commands:
   - cp -R /opt/exercices/04-secrets/. .
-etapes:
-  - texte: 'Le jeton `DEPLOY_TOKEN` est écrit en clair dans la section `variables:` du fichier. Retire cette ligne (sa vraie valeur irait dans *Settings > CI/CD > Variables*) : le job `deploy` continue d''utiliser `$DEPLOY_TOKEN`, GitLab la fournira. `verifier-ci .gitlab-ci.yml` ne doit plus signaler d''erreur'
-    indice: 'Supprime la ligne `DEPLOY_TOKEN: "FAUX-…"` et garde `DOCKER_DRIVER`. Ne supprime pas `$DEPLOY_TOKEN` dans le script du job `deploy`.'
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-echoue: grep -q 'FAUX-jeton' .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --sans-variable-globale DEPLOY_TOKEN"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job deploy --cree --script-lance 'curl :: $DEPLOY_TOKEN'"
+steps:
+  - text: 'Le jeton `DEPLOY_TOKEN` est écrit en clair dans la section `variables:` du fichier. Retire cette ligne (sa vraie valeur irait dans *Settings > CI/CD > Variables*) : le job `deploy` continue d''utiliser `$DEPLOY_TOKEN`, GitLab la fournira. `verifier-ci .gitlab-ci.yml` ne doit plus signaler d''erreur'
+    hint: 'Supprime la ligne `DEPLOY_TOKEN: "FAUX-…"` et garde `DOCKER_DRIVER`. Ne supprime pas `$DEPLOY_TOKEN` dans le script du job `deploy`.'
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-fails: grep -q 'FAUX-jeton' .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --sans-variable-globale DEPLOY_TOKEN"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job deploy --cree --script-lance 'curl :: $DEPLOY_TOKEN'"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - build
@@ -150,19 +150,19 @@ etapes:
               script:
                 - echo "Déploiement terminé"
                 - echo "Jeton utilisé $DEPLOY_TOKEN"
-  - texte: 'Un des trois jobs affiche le secret dans son log. Repère-le avec `verifier-ci .gitlab-ci.yml` (cherche la ligne `AVERTISSEMENT`) et écris son nom dans un fichier `fuite.txt`'
-    indice: 'Le message cite le nom du job entre guillemets : `job « … »`. Écris-le avec `echo NOM > fuite.txt`.'
-    verif:
-      - fichier-contient-dans-env: [fuite.txt, '^\s*notify\s*$']
+  - text: 'Un des trois jobs affiche le secret dans son log. Repère-le avec `verifier-ci .gitlab-ci.yml` (cherche la ligne `AVERTISSEMENT`) et écris son nom dans un fichier `fuite.txt`'
+    hint: 'Le message cite le nom du job entre guillemets : `job « … »`. Écris-le avec `echo NOM > fuite.txt`.'
+    checks:
+      - env-file-contains: [fuite.txt, '^\s*notify\s*$']
     solution:
       - echo notify > fuite.txt
-  - texte: 'Colmate la fuite : remplace la commande fautive par un test qui vérifie seulement que le secret est présent, `test -n "$DEPLOY_TOKEN"`. `verifier-ci --strict .gitlab-ci.yml` doit réussir'
-    indice: 'Dans le job `notify`, la ligne `echo "Jeton utilisé $DEPLOY_TOKEN"` devient `- test -n "$DEPLOY_TOKEN"`.'
-    verif:
-      - commande-reussit: verifier-ci --strict .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job notify --cree --script-lance 'test :: -n :: $DEPLOY_TOKEN'"
+  - text: 'Colmate la fuite : remplace la commande fautive par un test qui vérifie seulement que le secret est présent, `test -n "$DEPLOY_TOKEN"`. `verifier-ci --strict .gitlab-ci.yml` doit réussir'
+    hint: 'Dans le job `notify`, la ligne `echo "Jeton utilisé $DEPLOY_TOKEN"` devient `- test -n "$DEPLOY_TOKEN"`.'
+    checks:
+      - command-succeeds: verifier-ci --strict .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job notify --cree --script-lance 'test :: -n :: $DEPLOY_TOKEN'"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - build
@@ -190,10 +190,10 @@ etapes:
               script:
                 - echo "Déploiement terminé"
                 - test -n "$DEPLOY_TOKEN"
-  - texte: 'GitLab ne masque pas n''importe quelle valeur. `valeurs.txt` contient quatre valeurs d''exemple, une par ligne. Teste chacune avec `verifier-ci --masquable ''valeur''` et recopie dans `masquables.txt` celles que GitLab accepterait de masquer, une par ligne'
-    indice: 'Une valeur est refusée si elle fait moins de 8 caractères, si elle contient une espace ou un caractère inhabituel. Mets la valeur entre apostrophes pour que le shell ne la découpe pas.'
-    verif:
-      - commande-reussit: |
+  - text: 'GitLab ne masque pas n''importe quelle valeur. `valeurs.txt` contient quatre valeurs d''exemple, une par ligne. Teste chacune avec `verifier-ci --masquable ''valeur''` et recopie dans `masquables.txt` celles que GitLab accepterait de masquer, une par ligne'
+    hint: 'Une valeur est refusée si elle fait moins de 8 caractères, si elle contient une espace ou un caractère inhabituel. Mets la valeur entre apostrophes pour que le shell ne la découpe pas.'
+    checks:
+      - command-succeeds: |
           test -s masquables.txt && test "$(sort -u masquables.txt | wc -l)" -eq 2 && while IFS= read -r v; do verifier-ci --masquable "$v" > /dev/null && grep -qxF -- "$v" valeurs.txt || exit 1; done < masquables.txt
     solution:
       - printf '%s\n' 'Zm9vYmFyMTIzNDU=' 'Tk3fQ9aL.p2X@77v' > masquables.txt

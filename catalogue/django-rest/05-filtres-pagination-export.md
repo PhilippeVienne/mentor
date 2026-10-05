@@ -1,9 +1,9 @@
 ---
 id: filtres-pagination-export
-titre: "Filtres, pagination, import et export"
-resume: "Chercher, trier et découper une liste en pages ; exporter en CSV ; importer des fichiers via l'admin."
-duree: 45
-objectifs:
+title: "Filtres, pagination, import et export"
+summary: "Chercher, trier et découper une liste en pages ; exporter en CSV ; importer des fichiers via l'admin."
+minutes: 45
+objectives:
   - Utiliser les paramètres d'URL (`?search=`, `?ordering=`, `?page=`) pour interroger une liste
   - Configurer `SearchFilter`, `OrderingFilter` et `DjangoFilterBackend`
   - Paginer une liste avec `PageNumberPagination`
@@ -161,20 +161,20 @@ La `Resource` décrit les colonnes du fichier, comme un sérialiseur décrit le 
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   L'API des événements est protégée (les tests se connectent avec le rôle `staff` ou sans rôle) mais elle ne sait ni chercher, ni trier, ni paginer, ni exporter. Tu complètes `agenda/views.py`, `projet/settings.py` et un nouveau fichier `agenda/pagination.py`. Lance `pytest -q test_filtres.py` pour voir les cinq tests échouer, puis corrige-les dans l'ordre.
-commandes:
+commands:
   - cp -R /opt/exercices/base/. .
   - cp -R /opt/exercices/05-filtres-pagination-export/. .
-etapes:
-  - texte: 'Dans `EvenementViewSet`, active la recherche et le tri : `filter_backends = [filters.SearchFilter, filters.OrderingFilter]`, avec `search_fields` (`titre` et le début de `asso__nom`) et `ordering_fields` (`date` et `places`). `?search=Ciné` et `?ordering=-date` doivent fonctionner : `test_recherche_et_tri` doit passer'
-    indice: 'Un préfixe `^` devant un champ de `search_fields` veut dire « commence par ». Il faut importer `filters` depuis `rest_framework`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 05-filtres-pagination-export recherche_et_tri'
+steps:
+  - text: 'Dans `EvenementViewSet`, active la recherche et le tri : `filter_backends = [filters.SearchFilter, filters.OrderingFilter]`, avec `search_fields` (`titre` et le début de `asso__nom`) et `ordering_fields` (`date` et `places`). `?search=Ciné` et `?ordering=-date` doivent fonctionner : `test_recherche_et_tri` doit passer'
+    hint: 'Un préfixe `^` devant un champ de `search_fields` veut dire « commence par ». Il faut importer `filters` depuis `rest_framework`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 05-filtres-pagination-export recherche_et_tri'
     solution:
-      - ecrire:
+      - write:
           agenda/views.py: |
             from django.utils import timezone
             from rest_framework import filters, viewsets
@@ -213,13 +213,13 @@ etapes:
                     evenement.ouvert = False
                     evenement.save(update_fields=["ouvert"])
                     return Response(self.get_serializer(evenement).data)
-  - texte: 'Ajoute le filtre exact `DjangoFilterBackend` (importé de `django_filters.rest_framework`) à `filter_backends`, avec `filterset_fields = ["ouvert", "asso"]` : `?ouvert=false` et `?asso=<id>` doivent filtrer. `test_filtres_exacts` doit passer'
-    indice: '`DjangoFilterBackend` se met dans la même liste que les deux autres filtres. Les champs filtrables se déclarent dans `filterset_fields`.'
-    apres: [1]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 05-filtres-pagination-export filtres_exacts'
+  - text: 'Ajoute le filtre exact `DjangoFilterBackend` (importé de `django_filters.rest_framework`) à `filter_backends`, avec `filterset_fields = ["ouvert", "asso"]` : `?ouvert=false` et `?asso=<id>` doivent filtrer. `test_filtres_exacts` doit passer'
+    hint: '`DjangoFilterBackend` se met dans la même liste que les deux autres filtres. Les champs filtrables se déclarent dans `filterset_fields`.'
+    after: [1]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 05-filtres-pagination-export filtres_exacts'
     solution:
-      - ecrire:
+      - write:
           agenda/views.py: |
             from django.utils import timezone
             from django_filters.rest_framework import DjangoFilterBackend
@@ -260,12 +260,12 @@ etapes:
                     evenement.ouvert = False
                     evenement.save(update_fields=["ouvert"])
                     return Response(self.get_serializer(evenement).data)
-  - texte: 'Dans `projet/settings.py`, active la pagination pour toute l''API : `DEFAULT_PAGINATION_CLASS` (`rest_framework.pagination.PageNumberPagination`) et `PAGE_SIZE` à `20`. La réponse devient un objet avec `count`, `next`, `previous` et `results`. `test_pagination_globale` doit passer'
-    indice: 'Ajoute deux clés au dictionnaire `REST_FRAMEWORK`. Une page qui n''existe pas (`?page=9`) répond `404`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 05-filtres-pagination-export pagination_globale'
+  - text: 'Dans `projet/settings.py`, active la pagination pour toute l''API : `DEFAULT_PAGINATION_CLASS` (`rest_framework.pagination.PageNumberPagination`) et `PAGE_SIZE` à `20`. La réponse devient un objet avec `count`, `next`, `previous` et `results`. `test_pagination_globale` doit passer'
+    hint: 'Ajoute deux clés au dictionnaire `REST_FRAMEWORK`. Une page qui n''existe pas (`?page=9`) répond `404`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 05-filtres-pagination-export pagination_globale'
     solution:
-      - ecrire:
+      - write:
           projet/settings.py: |
             """Réglages du projet « Agenda des associations » (domaine fictif de la formation)."""
             from pathlib import Path
@@ -317,13 +317,13 @@ etapes:
                 "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
                 "PAGE_SIZE": 20,
             }
-  - texte: 'Crée `agenda/pagination.py` avec la classe `EvenementsPagination` (`page_size = 20`, `page_size_query_param = "page_size"`, `max_page_size = 100`) et branche-la sur la vue avec `pagination_class`. `?page_size=1` doit alors renvoyer un seul événement. `test_taille_de_page` doit passer'
-    indice: 'La classe hérite de `PageNumberPagination` (dans `rest_framework.pagination`). Dans la vue : `pagination_class = EvenementsPagination`, sans oublier l''import.'
-    apres: [2]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 05-filtres-pagination-export taille_de_page'
+  - text: 'Crée `agenda/pagination.py` avec la classe `EvenementsPagination` (`page_size = 20`, `page_size_query_param = "page_size"`, `max_page_size = 100`) et branche-la sur la vue avec `pagination_class`. `?page_size=1` doit alors renvoyer un seul événement. `test_taille_de_page` doit passer'
+    hint: 'La classe hérite de `PageNumberPagination` (dans `rest_framework.pagination`). Dans la vue : `pagination_class = EvenementsPagination`, sans oublier l''import.'
+    after: [2]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 05-filtres-pagination-export taille_de_page'
     solution:
-      - ecrire:
+      - write:
           agenda/pagination.py: |
             from rest_framework.pagination import PageNumberPagination
 
@@ -332,7 +332,7 @@ etapes:
                 page_size = 20
                 page_size_query_param = "page_size"
                 max_page_size = 100
-      - ecrire:
+      - write:
           agenda/views.py: |
             from django.utils import timezone
             from django_filters.rest_framework import DjangoFilterBackend
@@ -375,14 +375,14 @@ etapes:
                     evenement.ouvert = False
                     evenement.save(update_fields=["ouvert"])
                     return Response(self.get_serializer(evenement).data)
-  - texte: 'Ajoute l''action `export` (`detail=False`, `GET`, réservée à `HasRoleStaff`) qui renvoie un fichier CSV `titre,asso,date` des événements **filtrés** par l''URL. `test_export_csv` doit passer'
-    indice: 'Une `HttpResponse(content_type="text/csv")` se remplit avec `csv.writer(reponse)`. Parcours `self.filter_queryset(self.get_queryset())` pour que `?ouvert=true` s''applique aussi à l''export.'
-    apres: [4]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-tests 05-filtres-pagination-export export_csv'
+  - text: 'Ajoute l''action `export` (`detail=False`, `GET`, réservée à `HasRoleStaff`) qui renvoie un fichier CSV `titre,asso,date` des événements **filtrés** par l''URL. `test_export_csv` doit passer'
+    hint: 'Une `HttpResponse(content_type="text/csv")` se remplit avec `csv.writer(reponse)`. Parcours `self.filter_queryset(self.get_queryset())` pour que `?ouvert=true` s''applique aussi à l''export.'
+    after: [4]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-tests 05-filtres-pagination-export export_csv'
     solution:
-      - ecrire:
-          agenda/views.py: |
+      - write:
+          agenda/views.py: |-
             import csv
 
             from django.http import HttpResponse

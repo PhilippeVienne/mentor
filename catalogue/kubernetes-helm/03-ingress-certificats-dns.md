@@ -1,9 +1,9 @@
 ---
 id: ingress-certificats-dns
-titre: "Ingress, certificats et DNS"
-resume: "Comprendre le chemin d'une requête HTTPS jusqu'au pod : Ingress, HAProxy, cert-manager et External-DNS."
-duree: 45
-objectifs:
+title: "Ingress, certificats et DNS"
+summary: "Comprendre le chemin d'une requête HTTPS jusqu'au pod : Ingress, HAProxy, cert-manager et External-DNS."
+minutes: 45
+objectives:
   - Expliquer la différence entre un Ingress et un Ingress Controller
   - Décrire le rôle de cert-manager et d'External-DNS dans la configuration du cluster de l'équipe
   - Repérer ce qui est probablement obsolète dans le dépôt cluster-configuration
@@ -126,24 +126,24 @@ Le cluster de production fonctionne-t-il encore avec HAProxy Ingress, cert-manag
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Atelier sans cluster (donc **sans Ingress Controller, sans cert-manager et sans DNS réel** : rien n'est routé ni signé), avec `kubeconform`, `yamllint` (un correcteur de syntaxe YAML) et `verifier-k8s`. Tu as sous la main `service.yaml` (le service de Vitrine), `ingress-ancien.yaml` (un Ingress écrit à l'ancienne mode) et `cluster-issuer.yaml` (un émetteur cert-manager avec une erreur). Les schémas des CRD de cert-manager ne sont pas embarqués : `kubeconform` ne peut donc pas contrôler le ClusterIssuer lui-même, seulement `yamllint` sa syntaxe.
-commandes:
+commands:
   - cp /opt/exercices/03-ingress/service.yaml /opt/exercices/03-ingress/ingress-ancien.yaml /opt/exercices/03-ingress/cluster-issuer.yaml /opt/exercices/03-ingress/.yamllint .
-etapes:
-  - texte: 'Lance `kubeconform ingress-ancien.yaml` : il refuse l''ancienne `apiVersion`. Copie le fichier en `ingress.yaml` et modernise-le : `apiVersion: networking.k8s.io/v1`, `pathType: Prefix`, et le service désigné par `backend.service.name` et `backend.service.port.number` (80)'
-    indice: 'Dans la version 1, `serviceName` et `servicePort` disparaissent au profit de `service.name` et `service.port.number`. Compare avec l''exemple de la leçon.'
-    verif:
-      - commande-reussit: 'kubeconform ingress.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'apiVersion' --texte networking.k8s.io/v1 ingress.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].pathType' --texte Prefix ingress.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte vitrine-nginx-svc ingress.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.port.number' --egal 80 ingress.yaml"
-      - commande-reussit: 'verifier-k8s references ingress.yaml service.yaml'
+steps:
+  - text: 'Lance `kubeconform ingress-ancien.yaml` : il refuse l''ancienne `apiVersion`. Copie le fichier en `ingress.yaml` et modernise-le : `apiVersion: networking.k8s.io/v1`, `pathType: Prefix`, et le service désigné par `backend.service.name` et `backend.service.port.number` (80)'
+    hint: 'Dans la version 1, `serviceName` et `servicePort` disparaissent au profit de `service.name` et `service.port.number`. Compare avec l''exemple de la leçon.'
+    checks:
+      - command-succeeds: 'kubeconform ingress.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'apiVersion' --texte networking.k8s.io/v1 ingress.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].pathType' --texte Prefix ingress.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte vitrine-nginx-svc ingress.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.port.number' --egal 80 ingress.yaml"
+      - command-succeeds: 'verifier-k8s references ingress.yaml service.yaml'
     solution:
-      - ecrire:
+      - write:
           ingress.yaml: |
             apiVersion: networking.k8s.io/v1
             kind: Ingress
@@ -161,16 +161,16 @@ etapes:
                             name: vitrine-nginx-svc
                             port:
                               number: 80
-  - texte: 'Prépare le HTTPS dans `ingress.yaml` : ajoute sous `metadata` une annotation `cert-manager.io/cluster-issuer: letsencrypt-production`, et sous `spec` un bloc `tls` qui liste l''hôte `portail.example.org` avec `secretName: portail-tls`'
-    indice: '`annotations` est un dictionnaire sous `metadata` ; `tls` est une liste (un tiret) dont chaque élément a `hosts` (une liste) et `secretName`. cert-manager rangera le certificat dans le Secret `portail-tls`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'kubeconform ingress.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'metadata.annotations[cert-manager.io/cluster-issuer]' --texte letsencrypt-production ingress.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.tls[0].secretName' --texte portail-tls ingress.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.tls[0].hosts' --contient portail.example.org ingress.yaml"
+  - text: 'Prépare le HTTPS dans `ingress.yaml` : ajoute sous `metadata` une annotation `cert-manager.io/cluster-issuer: letsencrypt-production`, et sous `spec` un bloc `tls` qui liste l''hôte `portail.example.org` avec `secretName: portail-tls`'
+    hint: '`annotations` est un dictionnaire sous `metadata` ; `tls` est une liste (un tiret) dont chaque élément a `hosts` (une liste) et `secretName`. cert-manager rangera le certificat dans le Secret `portail-tls`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'kubeconform ingress.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'metadata.annotations[cert-manager.io/cluster-issuer]' --texte letsencrypt-production ingress.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.tls[0].secretName' --texte portail-tls ingress.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.tls[0].hosts' --contient portail.example.org ingress.yaml"
     solution:
-      - ecrire:
+      - write:
           ingress.yaml: |
             apiVersion: networking.k8s.io/v1
             kind: Ingress
@@ -194,14 +194,14 @@ etapes:
                             name: vitrine-nginx-svc
                             port:
                               number: 80
-  - texte: 'Lance `yamllint cluster-issuer.yaml` : il signale une clé en double. Corrige le fichier (supprime la ligne `email` en trop) et passe l''`apiVersion` à `cert-manager.io/v1`, la version actuelle de cert-manager'
-    indice: 'Relis le message de `yamllint` : il donne le numéro de la ligne fautive. Attention : la structure `acme` a aussi changé dans les versions récentes ; ici, seule la syntaxe est contrôlée.'
-    verif:
-      - commande-reussit: 'yamllint cluster-issuer.yaml'
-      - commande-reussit: "verifier-k8s champ --kind ClusterIssuer --chemin 'apiVersion' --texte cert-manager.io/v1 cluster-issuer.yaml"
-      - commande-reussit: "verifier-k8s champ --kind ClusterIssuer --chemin 'spec.acme.email' --existe cluster-issuer.yaml"
+  - text: 'Lance `yamllint cluster-issuer.yaml` : il signale une clé en double. Corrige le fichier (supprime la ligne `email` en trop) et passe l''`apiVersion` à `cert-manager.io/v1`, la version actuelle de cert-manager'
+    hint: 'Relis le message de `yamllint` : il donne le numéro de la ligne fautive. Attention : la structure `acme` a aussi changé dans les versions récentes ; ici, seule la syntaxe est contrôlée.'
+    checks:
+      - command-succeeds: 'yamllint cluster-issuer.yaml'
+      - command-succeeds: "verifier-k8s champ --kind ClusterIssuer --chemin 'apiVersion' --texte cert-manager.io/v1 cluster-issuer.yaml"
+      - command-succeeds: "verifier-k8s champ --kind ClusterIssuer --chemin 'spec.acme.email' --existe cluster-issuer.yaml"
     solution:
-      - ecrire:
+      - write:
           cluster-issuer.yaml: |
             apiVersion: cert-manager.io/v1
             kind: ClusterIssuer
@@ -213,18 +213,18 @@ etapes:
                 email: contact@exemple.invalid
                 privateKeySecretRef:
                   name: letsencrypt-production
-  - texte: 'Écris la version « cluster de dev » dans `ingress-dev.yaml` : même Ingress, mais pour l''hôte `portail.172.17.0.1.nip.io`, **sans** bloc `tls` et sans annotation cert-manager (il n''y a pas de HTTPS en local)'
-    indice: 'Pars de ton `ingress.yaml` (`cp ingress.yaml ingress-dev.yaml`), change l''hôte et supprime les deux blocs en trop.'
-    apres: [1]
-    verif:
-      - fichier-existe-dans-env: ingress-dev.yaml
-      - commande-reussit: 'kubeconform ingress-dev.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.172.17.0.1.nip.io ingress-dev.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte vitrine-nginx-svc ingress-dev.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'spec.tls' --absent ingress-dev.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Ingress --chemin 'metadata.annotations[cert-manager.io/cluster-issuer]' --absent ingress-dev.yaml"
+  - text: 'Écris la version « cluster de dev » dans `ingress-dev.yaml` : même Ingress, mais pour l''hôte `portail.172.17.0.1.nip.io`, **sans** bloc `tls` et sans annotation cert-manager (il n''y a pas de HTTPS en local)'
+    hint: 'Pars de ton `ingress.yaml` (`cp ingress.yaml ingress-dev.yaml`), change l''hôte et supprime les deux blocs en trop.'
+    after: [1]
+    checks:
+      - env-file-exists: ingress-dev.yaml
+      - command-succeeds: 'kubeconform ingress-dev.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].host' --texte portail.172.17.0.1.nip.io ingress-dev.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.rules[0].http.paths[0].backend.service.name' --texte vitrine-nginx-svc ingress-dev.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'spec.tls' --absent ingress-dev.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Ingress --chemin 'metadata.annotations[cert-manager.io/cluster-issuer]' --absent ingress-dev.yaml"
     solution:
-      - ecrire:
+      - write:
           ingress-dev.yaml: |
             apiVersion: networking.k8s.io/v1
             kind: Ingress
@@ -242,13 +242,13 @@ etapes:
                             name: vitrine-nginx-svc
                             port:
                               number: 80
-  - texte: 'Valide tout d''un coup et garde la trace : `kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml > resultat.txt`. Lis `resultat.txt` : le ClusterIssuer est « ignoré » (*Skipped*), faute de schéma de CRD'
-    indice: 'L''option `-ignore-missing-schemas` dit à kubeconform de ne pas échouer quand il ne connaît pas le type d''un objet.'
-    apres: [2, 3, 4]
-    verif:
-      - sortie-contient: ['kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml', 'Invalid: 0']
-      - sortie-contient: ['kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml', 'Skipped: 1']
-      - commande-reussit: 'kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml | diff -q - resultat.txt'
+  - text: 'Valide tout d''un coup et garde la trace : `kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml > resultat.txt`. Lis `resultat.txt` : le ClusterIssuer est « ignoré » (*Skipped*), faute de schéma de CRD'
+    hint: 'L''option `-ignore-missing-schemas` dit à kubeconform de ne pas échouer quand il ne connaît pas le type d''un objet.'
+    after: [2, 3, 4]
+    checks:
+      - output-contains: ['kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml', 'Invalid: 0']
+      - output-contains: ['kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml', 'Skipped: 1']
+      - command-succeeds: 'kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml | diff -q - resultat.txt'
     solution:
       - kubeconform -summary -ignore-missing-schemas service.yaml ingress.yaml ingress-dev.yaml cluster-issuer.yaml > resultat.txt
 :::

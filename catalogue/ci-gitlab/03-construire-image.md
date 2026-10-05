@@ -1,9 +1,9 @@
 ---
 id: construire-image
-titre: "Construire et publier une image Docker"
-resume: "Le job build de l'équipe : docker login, docker build, docker push vers le registry GitLab."
-duree: 35
-objectifs:
+title: "Construire et publier une image Docker"
+summary: "Le job build de l'équipe : docker login, docker build, docker push vers le registry GitLab."
+minutes: 35
+objectives:
   - Expliquer le rôle du service `docker:dind`
   - Se connecter au registry GitLab avec les variables prédéfinies
   - Choisir un tag d'image lisible (`$CI_COMMIT_REF_SLUG`)
@@ -66,7 +66,7 @@ Avec `-p`, le mot de passe apparaît dans la ligne de commande. Docker te le sig
 
 Les projets de l'équipe ne suivent pas tous la même convention :
 
-:::cartes
+:::cards
 ### Un tag par branche
 
 Adhésion utilise `$CI_COMMIT_REF_SLUG`. Chaque branche a son image, la dernière version de la branche écrase la précédente.
@@ -86,26 +86,26 @@ Un tag par commit ou par merge request crée beaucoup d'images dans le registry 
 Ton conteneur d'entraînement n'a ni démon Docker, ni réseau, ni registry : tu ne construiras donc aucune vraie image. Tu vas écrire le job et `verifier-ci` en contrôlera la **structure**. Il connaît les pièges classiques du build d'image : il avertit quand le script lance `docker` sans `docker:dind` ni `DOCKER_HOST`, quand il pousse sans s'être connecté, ou quand `docker build` n'a pas de `-t`. Il ne remplace pas un vrai pipeline.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient une petite application Python (`app`), son `Dockerfile` et un `.gitlab-ci.yml` de départ avec deux jobs : `tests` et un job `build` encore très incomplet. Modifie le fichier avec `nano .gitlab-ci.yml` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code. L'option `--strict` de `verifier-ci` fait échouer l'outil même pour un simple avertissement : lance `verifier-ci .gitlab-ci.yml` pour lire ses messages. Pour calculer un tag, essaie `verifier-ci --slug 'une/branche'`.
-commandes:
+commands:
   - cp -R /opt/exercices/03-image/. .
-etapes:
-  - texte: 'Quel tag obtient l''image construite depuis la branche `feature/Contact-Page` avec `$CI_COMMIT_REF_SLUG` ? Calcule-le, puis écris-le dans un fichier `tag.txt`'
-    indice: 'Lance `verifier-ci --slug ''feature/Contact-Page''` : l''outil applique la règle de GitLab (minuscules, `-` à la place des caractères spéciaux). Écris le résultat avec `echo TAG > tag.txt`.'
-    verif:
-      - fichier-contient-dans-env: [tag.txt, '^feature-contact-page\s*$']
+steps:
+  - text: 'Quel tag obtient l''image construite depuis la branche `feature/Contact-Page` avec `$CI_COMMIT_REF_SLUG` ? Calcule-le, puis écris-le dans un fichier `tag.txt`'
+    hint: 'Lance `verifier-ci --slug ''feature/Contact-Page''` : l''outil applique la règle de GitLab (minuscules, `-` à la place des caractères spéciaux). Écris le résultat avec `echo TAG > tag.txt`.'
+    checks:
+      - env-file-contains: [tag.txt, '^feature-contact-page\s*$']
     solution:
       - echo feature-contact-page > tag.txt
-  - texte: 'Lance `verifier-ci .gitlab-ci.yml` : le job `build` lance `docker` sans démon. Corrige-le (service `docker:dind` et variable `DOCKER_HOST`) jusqu''à ce que `verifier-ci --strict .gitlab-ci.yml` réussisse'
-    indice: 'Ajoute au job `build` : `services:` avec l''élément `- docker:dind`, puis `variables:` avec `DOCKER_HOST: tcp://docker:2375`.'
-    verif:
-      - commande-reussit: verifier-ci --strict .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --cree --service docker:dind --variable DOCKER_HOST=tcp://docker:2375"
+  - text: 'Lance `verifier-ci .gitlab-ci.yml` : le job `build` lance `docker` sans démon. Corrige-le (service `docker:dind` et variable `DOCKER_HOST`) jusqu''à ce que `verifier-ci --strict .gitlab-ci.yml` réussisse'
+    hint: 'Ajoute au job `build` : `services:` avec l''élément `- docker:dind`, puis `variables:` avec `DOCKER_HOST: tcp://docker:2375`.'
+    checks:
+      - command-succeeds: verifier-ci --strict .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --cree --service docker:dind --variable DOCKER_HOST=tcp://docker:2375"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - test
@@ -126,13 +126,13 @@ etapes:
                 DOCKER_HOST: tcp://docker:2375
               script:
                 - docker build -t mon-image .
-  - texte: 'Remplace le nom `mon-image` par un nom de registry lisible : `"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"`'
-    indice: 'La ligne devient `docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .` (n''oublie pas le point final : c''est le dossier du `Dockerfile`).'
-    apres: [2]
-    verif:
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --cree --service docker:dind --variable DOCKER_HOST=tcp://docker:2375 --script-lance 'docker build :: -t :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG'"
+  - text: 'Remplace le nom `mon-image` par un nom de registry lisible : `"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"`'
+    hint: 'La ligne devient `docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .` (n''oublie pas le point final : c''est le dossier du `Dockerfile`).'
+    after: [2]
+    checks:
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --cree --service docker:dind --variable DOCKER_HOST=tcp://docker:2375 --script-lance 'docker build :: -t :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG'"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - test
@@ -153,15 +153,15 @@ etapes:
                 DOCKER_HOST: tcp://docker:2375
               script:
                 - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
-  - texte: 'Publie l''image : ajoute au job `build` un `before_script` avec `docker login` (identifiant `$CI_REGISTRY_USER`, mot de passe `$CI_REGISTRY_PASSWORD`, adresse `$CI_REGISTRY`), et une dernière commande `docker push` du même nom d''image'
-    indice: 'Reprends le job d''Adhésion : `docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY` dans `before_script`, et `docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"` après le build.'
-    apres: [3]
-    verif:
-      - commande-reussit: verifier-ci --strict .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --cree --avant-script-lance 'docker login :: $CI_REGISTRY_USER'"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --script-lance 'docker push :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG' --ordre 'docker login' 'docker build' 'docker push'"
+  - text: 'Publie l''image : ajoute au job `build` un `before_script` avec `docker login` (identifiant `$CI_REGISTRY_USER`, mot de passe `$CI_REGISTRY_PASSWORD`, adresse `$CI_REGISTRY`), et une dernière commande `docker push` du même nom d''image'
+    hint: 'Reprends le job d''Adhésion : `docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY` dans `before_script`, et `docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"` après le build.'
+    after: [3]
+    checks:
+      - command-succeeds: verifier-ci --strict .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --cree --avant-script-lance 'docker login :: $CI_REGISTRY_USER'"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --script-lance 'docker push :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG' --ordre 'docker login' 'docker build' 'docker push'"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - test
@@ -185,16 +185,16 @@ etapes:
               script:
                 - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
                 - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-  - texte: 'Accélère le build avec le cache : avant `docker build`, ajoute `docker pull` de l''image de la branche suivi de `|| true`, et passe `--cache-from` avec ce même nom à `docker build`'
-    indice: 'Deux lignes de `script` : `docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" || true`, puis `docker build --cache-from "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .`.'
-    apres: [4]
-    verif:
-      - commande-reussit: verifier-ci --strict .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --cree --script-lance 'docker pull :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG :: || true'"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --script-lance 'docker build :: --cache-from :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG' --ordre 'docker pull' 'docker build' 'docker push'"
+  - text: 'Accélère le build avec le cache : avant `docker build`, ajoute `docker pull` de l''image de la branche suivi de `|| true`, et passe `--cache-from` avec ce même nom à `docker build`'
+    hint: 'Deux lignes de `script` : `docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" || true`, puis `docker build --cache-from "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .`.'
+    after: [4]
+    checks:
+      - command-succeeds: verifier-ci --strict .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --cree --script-lance 'docker pull :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG :: || true'"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --script-lance 'docker build :: --cache-from :: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG' --ordre 'docker pull' 'docker build' 'docker push'"
     solution:
-      - ecrire:
-          .gitlab-ci.yml: |
+      - write:
+          .gitlab-ci.yml: |-
             stages:
               - test
               - build

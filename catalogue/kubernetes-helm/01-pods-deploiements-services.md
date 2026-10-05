@@ -1,9 +1,9 @@
 ---
 id: pods-deploiements-services
-titre: "Pods, déploiements et services"
-resume: "Lire le Deployment et le Service du chart de Vitrine : ce que Kubernetes crée, relance et expose."
-duree: 45
-objectifs:
+title: "Pods, déploiements et services"
+summary: "Lire le Deployment et le Service du chart de Vitrine : ce que Kubernetes crée, relance et expose."
+minutes: 45
+objectives:
   - Distinguer un pod, un déploiement et un service
   - Expliquer comment un service retrouve ses pods grâce aux labels
   - Lire les sondes (probes), les ressources et la stratégie d'un déploiement de l'équipe
@@ -27,7 +27,7 @@ Quelques mots à connaître dès maintenant :
 
 ## Les trois objets de base
 
-:::cartes
+:::cards
 ### Pod
 
 La plus petite unité : un ou plusieurs conteneurs qui partagent le même réseau et les mêmes volumes. Un pod est **jetable** : s'il disparaît, son adresse IP disparaît avec lui.
@@ -163,40 +163,40 @@ Quels namespaces, quelles ressources par défaut (`requests`, `limits`) et quell
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu travailles dans un atelier Linux avec `kubectl`, `kubeconform` et un petit outil de l'équipe, `verifier-k8s`. **Il n'y a pas de cluster Kubernetes dans cet atelier** : rien n'est lancé pour de vrai. Tu écris des fichiers YAML et tu les contrôles. `kubeconform` compare un fichier au schéma officiel de Kubernetes (pour dire s'il est valide) ; `verifier-k8s` refait, sur tes fichiers, le raisonnement que ferait le cluster pour relier un service à ses pods. Le fichier `service.yaml` de Vitrine t'est fourni, mais il est cassé.
-commandes:
+commands:
   - cp /opt/exercices/01-deploiement/service.yaml .
-etapes:
-  - texte: 'Génère un squelette de déploiement nommé `vitrine-web` (image `nginx:1.27`, 2 copies) dans `deployment.yaml`, sans rien envoyer à un cluster : `kubectl create deployment vitrine-web --image=nginx:1.27 --replicas=2 --dry-run=client -o yaml > deployment.yaml` (`--dry-run=client` = « simule, n''envoie rien » ; `-o yaml` = « affiche en YAML » ; `>` écrit le résultat dans le fichier)'
-    indice: 'Ouvre ensuite le fichier avec `cat deployment.yaml` et retrouve `kind`, `replicas`, `selector` et `template`, vus dans la leçon.'
-    verif:
-      - commande-reussit: 'kubeconform deployment.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.replicas' --egal 2 deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].image' --texte nginx:1.27 deployment.yaml"
+steps:
+  - text: 'Génère un squelette de déploiement nommé `vitrine-web` (image `nginx:1.27`, 2 copies) dans `deployment.yaml`, sans rien envoyer à un cluster : `kubectl create deployment vitrine-web --image=nginx:1.27 --replicas=2 --dry-run=client -o yaml > deployment.yaml` (`--dry-run=client` = « simule, n''envoie rien » ; `-o yaml` = « affiche en YAML » ; `>` écrit le résultat dans le fichier)'
+    hint: 'Ouvre ensuite le fichier avec `cat deployment.yaml` et retrouve `kind`, `replicas`, `selector` et `template`, vus dans la leçon.'
+    checks:
+      - command-succeeds: 'kubeconform deployment.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.replicas' --egal 2 deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].image' --texte nginx:1.27 deployment.yaml"
     solution:
       - kubectl create deployment vitrine-web --image=nginx:1.27 --replicas=2 --dry-run=client -o yaml > deployment.yaml
-  - texte: 'Lance `verifier-k8s selecteur deployment.yaml service.yaml` : le service ne trouve aucun pod. Corrige le `selector` de `service.yaml` (avec `nano service.yaml`) pour qu''il reprenne le label du déploiement, puis relance la commande'
-    indice: 'Le label des pods est `app: vitrine-web` (regarde `template.metadata.labels` dans `deployment.yaml`). Le `selector` du service doit le reprendre exactement.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'verifier-k8s selecteur deployment.yaml service.yaml'
-      - commande-reussit: 'kubeconform service.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Service --chemin 'spec.selector.app' --texte vitrine-web service.yaml"
+  - text: 'Lance `verifier-k8s selecteur deployment.yaml service.yaml` : le service ne trouve aucun pod. Corrige le `selector` de `service.yaml` (avec `nano service.yaml`) pour qu''il reprenne le label du déploiement, puis relance la commande'
+    hint: 'Le label des pods est `app: vitrine-web` (regarde `template.metadata.labels` dans `deployment.yaml`). Le `selector` du service doit le reprendre exactement.'
+    after: [1]
+    checks:
+      - command-succeeds: 'verifier-k8s selecteur deployment.yaml service.yaml'
+      - command-succeeds: 'kubeconform service.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Service --chemin 'spec.selector.app' --texte vitrine-web service.yaml"
     solution:
       - "sed -i 's/app: web$/app: vitrine-web/' service.yaml"
-  - texte: 'Ajoute dans `deployment.yaml`, au même niveau que `name` et `image` du conteneur, une `readinessProbe` : un `httpGet` sur `path: /` et `port: 80`, avec `initialDelaySeconds: 10`'
-    indice: 'Les clés `path` et `port` sont sous `httpGet`, lui-même sous `readinessProbe`. Les espaces comptent : deux par niveau, jamais de tabulation. Valide avec `kubeconform deployment.yaml`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'kubeconform deployment.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.httpGet.path' --texte / deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.httpGet.port' --egal 80 deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.initialDelaySeconds' --egal 10 deployment.yaml"
+  - text: 'Ajoute dans `deployment.yaml`, au même niveau que `name` et `image` du conteneur, une `readinessProbe` : un `httpGet` sur `path: /` et `port: 80`, avec `initialDelaySeconds: 10`'
+    hint: 'Les clés `path` et `port` sont sous `httpGet`, lui-même sous `readinessProbe`. Les espaces comptent : deux par niveau, jamais de tabulation. Valide avec `kubeconform deployment.yaml`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'kubeconform deployment.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.httpGet.path' --texte / deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.httpGet.port' --egal 80 deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].readinessProbe.initialDelaySeconds' --egal 10 deployment.yaml"
     solution:
-      - ecrire:
+      - write:
           deployment.yaml: |
             apiVersion: apps/v1
             kind: Deployment
@@ -223,17 +223,17 @@ etapes:
                         path: /
                         port: 80
                       initialDelaySeconds: 10
-  - texte: 'Ajoute au conteneur des `resources` : `requests` de `100m` de CPU et `128Mi` de mémoire, `limits` de `500m` de CPU et `256Mi` de mémoire'
-    indice: 'La clé `resources` est au même niveau que `readinessProbe` ; elle contient `requests` et `limits`, qui contiennent chacun `cpu` et `memory`.'
-    apres: [3]
-    verif:
-      - commande-reussit: 'kubeconform deployment.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.requests.cpu' --texte 100m deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.requests.memory' --texte 128Mi deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.limits.cpu' --texte 500m deployment.yaml"
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.limits.memory' --texte 256Mi deployment.yaml"
+  - text: 'Ajoute au conteneur des `resources` : `requests` de `100m` de CPU et `128Mi` de mémoire, `limits` de `500m` de CPU et `256Mi` de mémoire'
+    hint: 'La clé `resources` est au même niveau que `readinessProbe` ; elle contient `requests` et `limits`, qui contiennent chacun `cpu` et `memory`.'
+    after: [3]
+    checks:
+      - command-succeeds: 'kubeconform deployment.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.requests.cpu' --texte 100m deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.requests.memory' --texte 128Mi deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.limits.cpu' --texte 500m deployment.yaml"
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.template.spec.containers[0].resources.limits.memory' --texte 256Mi deployment.yaml"
     solution:
-      - ecrire:
+      - write:
           deployment.yaml: |
             apiVersion: apps/v1
             kind: Deployment
@@ -267,16 +267,16 @@ etapes:
                       limits:
                         cpu: 500m
                         memory: 256Mi
-  - texte: 'Remplace `strategy: {}` par la stratégie `Recreate` (la clé `type` est sous `strategy`), puis valide une dernière fois les deux fichiers avec `kubeconform deployment.yaml service.yaml`'
-    indice: 'Il faut deux lignes à la place de `strategy: {}` : `strategy:` puis, indentée de deux espaces de plus, `type: Recreate`.'
-    apres: [4]
-    verif:
-      - commande-reussit: 'kubeconform deployment.yaml service.yaml'
-      - commande-reussit: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.strategy.type' --texte Recreate deployment.yaml"
-      - commande-reussit: 'verifier-k8s selecteur deployment.yaml service.yaml'
+  - text: 'Remplace `strategy: {}` par la stratégie `Recreate` (la clé `type` est sous `strategy`), puis valide une dernière fois les deux fichiers avec `kubeconform deployment.yaml service.yaml`'
+    hint: 'Il faut deux lignes à la place de `strategy: {}` : `strategy:` puis, indentée de deux espaces de plus, `type: Recreate`.'
+    after: [4]
+    checks:
+      - command-succeeds: 'kubeconform deployment.yaml service.yaml'
+      - command-succeeds: "verifier-k8s champ --kind Deployment --nom vitrine-web --chemin 'spec.strategy.type' --texte Recreate deployment.yaml"
+      - command-succeeds: 'verifier-k8s selecteur deployment.yaml service.yaml'
     solution:
-      - ecrire:
-          deployment.yaml: |
+      - write:
+          deployment.yaml: |-
             apiVersion: apps/v1
             kind: Deployment
             metadata:

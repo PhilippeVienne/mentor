@@ -1,9 +1,9 @@
 ---
 id: redirections-recherche
-titre: "Redirections, tubes et recherche"
-resume: "Enchaîner des commandes avec les tubes, rediriger les sorties et retrouver fichiers et lignes avec find et grep."
-duree: 30
-objectifs:
+title: "Redirections, tubes et recherche"
+summary: "Enchaîner des commandes avec les tubes, rediriger les sorties et retrouver fichiers et lignes avec find et grep."
+minutes: 30
+objectives:
   - Rediriger une sortie vers un fichier avec `>` et `>>`
   - Enchaîner des commandes avec le tube `|`
   - Rechercher dans le contenu (`grep`) et dans les noms de fichiers (`find`)
@@ -86,41 +86,41 @@ Pour retrouver **où** se trouve un fichier selon son nom, sa taille ou sa date,
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Dans ton dossier de travail, le dossier `journaux` contient trois journaux d'application (`app.log`, `adhesion.log`, `portail.log`) et un fichier de notes (`notes.txt`). Chaque ligne d'un journal commence par une date et un niveau (`INFO`, `WARNING`, `ERROR`, `DEBUG`). Utilise les redirections, les tubes, `grep` et `find` pour répondre aux questions. Les fichiers de résultat se créent dans le dossier de travail, à côté de `journaux`.
-commandes:
+commands:
   - cp -R /opt/exercices/04-recherche/. .
-etapes:
-  - texte: 'Écris dans `erreurs.txt` toutes les lignes de `journaux/app.log` qui contiennent `ERROR` (et seulement celles-là)'
-    indice: '`grep ERROR journaux/app.log > erreurs.txt` : `grep` filtre et `>` envoie le résultat dans le fichier au lieu de l''écran. Relis le résultat avec `cat erreurs.txt`.'
-    verif:
-      - commande-reussit: 'grep ERROR /opt/exercices/04-recherche/journaux/app.log | cmp -s - erreurs.txt'
+steps:
+  - text: 'Écris dans `erreurs.txt` toutes les lignes de `journaux/app.log` qui contiennent `ERROR` (et seulement celles-là)'
+    hint: '`grep ERROR journaux/app.log > erreurs.txt` : `grep` filtre et `>` envoie le résultat dans le fichier au lieu de l''écran. Relis le résultat avec `cat erreurs.txt`.'
+    checks:
+      - command-succeeds: 'grep ERROR /opt/exercices/04-recherche/journaux/app.log | cmp -s - erreurs.txt'
     solution:
       - grep ERROR journaux/app.log > erreurs.txt
-  - texte: 'Écris dans `nombre-erreurs.txt` le nombre de lignes `ERROR` de `journaux/app.log`, rien d''autre que ce nombre'
-    indice: 'Deux façons : `grep -c ERROR journaux/app.log > nombre-erreurs.txt`, ou `grep ERROR journaux/app.log | wc -l > nombre-erreurs.txt`.'
-    verif:
-      - commande-reussit: 'test "$(tr -d "[:space:]" < nombre-erreurs.txt)" = "$(grep -c ERROR /opt/exercices/04-recherche/journaux/app.log)"'
+  - text: 'Écris dans `nombre-erreurs.txt` le nombre de lignes `ERROR` de `journaux/app.log`, rien d''autre que ce nombre'
+    hint: 'Deux façons : `grep -c ERROR journaux/app.log > nombre-erreurs.txt`, ou `grep ERROR journaux/app.log | wc -l > nombre-erreurs.txt`.'
+    checks:
+      - command-succeeds: 'test "$(tr -d "[:space:]" < nombre-erreurs.txt)" = "$(grep -c ERROR /opt/exercices/04-recherche/journaux/app.log)"'
     solution:
       - grep -c ERROR journaux/app.log > nombre-erreurs.txt
-  - texte: 'Avec `find`, écris dans `liste-logs.txt` les chemins des fichiers dont le nom finit par `.log` dans `journaux` (pas `notes.txt`)'
-    indice: '`find journaux -name "*.log" > liste-logs.txt`. Les guillemets autour de `*.log` sont importants.'
-    verif:
-      - commande-reussit: 'test "$(cd /opt/exercices/04-recherche && find journaux -name "*.log" | sort)" = "$(sort liste-logs.txt)"'
+  - text: 'Avec `find`, écris dans `liste-logs.txt` les chemins des fichiers dont le nom finit par `.log` dans `journaux` (pas `notes.txt`)'
+    hint: '`find journaux -name "*.log" > liste-logs.txt`. Les guillemets autour de `*.log` sont importants.'
+    checks:
+      - command-succeeds: 'test "$(cd /opt/exercices/04-recherche && find journaux -name "*.log" | sort)" = "$(sort liste-logs.txt)"'
     solution:
       - find journaux -name "*.log" > liste-logs.txt
-  - texte: 'Combien de lignes `ERROR` en tout dans les trois journaux ? Écris ce nombre seul dans `total.txt`, avec un tube'
-    indice: '`grep -h ERROR journaux/*.log | wc -l > total.txt`. `-h` évite d''afficher le nom du fichier devant chaque ligne ; le joker `*` désigne tous les fichiers `.log` du dossier.'
-    verif:
-      - commande-reussit: 'test "$(tr -d "[:space:]" < total.txt)" = "$(grep -h ERROR /opt/exercices/04-recherche/journaux/*.log | wc -l | tr -d " ")"'
+  - text: 'Combien de lignes `ERROR` en tout dans les trois journaux ? Écris ce nombre seul dans `total.txt`, avec un tube'
+    hint: '`grep -h ERROR journaux/*.log | wc -l > total.txt`. `-h` évite d''afficher le nom du fichier devant chaque ligne ; le joker `*` désigne tous les fichiers `.log` du dossier.'
+    checks:
+      - command-succeeds: 'test "$(tr -d "[:space:]" < total.txt)" = "$(grep -h ERROR /opt/exercices/04-recherche/journaux/*.log | wc -l | tr -d " ")"'
     solution:
       - grep -h ERROR journaux/*.log | wc -l > total.txt
-  - texte: 'Cherche le mot `TODO` dans tout le dossier `journaux` (sous-dossiers compris) et écris le résultat dans `todo.txt`'
-    indice: '`grep -rn TODO journaux > todo.txt` : `-r` descend dans les dossiers, `-n` ajoute le numéro de ligne.'
-    verif:
-      - commande-reussit: 'cd /opt/exercices/04-recherche && test "$(grep -rn TODO journaux | sort)" = "$(cd /workspace && sort todo.txt)" || test "$(grep -r TODO journaux | sort)" = "$(cd /workspace && sort todo.txt)"'
+  - text: 'Cherche le mot `TODO` dans tout le dossier `journaux` (sous-dossiers compris) et écris le résultat dans `todo.txt`'
+    hint: '`grep -rn TODO journaux > todo.txt` : `-r` descend dans les dossiers, `-n` ajoute le numéro de ligne.'
+    checks:
+      - command-succeeds: 'cd /opt/exercices/04-recherche && test "$(grep -rn TODO journaux | sort)" = "$(cd /workspace && sort todo.txt)" || test "$(grep -r TODO journaux | sort)" = "$(cd /workspace && sort todo.txt)"'
     solution:
       - grep -rn TODO journaux > todo.txt
 :::

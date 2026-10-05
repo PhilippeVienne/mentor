@@ -1,9 +1,9 @@
 ---
 id: volumes-kubernetes
-titre: "Sauvegarder des volumes Kubernetes"
-resume: "Lire un CronJob de sauvegarde et utiliser, dans un vrai terminal, le script qui archive un dossier vers S3."
-duree: 35
-objectifs:
+title: "Sauvegarder des volumes Kubernetes"
+summary: "Lire un CronJob de sauvegarde et utiliser, dans un vrai terminal, le script qui archive un dossier vers S3."
+minutes: 35
+objectives:
   - Lire un CronJob de sauvegarde et ses secrets
   - Expliquer le rôle de l'option `-c` de `backup.py`
   - Archiver un dossier vers un bucket S3 avec `backup.py`
@@ -152,63 +152,63 @@ Lance d'abord `test_connection_s3.py` dans un Job pour vérifier le point d'acc�
 
 Dans le labo, le dossier `data` joue le rôle du volume (un fichier `piece-jointe.txt` et un dossier `media`, contenus fictifs). Un MinIO local joue le S3. Tu fais ce que fait le CronJob, mais à la main. Le CronJob lui-même n'est pas exécuté (il faudrait un cluster Kubernetes) : tu écris seulement le fichier du secret.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le dossier `data` est la copie fictive d'un volume d'application. Le serveur MinIO local est démarré, et les variables `URL`, `ACCESSKEY` et `SECRETKEY` (factices) sont déjà définies : tu peux les afficher avec `echo $URL`. Les scripts `test_connection_s3.py` et `backup.py` sont des versions simplifiées de ceux de `backups3`. Les étapes sont vérifiées sur les fichiers et sur le contenu du bucket.
-commandes:
+commands:
   - demarrer-minio
   - cp -r /opt/exercices/volume data
-etapes:
-  - texte: 'Teste l''accès S3 avec `test_connection_s3.py` et garde la sortie dans `connexion.txt`'
-    indice: 'test_connection_s3.py > connexion.txt'
-    verif:
-      - fichier-contient-dans-env: [connexion.txt, '^Connexion OK']
+steps:
+  - text: 'Teste l''accès S3 avec `test_connection_s3.py` et garde la sortie dans `connexion.txt`'
+    hint: 'test_connection_s3.py > connexion.txt'
+    checks:
+      - env-file-contains: [connexion.txt, '^Connexion OK']
     solution:
       - test_connection_s3.py > connexion.txt
-  - texte: 'Crée le bucket `volumes` avec `mc mb`'
-    indice: 'mc mb labo/volumes'
-    verif:
-      - commande-reussit: mc ls labo/volumes
+  - text: 'Crée le bucket `volumes` avec `mc mb`'
+    hint: 'mc mb labo/volumes'
+    checks:
+      - command-succeeds: mc ls labo/volumes
     solution:
       - mc mb labo/volumes
-  - texte: 'Essaie de sauvegarder le dossier `data/` SANS l''option `-c` vers l''objet `sans-c.tgz`, en gardant le message d''erreur dans `erreur.txt`'
-    indice: 'backup.py volumes data/ sans-c.tgz 2> erreur.txt (2> envoie les messages d''erreur dans le fichier)'
-    apres: [2]
-    verif:
-      - fichier-contient-dans-env: [erreur.txt, 'not supported']
+  - text: 'Essaie de sauvegarder le dossier `data/` SANS l''option `-c` vers l''objet `sans-c.tgz`, en gardant le message d''erreur dans `erreur.txt`'
+    hint: 'backup.py volumes data/ sans-c.tgz 2> erreur.txt (2> envoie les messages d''erreur dans le fichier)'
+    after: [2]
+    checks:
+      - env-file-contains: [erreur.txt, 'not supported']
     solution:
       - backup.py volumes data/ sans-c.tgz 2> erreur.txt || true
-  - texte: 'Sauvegarde correctement `data/` vers l''objet `backup.tgz` du bucket `volumes`, avec `-v` et `-c`'
-    indice: 'backup.py -v -c volumes data/ backup.tgz'
-    apres: [2]
-    verif:
-      - commande-reussit: mc stat labo/volumes/backup.tgz
-      - sortie-contient:
+  - text: 'Sauvegarde correctement `data/` vers l''objet `backup.tgz` du bucket `volumes`, avec `-v` et `-c`'
+    hint: 'backup.py -v -c volumes data/ backup.tgz'
+    after: [2]
+    checks:
+      - command-succeeds: mc stat labo/volumes/backup.tgz
+      - output-contains:
           - aws s3 cp s3://volumes/backup.tgz - | tar tzf -
           - 'data/media/photo-1\.txt'
     solution:
       - backup.py -v -c volumes data/ backup.tgz
-  - texte: 'Comme `readOnly: true` dans le CronJob, prouve que la sauvegarde n''a besoin que de lire : retire le droit d''écriture sur `data`, puis sauvegarde-le vers l''objet `backup-lecture-seule.tgz`'
-    indice: 'chmod -R a-w data (retire le droit d''écriture pour tout le monde), puis backup.py -c volumes data/ backup-lecture-seule.tgz'
-    apres: [4]
-    verif:
-      - commande-echoue: test -w data
-      - commande-reussit: mc stat labo/volumes/backup-lecture-seule.tgz
+  - text: 'Comme `readOnly: true` dans le CronJob, prouve que la sauvegarde n''a besoin que de lire : retire le droit d''écriture sur `data`, puis sauvegarde-le vers l''objet `backup-lecture-seule.tgz`'
+    hint: 'chmod -R a-w data (retire le droit d''écriture pour tout le monde), puis backup.py -c volumes data/ backup-lecture-seule.tgz'
+    after: [4]
+    checks:
+      - command-fails: test -w data
+      - command-succeeds: mc stat labo/volumes/backup-lecture-seule.tgz
     solution:
       - chmod -R a-w data
       - backup.py -c volumes data/ backup-lecture-seule.tgz
-  - texte: 'Écris le fichier `s3-credentials.yaml` : un `Secret` Kubernetes nommé `s3-credentials` avec les clés `url`, `accessKey` et `secretKey` (valeurs factices)'
-    indice: 'Recopie le YAML du cours avec nano s3-credentials.yaml. Tu ne peux pas l''appliquer ici : il n''y a pas de cluster.'
-    verif:
-      - fichier-contient-dans-env: [s3-credentials.yaml, '^kind: Secret\s*$']
-      - fichier-contient-dans-env: [s3-credentials.yaml, 'name: s3-credentials']
-      - fichier-contient-dans-env: [s3-credentials.yaml, 'accessKey:']
-      - fichier-contient-dans-env: [s3-credentials.yaml, 'secretKey:']
-      - fichier-contient-dans-env: [s3-credentials.yaml, 'url:']
+  - text: 'Écris le fichier `s3-credentials.yaml` : un `Secret` Kubernetes nommé `s3-credentials` avec les clés `url`, `accessKey` et `secretKey` (valeurs factices)'
+    hint: 'Recopie le YAML du cours avec nano s3-credentials.yaml. Tu ne peux pas l''appliquer ici : il n''y a pas de cluster.'
+    checks:
+      - env-file-contains: [s3-credentials.yaml, '^kind: Secret\s*$']
+      - env-file-contains: [s3-credentials.yaml, 'name: s3-credentials']
+      - env-file-contains: [s3-credentials.yaml, 'accessKey:']
+      - env-file-contains: [s3-credentials.yaml, 'secretKey:']
+      - env-file-contains: [s3-credentials.yaml, 'url:']
     solution:
-      - ecrire:
-          s3-credentials.yaml: |
+      - write:
+          s3-credentials.yaml: |-
             apiVersion: v1
             kind: Secret
             metadata:

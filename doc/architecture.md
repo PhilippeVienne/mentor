@@ -24,7 +24,7 @@ authentication, execution plane (scheduler, host agent, guest agent), terminal/V
 **Kept as is** (no reason to rewrite):
 
 - the **catalogue format** (Markdown, front matter, `:::labo`, `:::quiz`, `_verifications.yml`): the 19 existing
-  courses must compile unchanged. Its keys and directive names are French and stay so;
+  courses compile after a mechanical conversion of the format to English names (see §10);
 - the **browser JavaScript** (simulated Git/Docker engines, quiz, exam, editor) and its Jest tests;
 - the **style sheets** and the brand file (`branding.yml`);
 - the **VS Code extension** and the accepted `devcontainer.json` subset.
@@ -141,7 +141,9 @@ application, then replaces the rest slice by slice.
 ### 6.1 Phase 0 conformance (what "matches v1" means)
 
 `crates/mentor-content/tests/conformance.rs` compiles `catalogue/` and compares it with
-`conformance/v1-catalogue.json`, exported from v1 at the commit recorded in `conformance/V1_COMMIT`:
+`conformance/v1-catalogue.json`, exported from v1 at the commit recorded in `conformance/V1_COMMIT`. Because v2
+renamed the format to English, the v1 export is first rewritten with the name table `conformance/v1-names.json`
+(the one `tools/migrate_v1_catalogue.py` uses to convert a v1 catalogue), then compared:
 
 - **structure** (identifiers, order, durations, labs, checks, solutions, correct answers, exam settings) must be
   **strictly equal**;
@@ -152,7 +154,9 @@ Two consequences to handle before phase 4:
 
 1. **Exam question identifiers change.** An identifier is the SHA-1 of the question's HTML, and v2 escapes quotes
    differently. Stored exam attempts must be remapped during data migration (or identifiers recomputed from text).
-2. **Not ported yet**: validation of the `devcontainer.json` specification (it belongs with the execution plane,
+2. **The browser JavaScript must follow the renamed fields** (`steps`, `checks`, `text`…) and check names when
+   it is brought into v2 (phase 3); v1's `static/js/checks.js` still uses the French names.
+3. **Not ported yet**: the authoring guide `catalogue/README.md` (still describing v1 names), validation of the `devcontainer.json` specification (it belongs with the execution plane,
    phase 1), regular-expression validation of real-lab check arguments, syntax highlighting, the catalogue linter.
 
 ## 7. Target deployment
@@ -195,7 +199,7 @@ Decided on 4 October 2026:
 | Web stack | `axum` + `sqlx` + `askama` |
 | Data isolation | PostgreSQL **row-level security**, a `tenant_id` column everywhere |
 | Repository | **A new repository**: `PhilippeVienne/mentor` holds only the Rust code; the v1 repository stays as the reference |
-| Language | Code, comments, tests and documentation in **English** |
+| Language | **Everything in English**: code, comments, tests, documentation, compiler diagnostics and the catalogue format (file names, keys, directive and check names). Course content keeps its authors' language |
 
 Consequence of the new repository: the catalogue, static files (JavaScript, CSS) and conformance tools are no
 longer shared by construction. v2 **copies** them at the start, and its CI compares its output with reference
@@ -207,5 +211,5 @@ Still open (they do not block phases 0 and 1):
 1. **Hosting**: which KVM hosts (physical machines, nested virtualisation at a provider); this drives network
    design and CI.
 2. **Shared catalogue**: are the 19 current courses offered to every tenant, or does each tenant bring its own?
-3. **Language of product strings**: author-facing diagnostics of the catalogue compiler and the catalogue format
-   itself are French today; whether to localise them is undecided.
+3. **Content locale**: default callout titles and generated button labels are French, like the shipped
+   courses; a per-catalogue locale will be needed once a tenant writes courses in another language.

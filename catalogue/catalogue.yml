@@ -1,6 +1,6 @@
 # Catalogue des formations du portail : ordre d'affichage des parcours.
 # Chaque entrée est le nom d'un dossier de ce répertoire (voir README.md pour la méthodologie d'écriture).
-parcours:
+courses:
   - git-basics
   - docker-hello
   - docker-advanced

@@ -1,9 +1,9 @@
 ---
 id: tables-et-cles
-titre: "Tables, clés primaires et clés étrangères"
-resume: "Comprendre ce qu'est une base de données, comment une base relationnelle range les données, relie les tables entre elles, et créer ton premier schéma dans un vrai PostgreSQL."
-duree: 30
-objectifs:
+title: "Tables, clés primaires et clés étrangères"
+summary: "Comprendre ce qu'est une base de données, comment une base relationnelle range les données, relie les tables entre elles, et créer ton premier schéma dans un vrai PostgreSQL."
+minutes: 30
+objectives:
   - Expliquer ce qu'est une base de données, à quoi sert SQL et comment envoyer une requête avec `psql`
   - Décrire une table avec ses colonnes, ses types et ses contraintes
   - Distinguer clé primaire et clé étrangère
@@ -225,59 +225,59 @@ Range une date dans une colonne `date` ou `timestamptz`, pas dans un `text`. Ave
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Un serveur PostgreSQL est déjà démarré dans ton conteneur, avec une base **vide** nommée `asso`. Tu y construis le début du schéma : les tables `assos` et `adherents`, puis tu y ranges des données. Envoie chaque requête avec `psql -c "…"` (une requête, puis tu récupères le terminal) ou tape `psql` pour une session interactive (n'oublie pas le `;` final, et `\q` pour quitter). Chaque étape est vérifiée sur **l'état de la base**, pas sur ce que tu as tapé.
-commandes:
+commands:
   - /opt/exercices/demarrer.sh
-etapes:
-  - texte: 'Crée la table `assos` avec les colonnes `id` (clé primaire numérotée automatiquement), `nom` (texte obligatoire et unique) et `cree_le` (date obligatoire, par défaut la date du jour)'
-    indice: 'Reprends le `CREATE TABLE assos (…)` du cours : `psql -c "CREATE TABLE assos (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, nom text NOT NULL UNIQUE, cree_le date NOT NULL DEFAULT CURRENT_DATE);"`. Vérifie ensuite avec `psql -c "\d assos"`.'
-    verif:
-      - sortie-contient:
+steps:
+  - text: 'Crée la table `assos` avec les colonnes `id` (clé primaire numérotée automatiquement), `nom` (texte obligatoire et unique) et `cree_le` (date obligatoire, par défaut la date du jour)'
+    hint: 'Reprends le `CREATE TABLE assos (…)` du cours : `psql -c "CREATE TABLE assos (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, nom text NOT NULL UNIQUE, cree_le date NOT NULL DEFAULT CURRENT_DATE);"`. Vérifie ensuite avec `psql -c "\d assos"`.'
+    checks:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM pg_constraint WHERE conrelid = to_regclass('assos') AND contype IN ('p', 'u')"
           - '^2$'
-      - sortie-contient:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM information_schema.columns WHERE table_name = 'assos' AND column_name IN ('id', 'nom', 'cree_le')"
           - '^3$'
     solution:
       - psql -c "CREATE TABLE assos (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, nom text NOT NULL UNIQUE, cree_le date NOT NULL DEFAULT CURRENT_DATE);"
-  - texte: 'Crée la table `adherents` avec `id` (clé primaire numérotée automatiquement), `prenom`, `nom` et `email` (textes obligatoires, `email` unique) et `asso_id` : une **clé étrangère** facultative vers `assos (id)`'
-    indice: 'La clé étrangère s''écrit `asso_id integer REFERENCES assos (id)`, sans `NOT NULL` puisqu''une personne peut n''avoir aucune association.'
-    apres: [1]
-    verif:
-      - sortie-contient:
+  - text: 'Crée la table `adherents` avec `id` (clé primaire numérotée automatiquement), `prenom`, `nom` et `email` (textes obligatoires, `email` unique) et `asso_id` : une **clé étrangère** facultative vers `assos (id)`'
+    hint: 'La clé étrangère s''écrit `asso_id integer REFERENCES assos (id)`, sans `NOT NULL` puisqu''une personne peut n''avoir aucune association.'
+    after: [1]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM pg_constraint WHERE conrelid = to_regclass('adherents') AND contype = 'f' AND confrelid = to_regclass('assos')"
           - '^1$'
-      - sortie-contient:
+      - output-contains:
           - psql -Atc "SELECT count(*) FROM information_schema.columns WHERE table_name = 'adherents' AND column_name IN ('id', 'prenom', 'nom', 'email', 'asso_id')"
           - '^5$'
     solution:
       - psql -c "CREATE TABLE adherents (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, prenom text NOT NULL, nom text NOT NULL, email text NOT NULL UNIQUE, asso_id integer REFERENCES assos (id));"
-  - texte: 'Insère les trois associations `Ciné-club` (créée le `2019-09-01`), `Robotique` (`2021-02-15`) et `Jazz` (`2023-10-01`), dans cet ordre'
-    indice: 'Un seul `INSERT INTO assos (nom, cree_le) VALUES (…), (…), (…);` suffit. Le texte et les dates s''écrivent entre apostrophes.'
-    apres: [1]
-    verif:
-      - sortie-contient:
+  - text: 'Insère les trois associations `Ciné-club` (créée le `2019-09-01`), `Robotique` (`2021-02-15`) et `Jazz` (`2023-10-01`), dans cet ordre'
+    hint: 'Un seul `INSERT INTO assos (nom, cree_le) VALUES (…), (…), (…);` suffit. Le texte et les dates s''écrivent entre apostrophes.'
+    after: [1]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT string_agg(id || ':' || nom, ',' ORDER BY id) FROM assos"
           - '^1:Ciné-club,2:Robotique,3:Jazz$'
     solution:
       - psql -c "INSERT INTO assos (nom, cree_le) VALUES ('Ciné-club', '2019-09-01'), ('Robotique', '2021-02-15'), ('Jazz', '2023-10-01');"
-  - texte: 'Insère quatre adhérent·e·s : Alice Martin et Bilal Haddad dans le `Ciné-club` (`asso_id` 1), Chloé Durand et David Roux dans la `Robotique` (`asso_id` 2), avec les e-mails `prenom.nom@example.org` en minuscules et sans accent (`chloe.durand@example.org`)'
-    indice: 'Un `INSERT INTO adherents (prenom, nom, email, asso_id) VALUES (…), (…), (…), (…);`. Le dernier nombre de chaque ligne est l''`id` de l''association.'
-    apres: [2, 3]
-    verif:
-      - sortie-contient:
+  - text: 'Insère quatre adhérent·e·s : Alice Martin et Bilal Haddad dans le `Ciné-club` (`asso_id` 1), Chloé Durand et David Roux dans la `Robotique` (`asso_id` 2), avec les e-mails `prenom.nom@example.org` en minuscules et sans accent (`chloe.durand@example.org`)'
+    hint: 'Un `INSERT INTO adherents (prenom, nom, email, asso_id) VALUES (…), (…), (…), (…);`. Le dernier nombre de chaque ligne est l''`id` de l''association.'
+    after: [2, 3]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT string_agg(a.prenom || '>' || s.nom || '>' || a.email, ' ' ORDER BY a.prenom) FROM adherents a JOIN assos s ON s.id = a.asso_id"
           - '^Alice>Ciné-club>alice.martin@example.org Bilal>Ciné-club>bilal.haddad@example.org Chloé>Robotique>chloe.durand@example.org David>Robotique>david.roux@example.org$'
     solution:
       - psql -c "INSERT INTO adherents (prenom, nom, email, asso_id) VALUES ('Alice', 'Martin', 'alice.martin@example.org', 1), ('Bilal', 'Haddad', 'bilal.haddad@example.org', 1), ('Chloé', 'Durand', 'chloe.durand@example.org', 2), ('David', 'Roux', 'david.roux@example.org', 2);"
-  - texte: 'Insère Emma Petit (`emma.petit@example.org`) **sans association** (`asso_id` à `NULL`) et fais afficher son `id` avec `RETURNING id`'
-    indice: 'Ajoute `RETURNING id` à la fin de ton `INSERT`, avant le `;`. Pour l''association, écris `NULL` sans apostrophes.'
-    apres: [4]
-    verif:
-      - sortie-contient:
+  - text: 'Insère Emma Petit (`emma.petit@example.org`) **sans association** (`asso_id` à `NULL`) et fais afficher son `id` avec `RETURNING id`'
+    hint: 'Ajoute `RETURNING id` à la fin de ton `INSERT`, avant le `;`. Pour l''association, écris `NULL` sans apostrophes.'
+    after: [4]
+    checks:
+      - output-contains:
           - psql -Atc "SELECT id || ':' || (asso_id IS NULL) FROM adherents WHERE email = 'emma.petit@example.org'"
           - '^5:true$'
     solution:

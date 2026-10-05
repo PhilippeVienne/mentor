@@ -1,9 +1,9 @@
 ---
 id: naviguer-fichiers
-titre: "Naviguer et manipuler des fichiers"
-resume: "Se repérer dans l'arborescence, créer, copier, déplacer et supprimer sans se perdre."
-duree: 30
-objectifs:
+title: "Naviguer et manipuler des fichiers"
+summary: "Se repérer dans l'arborescence, créer, copier, déplacer et supprimer sans se perdre."
+minutes: 30
+objectives:
   - Te repérer avec `pwd`, `ls` et `cd`
   - Créer, copier, déplacer et supprimer des fichiers et des dossiers
   - Distinguer un chemin absolu d'un chemin relatif
@@ -79,47 +79,47 @@ Appuie sur Tab pour compléter un nom de fichier ou de commande, et deux fois po
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton terminal est ouvert dans le dossier de travail `/workspace`. Il contient un dossier d'entraînement, `projet-demo`, qui ressemble à un petit projet de l'équipe : des fichiers de configuration, des journaux et des brouillons. Tape tes commandes dans le terminal ; chaque étape se valide toute seule quand le résultat est bon. Astuce : `ls` te permet de voir où tu en es.
-commandes:
+commands:
   - cp -R /opt/exercices/01-navigation/. .
-etapes:
-  - texte: 'Explore `projet-demo` avec `ls -la projet-demo/config`, puis lis le fichier caché qui s''y trouve avec `cat`. Il contient une ligne `ENVIRONNEMENT=...` : crée dans `projet-demo` un dossier `archives`, puis dans `archives` un dossier qui porte le nom de cet environnement'
-    indice: 'Le fichier caché s''appelle `.env.exemple` (son nom commence par un point : `ls -la` le montre, pas `ls`). Crée ensuite `projet-demo/archives/NOM` avec `mkdir -p`.'
-    verif:
-      - commande-reussit: 'test -d "projet-demo/archives/$(sed -n "s/^ENVIRONNEMENT=//p" /opt/exercices/01-navigation/projet-demo/config/.env.exemple)"'
+steps:
+  - text: 'Explore `projet-demo` avec `ls -la projet-demo/config`, puis lis le fichier caché qui s''y trouve avec `cat`. Il contient une ligne `ENVIRONNEMENT=...` : crée dans `projet-demo` un dossier `archives`, puis dans `archives` un dossier qui porte le nom de cet environnement'
+    hint: 'Le fichier caché s''appelle `.env.exemple` (son nom commence par un point : `ls -la` le montre, pas `ls`). Crée ensuite `projet-demo/archives/NOM` avec `mkdir -p`.'
+    checks:
+      - command-succeeds: 'test -d "projet-demo/archives/$(sed -n "s/^ENVIRONNEMENT=//p" /opt/exercices/01-navigation/projet-demo/config/.env.exemple)"'
     solution:
       - ls -la projet-demo/config
       - cat projet-demo/config/.env.exemple
       - mkdir -p projet-demo/archives/recette
-  - texte: 'Copie `projet-demo/journaux/ancien.log` dans `projet-demo/archives/` : l''original doit rester à sa place'
-    indice: '`cp source destination`. Si la destination est un dossier, le fichier garde son nom.'
-    verif:
-      - commande-reussit: 'cmp -s projet-demo/archives/ancien.log /opt/exercices/01-navigation/projet-demo/journaux/ancien.log'
-      - commande-reussit: 'cmp -s projet-demo/journaux/ancien.log /opt/exercices/01-navigation/projet-demo/journaux/ancien.log'
+  - text: 'Copie `projet-demo/journaux/ancien.log` dans `projet-demo/archives/` : l''original doit rester à sa place'
+    hint: '`cp source destination`. Si la destination est un dossier, le fichier garde son nom.'
+    checks:
+      - command-succeeds: 'cmp -s projet-demo/archives/ancien.log /opt/exercices/01-navigation/projet-demo/journaux/ancien.log'
+      - command-succeeds: 'cmp -s projet-demo/journaux/ancien.log /opt/exercices/01-navigation/projet-demo/journaux/ancien.log'
     solution:
       - cp projet-demo/journaux/ancien.log projet-demo/archives/
-  - texte: 'Déplace `projet-demo/brouillons/idee.txt` dans `projet-demo/archives/` en le renommant `idee-2025.txt`'
-    indice: '`mv` déplace et renomme en une seule commande : `mv ancien-chemin nouveau-chemin`.'
-    verif:
-      - commande-reussit: 'cmp -s projet-demo/archives/idee-2025.txt /opt/exercices/01-navigation/projet-demo/brouillons/idee.txt'
-      - fichier-absent-dans-env: projet-demo/brouillons/idee.txt
+  - text: 'Déplace `projet-demo/brouillons/idee.txt` dans `projet-demo/archives/` en le renommant `idee-2025.txt`'
+    hint: '`mv` déplace et renomme en une seule commande : `mv ancien-chemin nouveau-chemin`.'
+    checks:
+      - command-succeeds: 'cmp -s projet-demo/archives/idee-2025.txt /opt/exercices/01-navigation/projet-demo/brouillons/idee.txt'
+      - env-file-absent: projet-demo/brouillons/idee.txt
     solution:
       - mv projet-demo/brouillons/idee.txt projet-demo/archives/idee-2025.txt
-  - texte: 'Crée un fichier vide `projet-demo/notes.txt`, puis supprime le dossier `projet-demo/brouillons` avec tout ce qu''il contient'
-    indice: '`touch` crée le fichier ; pour un dossier, il faut `rm -r`. Fais un `ls projet-demo/brouillons` avant de supprimer : il n''y a pas de corbeille.'
-    verif:
-      - commande-reussit: 'test -f projet-demo/notes.txt'
-      - fichier-absent-dans-env: projet-demo/brouillons
+  - text: 'Crée un fichier vide `projet-demo/notes.txt`, puis supprime le dossier `projet-demo/brouillons` avec tout ce qu''il contient'
+    hint: '`touch` crée le fichier ; pour un dossier, il faut `rm -r`. Fais un `ls projet-demo/brouillons` avant de supprimer : il n''y a pas de corbeille.'
+    checks:
+      - command-succeeds: 'test -f projet-demo/notes.txt'
+      - env-file-absent: projet-demo/brouillons
     solution:
       - touch projet-demo/notes.txt
       - rm -r projet-demo/brouillons
-  - texte: 'Copie tout le dossier `projet-demo/config` (avec son contenu, fichier caché compris) dans `projet-demo/archives/`'
-    indice: 'Pour un dossier, `cp` demande l''option `-r` (récursif) : `cp -r source destination`.'
-    verif:
-      - commande-reussit: 'diff -r projet-demo/archives/config /opt/exercices/01-navigation/projet-demo/config'
+  - text: 'Copie tout le dossier `projet-demo/config` (avec son contenu, fichier caché compris) dans `projet-demo/archives/`'
+    hint: 'Pour un dossier, `cp` demande l''option `-r` (récursif) : `cp -r source destination`.'
+    checks:
+      - command-succeeds: 'diff -r projet-demo/archives/config /opt/exercices/01-navigation/projet-demo/config'
     solution:
       - cp -r projet-demo/config projet-demo/archives/
 :::

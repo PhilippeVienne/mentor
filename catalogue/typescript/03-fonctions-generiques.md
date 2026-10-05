@@ -1,9 +1,9 @@
 ---
 id: fonctions-generiques
-titre: "Fonctions et génériques"
-resume: "Typer les paramètres et les retours, puis écrire des fonctions qui marchent avec n'importe quel type grâce aux génériques."
-duree: 40
-objectifs:
+title: "Fonctions et génériques"
+summary: "Typer les paramètres et les retours, puis écrire des fonctions qui marchent avec n'importe quel type grâce aux génériques."
+minutes: 40
+objectives:
   - Annoter les paramètres, les paramètres facultatifs et le retour d'une fonction
   - Écrire et appeler une fonction générique `<T>`
   - Lire un type générique comme `Promise<T>` ou `Partial<T>`
@@ -134,18 +134,18 @@ Depuis TypeScript 5.5, `tsc` devine tout seul le prédicat pour un test simple c
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient cinq fichiers TypeScript, un par notion de la leçon : `adherents.ts`, `premier.ts`, `modifier.ts`, `filtre.ts` et `usage-enveloppe.ts`. Corrige-les un par un. `npx tsc --noEmit` vérifie les types ; `npx tsx fichier.ts` exécute un fichier. Utilise `nano` pour éditer. Le portail contrôle ton travail sur une copie propre, avec ses propres contrôles : `@ts-ignore`, `@ts-nocheck` et `any` ne font que taire `tsc`, ils ne valident pas l'étape.
-commandes:
+commands:
   - cp -R /opt/exercices/03-fonctions-generiques/. .
   - lier-outils
-etapes:
-  - texte: 'Dans `adherents.ts`, annote les trois paramètres de `ajouterAdherents` (le dernier est facultatif) et son retour : `tsc` ne doit plus se plaindre, et `npx tsx adherents.ts` doit afficher `825`'
-    indice: 'Les types sont `asso: Association`, `nombre: number` et `motif?: string`. Le retour est `Association`.'
-    verif:
-      - commande-reussit: 'verifier-ts 03 adherents'
+steps:
+  - text: 'Dans `adherents.ts`, annote les trois paramètres de `ajouterAdherents` (le dernier est facultatif) et son retour : `tsc` ne doit plus se plaindre, et `npx tsx adherents.ts` doit afficher `825`'
+    hint: 'Les types sont `asso: Association`, `nombre: number` et `motif?: string`. Le retour est `Association`.'
+    checks:
+      - command-succeeds: 'verifier-ts 03 adherents'
     solution:
       - |
         cat > adherents.ts <<'EOF'
@@ -162,10 +162,10 @@ etapes:
         const bde: Association = { nom: "BdE", adherents: 800 };
         console.log(ajouterAdherents(bde, 25).adherents);
         EOF
-  - texte: 'Dans `premier.ts`, rends `premier` générique pour qu''elle accepte aussi bien des nombres que des textes'
-    indice: 'Remplace `number` par un paramètre de type : `function premier<T>(liste: T[]): T | undefined`.'
-    verif:
-      - commande-reussit: 'verifier-ts 03 premier'
+  - text: 'Dans `premier.ts`, rends `premier` générique pour qu''elle accepte aussi bien des nombres que des textes'
+    hint: 'Remplace `number` par un paramètre de type : `function premier<T>(liste: T[]): T | undefined`.'
+    checks:
+      - command-succeeds: 'verifier-ts 03 premier'
     solution:
       - |
         cat > premier.ts <<'EOF'
@@ -182,10 +182,10 @@ etapes:
         // @ts-expect-error
         console.log(s.toFixed(1));
         EOF
-  - texte: 'Dans `modifier.ts`, fais accepter à `modifier` un objet de changements partiel, avec `Partial<Evenement>`'
-    indice: 'Le deuxième paramètre doit être de type `Partial<Evenement>`.'
-    verif:
-      - commande-reussit: 'verifier-ts 03 modifier'
+  - text: 'Dans `modifier.ts`, fais accepter à `modifier` un objet de changements partiel, avec `Partial<Evenement>`'
+    hint: 'Le deuxième paramètre doit être de type `Partial<Evenement>`.'
+    checks:
+      - command-succeeds: 'verifier-ts 03 modifier'
     solution:
       - |
         cat > modifier.ts <<'EOF'
@@ -207,19 +207,19 @@ etapes:
         // @ts-expect-error
         modifier(gala, { titer: "Gala" });
         EOF
-  - texte: 'Dans `filtre.ts`, `evenements[0].titre` est refusé parce que `tsc` croit qu''il peut y avoir des `null` : donne au filtre un prédicat de type (`e is Evenement`)'
-    indice: 'Écris le filtre sous la forme `(e): e is Evenement => e !== null && e.id > 0`.'
-    verif:
-      - commande-reussit: 'verifier-ts 03 filtre'
+  - text: 'Dans `filtre.ts`, `evenements[0].titre` est refusé parce que `tsc` croit qu''il peut y avoir des `null` : donne au filtre un prédicat de type (`e is Evenement`)'
+    hint: 'Écris le filtre sous la forme `(e): e is Evenement => e !== null && e.id > 0`.'
+    checks:
+      - command-succeeds: 'verifier-ts 03 filtre'
     solution:
       - |
         sed -i 's/(e) => e !== null/(e): e is Evenement => e !== null/' filtre.ts
-  - texte: '`usage-enveloppe.ts` utilise une fonction générique `envelopper` qui n''existe pas : crée `enveloppe.ts` qui exporte l''interface `Reponse<T>` (`donnees: T`, `recu: Date`) et la fonction `envelopper<T>(donnees: T): Reponse<T>`'
-    indice: 'Reprends l''exemple de la leçon. N''oublie pas `export` devant l''interface et la fonction.'
-    verif:
-      - commande-reussit: 'verifier-ts 03 enveloppe'
+  - text: '`usage-enveloppe.ts` utilise une fonction générique `envelopper` qui n''existe pas : crée `enveloppe.ts` qui exporte l''interface `Reponse<T>` (`donnees: T`, `recu: Date`) et la fonction `envelopper<T>(donnees: T): Reponse<T>`'
+    hint: 'Reprends l''exemple de la leçon. N''oublie pas `export` devant l''interface et la fonction.'
+    checks:
+      - command-succeeds: 'verifier-ts 03 enveloppe'
     solution:
-      - |
+      - |-
         cat > enveloppe.ts <<'EOF'
         export interface Reponse<T> {
           donnees: T;

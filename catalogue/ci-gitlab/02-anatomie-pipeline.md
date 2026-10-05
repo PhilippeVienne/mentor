@@ -1,9 +1,9 @@
 ---
 id: anatomie-pipeline
-titre: "Anatomie d'un .gitlab-ci.yml"
-resume: "Stages, jobs et rules : lire le pipeline d'un projet de l'équipe sans se perdre."
-duree: 35
-objectifs:
+title: "Anatomie d'un .gitlab-ci.yml"
+summary: "Stages, jobs et rules : lire le pipeline d'un projet de l'équipe sans se perdre."
+minutes: 35
+objectives:
   - Distinguer pipeline, stage et job
   - Lire une condition `rules` et prédire si un job se lance
   - Réutiliser du YAML avec `include` et `extends`
@@ -128,23 +128,23 @@ Dans le dépôt, l'éditeur de pipeline de GitLab (menu *Build*) valide le YAML 
 Il n'y a pas de vrai runner dans ce labo. `verifier-ci` ne lance aucun job : il lit le fichier et contrôle sa structure, puis, sur demande, il **simule** les `rules`. L'option `--contexte NOM=VALEUR` dit à l'outil « imagine un pipeline où cette variable vaut cela » ; l'option `--modifie chemin` ajoute un fichier modifié (pour `changes`). L'outil répond par une ligne `+ [stage] job` pour chaque job qui serait créé et `- job : raison` pour chaque job absent. C'est une approximation : GitLab seul a le dernier mot.
 :::
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Ton dossier de travail contient un `.gitlab-ci.yml` de départ, avec trois stages (`quality`, `build`, `deploy`) et deux jobs, `lint` et `build`, qui répètent la même image. Pour modifier un fichier, utilise `nano .gitlab-ci.yml` (Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter) ou l'éditeur de VS Code. Tu peux afficher le pipeline avec `verifier-ci --montrer .gitlab-ci.yml`, et simuler un contexte avec, par exemple, `verifier-ci --contexte CI_PIPELINE_SOURCE=schedule .gitlab-ci.yml`.
-commandes:
+commands:
   - cp -R /opt/exercices/02-anatomie/. .
-etapes:
-  - texte: 'Ajoute des `rules` au job `lint`, comme MiniShop : jamais dans un pipeline planifié (`schedule`), mais dans une merge request (`merge_request_event`) et sur la branche `main`. Vérifie avec `verifier-ci --contexte CI_PIPELINE_SOURCE=schedule --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml`'
-    indice: 'Première règle : `- if: ''$CI_PIPELINE_SOURCE == "schedule"''` suivie de `when: never`. Puis une règle pour `merge_request_event` et une pour `$CI_COMMIT_BRANCH == "main"`.'
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event .gitlab-ci.yml | grep -q '^+ \[quality\] lint'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^+ \[quality\] lint'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=schedule --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^- lint'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x .gitlab-ci.yml | grep -q '^- lint'
+steps:
+  - text: 'Ajoute des `rules` au job `lint`, comme MiniShop : jamais dans un pipeline planifié (`schedule`), mais dans une merge request (`merge_request_event`) et sur la branche `main`. Vérifie avec `verifier-ci --contexte CI_PIPELINE_SOURCE=schedule --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml`'
+    hint: 'Première règle : `- if: ''$CI_PIPELINE_SOURCE == "schedule"''` suivie de `when: never`. Puis une règle pour `merge_request_event` et une pour `$CI_COMMIT_BRANCH == "main"`.'
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=merge_request_event .gitlab-ci.yml | grep -q '^+ \[quality\] lint'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^+ \[quality\] lint'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=schedule --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^- lint'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x .gitlab-ci.yml | grep -q '^- lint'
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - quality
@@ -169,15 +169,15 @@ etapes:
               script:
                 - npm ci
                 - npm run build
-  - texte: 'Supprime la répétition : crée un job caché `.node` qui porte l''`image` (une seule fois dans tout le fichier), et fais-en hériter `lint` et `build` avec `extends`'
-    indice: 'Un bloc `.node:` avec `image: node:24-alpine`, puis `extends: .node` dans `lint` et dans `build`, et plus aucune ligne `image:` dans ces deux jobs. `verifier-ci --montrer .gitlab-ci.yml` doit afficher `extends=.node` sur les deux.'
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job .node --image node:24-alpine"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job lint --stage quality --extends .node --image node:24-alpine --sans-cle-propre image"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --stage build --extends .node --image node:24-alpine --sans-cle-propre image"
+  - text: 'Supprime la répétition : crée un job caché `.node` qui porte l''`image` (une seule fois dans tout le fichier), et fais-en hériter `lint` et `build` avec `extends`'
+    hint: 'Un bloc `.node:` avec `image: node:24-alpine`, puis `extends: .node` dans `lint` et dans `build`, et plus aucune ligne `image:` dans ces deux jobs. `verifier-ci --montrer .gitlab-ci.yml` doit afficher `extends=.node` sur les deux.'
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job .node --image node:24-alpine"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job lint --stage quality --extends .node --image node:24-alpine --sans-cle-propre image"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --stage build --extends .node --image node:24-alpine --sans-cle-propre image"
     solution:
-      - ecrire:
+      - write:
           .gitlab-ci.yml: |
             stages:
               - quality
@@ -205,17 +205,17 @@ etapes:
               script:
                 - npm ci
                 - npm run build
-  - texte: 'Découpe le fichier comme Vitrine : déplace le job `build` dans un fichier `.gitlab/ci/build.gitlab-ci.yml` et appelle-le depuis `.gitlab-ci.yml` avec `include` et `local`'
-    indice: 'Crée le dossier avec `mkdir -p .gitlab/ci`, mets-y le job `build` (sans le retirer du pipeline : il hérite toujours de `.node`), puis ajoute en tête de `.gitlab-ci.yml` : `include:` et `- local: .gitlab/ci/build.gitlab-ci.yml`.'
-    apres: [2]
-    verif:
-      - fichier-existe-dans-env: .gitlab/ci/build.gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --include-local .gitlab/ci/build.gitlab-ci.yml"
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job build --cree --defini-dans .gitlab/ci/build.gitlab-ci.yml"
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - sortie-contient: ['verifier-ci --montrer .gitlab-ci.yml', '\[build\] build']
+  - text: 'Découpe le fichier comme Vitrine : déplace le job `build` dans un fichier `.gitlab/ci/build.gitlab-ci.yml` et appelle-le depuis `.gitlab-ci.yml` avec `include` et `local`'
+    hint: 'Crée le dossier avec `mkdir -p .gitlab/ci`, mets-y le job `build` (sans le retirer du pipeline : il hérite toujours de `.node`), puis ajoute en tête de `.gitlab-ci.yml` : `include:` et `- local: .gitlab/ci/build.gitlab-ci.yml`.'
+    after: [2]
+    checks:
+      - env-file-exists: .gitlab/ci/build.gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --include-local .gitlab/ci/build.gitlab-ci.yml"
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job build --cree --defini-dans .gitlab/ci/build.gitlab-ci.yml"
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - output-contains: ['verifier-ci --montrer .gitlab-ci.yml', '\[build\] build']
     solution:
-      - ecrire:
+      - write:
           .gitlab/ci/build.gitlab-ci.yml: |
             build:
               extends: .node
@@ -246,17 +246,17 @@ etapes:
                   when: never
                 - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
                 - if: '$CI_COMMIT_BRANCH == "main"'
-  - texte: 'Ajoute un job `deploiement` dans le stage `deploy` (commande de ton choix, par exemple `echo "Déploiement"`) : il ne doit exister que sur la branche `main`, et se déclencher **à la main** (`when: manual`). Vérifie avec `verifier-ci --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml`'
-    indice: 'Une seule règle suffit : `- if: ''$CI_COMMIT_BRANCH == "main"''` suivie de `when: manual`. Sur une autre branche, aucune règle ne correspond et le job est absent.'
-    apres: [3]
-    verif:
-      - commande-reussit: verifier-ci .gitlab-ci.yml
-      - commande-reussit: "verifier-ci .gitlab-ci.yml --job deploiement --stage deploy"
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^+ \[deploy\] deploiement (manuel)'
-      - commande-reussit: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x .gitlab-ci.yml | grep -q '^- deploiement'
+  - text: 'Ajoute un job `deploiement` dans le stage `deploy` (commande de ton choix, par exemple `echo "Déploiement"`) : il ne doit exister que sur la branche `main`, et se déclencher **à la main** (`when: manual`). Vérifie avec `verifier-ci --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml`'
+    hint: 'Une seule règle suffit : `- if: ''$CI_COMMIT_BRANCH == "main"''` suivie de `when: manual`. Sur une autre branche, aucune règle ne correspond et le job est absent.'
+    after: [3]
+    checks:
+      - command-succeeds: verifier-ci .gitlab-ci.yml
+      - command-succeeds: "verifier-ci .gitlab-ci.yml --job deploiement --stage deploy"
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=main .gitlab-ci.yml | grep -q '^+ \[deploy\] deploiement (manuel)'
+      - command-succeeds: verifier-ci --contexte CI_PIPELINE_SOURCE=push --contexte CI_COMMIT_BRANCH=feature-x .gitlab-ci.yml | grep -q '^- deploiement'
     solution:
-      - ecrire:
-          .gitlab-ci.yml: |
+      - write:
+          .gitlab-ci.yml: |-
             include:
               - local: .gitlab/ci/build.gitlab-ci.yml
 

@@ -1,9 +1,9 @@
 ---
 id: tailwind
-titre: "Mettre en forme avec Tailwind CSS"
-resume: "Styler un composant en combinant de petites classes utilitaires, adaptées à tous les écrans."
-duree: 30
-objectifs:
+title: "Mettre en forme avec Tailwind CSS"
+summary: "Styler un composant en combinant de petites classes utilitaires, adaptées à tous les écrans."
+minutes: 30
+objectives:
   - Expliquer ce qu'est une classe utilitaire et pourquoi Tailwind en propose autant
   - Lire et écrire des classes de mise en page, d'espacement et de couleur
   - Rendre une interface adaptative avec les préfixes `sm:`, `md:`, `lg:` et `hover:`
@@ -101,26 +101,26 @@ Les deux projets déclarent `prettier-plugin-tailwindcss`. **Prettier** est un o
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Démarre ton environnement. Tu vas mettre en forme cinq petits composants de `src` avec **Tailwind CSS** (version 4). Le fichier `globals.css` (déjà écrit) charge Tailwind avec `@import "tailwindcss";`. Modifie les composants avec `nano` (`Ctrl+O` puis `Entrée` enregistre, `Ctrl+X` quitte).
 
   Il n'y a pas de navigateur pour juger l'apparence : deux outils vérifient ton travail. Les **tests** (`npx vitest run carte` lance ceux dont le nom de fichier contient `carte`) regardent les classes posées sur chaque élément. La commande `classes-generees` compile `globals.css` avec Tailwind, comme le ferait le build du site, et vérifie que chaque classe citée a bien reçu une règle CSS. Ainsi, une classe mal écrite ou construite à la volée est détectée, même si le test, lui, est content.
-commandes:
+commands:
   - cp -R /opt/exercices/commun/. .
   - cp -R /opt/exercices/05-tailwind/. .
   - lier-outils
-etapes:
-  - texte: >-
+steps:
+  - text: >-
       Dans `src/Carte.tsx`, habille la carte avec des classes utilitaires dans l'attribut `className` : l'`<article>` reçoit `rounded-lg bg-white p-4 shadow-sm`, le titre `<h3>` reçoit `text-lg font-semibold text-slate-900` et le paragraphe `mt-2 text-sm text-slate-600`. Vérifie avec `npx vitest run carte`, puis avec `classes-generees rounded-lg bg-white p-4 shadow-sm text-lg font-semibold text-slate-900 mt-2 text-sm text-slate-600`.
-    indice: >-
+    hint: >-
       En JSX, l'attribut HTML `class` s'écrit `className`. Exemple : `<article className="rounded-lg bg-white p-4 shadow-sm">`.
-    verif:
-      - commande-reussit: controler tests 05-tailwind carte
-      - commande-reussit: classes-generees rounded-lg bg-white p-4 shadow-sm text-lg font-semibold text-slate-900 mt-2 text-sm text-slate-600
+    checks:
+      - command-succeeds: controler tests 05-tailwind carte
+      - command-succeeds: classes-generees rounded-lg bg-white p-4 shadow-sm text-lg font-semibold text-slate-900 mt-2 text-sm text-slate-600
     solution:
-      - ecrire:
+      - write:
           'src/Carte.tsx': |
             export function Carte({ nom, description }: Readonly<{ nom: string; description: string }>) {
               return (
@@ -130,30 +130,30 @@ etapes:
                 </article>
               );
             }
-  - texte: >-
+  - text: >-
       Dans `src/GrilleCategories.tsx`, transforme la `<div>` en grille **adaptative**, « mobile d'abord » : `grid gap-4` partout, une seule colonne par défaut, deux colonnes dès l'écran `sm` (640 pixels) avec `sm:grid-cols-2`, trois dès `lg` (1024 pixels) avec `lg:grid-cols-3`. Vérifie avec `npx vitest run grille` et `classes-generees grid gap-4 sm:grid-cols-2 lg:grid-cols-3`.
-    indice: >-
+    hint: >-
       Les classes sans préfixe valent pour toutes les largeurs ; `sm:` et `lg:` ne s'appliquent qu'à partir d'une largeur minimale : `className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"`.
-    verif:
-      - commande-reussit: controler tests 05-tailwind grille
-      - commande-reussit: classes-generees grid gap-4 sm:grid-cols-2 lg:grid-cols-3
+    checks:
+      - command-succeeds: controler tests 05-tailwind grille
+      - command-succeeds: classes-generees grid gap-4 sm:grid-cols-2 lg:grid-cols-3
     solution:
-      - ecrire:
+      - write:
           'src/GrilleCategories.tsx': |
             import type { ReactNode } from "react";
 
             export function GrilleCategories({ children }: Readonly<{ children: ReactNode }>) {
               return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
             }
-  - texte: >-
+  - text: >-
       Dans `src/Bouton.tsx`, donne au bouton un fond `bg-sky-600` qui devient `hover:bg-sky-700` au survol de la souris, et une opacité réduite `disabled:opacity-50` quand il est désactivé. Ajoute aussi `rounded-md px-4 py-2 text-white`. Vérifie avec `npx vitest run bouton` et `classes-generees rounded-md px-4 py-2 text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50`.
-    indice: >-
+    hint: >-
       Un préfixe d'état se colle devant la classe, avec deux-points : `hover:bg-sky-700`, `disabled:opacity-50`.
-    verif:
-      - commande-reussit: controler tests 05-tailwind bouton
-      - commande-reussit: classes-generees rounded-md px-4 py-2 text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50
+    checks:
+      - command-succeeds: controler tests 05-tailwind bouton
+      - command-succeeds: classes-generees rounded-md px-4 py-2 text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50
     solution:
-      - ecrire:
+      - write:
           'src/Bouton.tsx': |
             import type { ReactNode } from "react";
 
@@ -168,16 +168,16 @@ etapes:
                 </button>
               );
             }
-  - texte: >-
+  - text: >-
       `src/Pastille.tsx` assemble le nom de sa classe à la volée avec `` `bg-${nom}-500` `` : à l'écran du test, tout va bien, mais Tailwind ne voit jamais `bg-red-500` écrit en entier et ne génère pas son CSS. Lance `classes-generees bg-red-500 bg-blue-500` pour le constater, puis corrige le composant avec un objet qui associe chaque couleur à sa classe **complète**. Vérifie avec `npx vitest run pastille` et `classes-generees bg-red-500 bg-blue-500`.
-    indice: >-
+    hint: >-
       `const FONDS = { rouge: "bg-red-500", bleu: "bg-blue-500" } as const;` puis `` className={`${FONDS[couleur]} inline-block size-4 rounded-full`} ``.
-    verif:
-      - commande-reussit: controler tests 05-tailwind pastille
-      - commande-reussit: classes-generees bg-red-500 bg-blue-500
-      - commande-reussit: contient -v src/Pastille.tsx 'bg-\$\{'
+    checks:
+      - command-succeeds: controler tests 05-tailwind pastille
+      - command-succeeds: classes-generees bg-red-500 bg-blue-500
+      - command-succeeds: contient -v src/Pastille.tsx 'bg-\$\{'
     solution:
-      - ecrire:
+      - write:
           'src/Pastille.tsx': |
             export type Couleur = "rouge" | "bleu";
 
@@ -186,16 +186,16 @@ etapes:
             export function Pastille({ couleur }: Readonly<{ couleur: Couleur }>) {
               return <span className={`${FONDS[couleur]} inline-block size-4 rounded-full`} />;
             }
-  - texte: >-
+  - text: >-
       Quand la couleur vient de la base de données, elle peut être n'importe quelle valeur : une classe ne convient plus. Dans `src/Badge.tsx`, applique la couleur reçue avec l'attribut `style` (`backgroundColor`), et `#104e64` quand elle est absente. Vérifie avec `npx vitest run badge`.
-    indice: >-
+    hint: >-
       En JSX, `style` reçoit un objet : `style={{ backgroundColor: couleur ?? "#104e64" }}`. L'opérateur `??` choisit la valeur de droite quand celle de gauche est absente.
-    verif:
-      - commande-reussit: controler tests 05-tailwind badge
-      - commande-reussit: contient src/Badge.tsx 'backgroundColor'
+    checks:
+      - command-succeeds: controler tests 05-tailwind badge
+      - command-succeeds: contient src/Badge.tsx 'backgroundColor'
     solution:
-      - ecrire:
-          'src/Badge.tsx': |
+      - write:
+          'src/Badge.tsx': |-
             export function Badge({ texte, couleur }: Readonly<{ texte: string; couleur?: string }>) {
               return (
                 <span className="rounded px-2 text-white" style={{ backgroundColor: couleur ?? "#104e64" }}>

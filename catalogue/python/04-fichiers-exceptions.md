@@ -1,9 +1,9 @@
 ---
 id: fichiers-exceptions
-titre: "Fichiers et exceptions"
-resume: "Lis et écris des fichiers, et apprends à gérer les erreurs au lieu de les subir."
-duree: 30
-objectifs:
+title: "Fichiers et exceptions"
+summary: "Lis et écris des fichiers, et apprends à gérer les erreurs au lieu de les subir."
+minutes: 30
+objectives:
   - Lire et écrire un fichier texte avec `with open(...)`
   - Lever et attraper une exception avec `try` / `except`
   - Distinguer les erreurs courantes (`FileNotFoundError`, `ValueError`, `KeyError`)
@@ -94,17 +94,17 @@ python3 -c "print(open('nombres_essai.txt', encoding='utf-8').read().split())"
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   `fichiers_exo.py` contient quatre fonctions à écrire. Le fichier `nombres.txt` (une ligne vide, et une ligne `abc` qui n'est pas un nombre) te sert de cobaye. Les tests sont dans `test_fichiers_exo.py`.
-commandes:
+commands:
   - cp -R /opt/exercices/04-fichiers-exceptions/. .
-etapes:
-  - texte: 'Écris `lire_lignes(chemin)` : la liste des lignes **non vides**, sans retour à la ligne'
-    indice: 'Utilise `with open(chemin, encoding="utf-8") as fichier:` puis une compréhension : `[ligne.strip() for ligne in fichier if ligne.strip()]`.'
-    verif:
-      - commande-reussit: 'pytest -q test_fichiers_exo.py -k lire_lignes'
+steps:
+  - text: 'Écris `lire_lignes(chemin)` : la liste des lignes **non vides**, sans retour à la ligne'
+    hint: 'Utilise `with open(chemin, encoding="utf-8") as fichier:` puis une compréhension : `[ligne.strip() for ligne in fichier if ligne.strip()]`.'
+    checks:
+      - command-succeeds: 'pytest -q test_fichiers_exo.py -k lire_lignes'
     solution:
       - |
         cat > fichiers_exo.py <<'EOF'
@@ -131,11 +131,11 @@ etapes:
             """Lit un fichier « cle=valeur » (une paire par ligne) ; retourne {} si le fichier n'existe pas."""
             raise NotImplementedError("À toi de jouer : attrape FileNotFoundError")
         EOF
-  - texte: 'Écris `somme_nombres(chemin)` : la somme des lignes qui sont des entiers, en **ignorant** les lignes invalides'
-    indice: 'Réutilise `lire_lignes`. Pour chaque ligne, `int(ligne)` dans un `try`, et un `except ValueError` qui passe à la suite.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_fichiers_exo.py -k somme_nombres'
+  - text: 'Écris `somme_nombres(chemin)` : la somme des lignes qui sont des entiers, en **ignorant** les lignes invalides'
+    hint: 'Réutilise `lire_lignes`. Pour chaque ligne, `int(ligne)` dans un `try`, et un `except ValueError` qui passe à la suite.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_fichiers_exo.py -k somme_nombres'
     solution:
       - |
         cat > fichiers_exo.py <<'EOF'
@@ -168,11 +168,11 @@ etapes:
             """Lit un fichier « cle=valeur » (une paire par ligne) ; retourne {} si le fichier n'existe pas."""
             raise NotImplementedError("À toi de jouer : attrape FileNotFoundError")
         EOF
-  - texte: 'Écris `ecrire_rapport(chemin, valeurs)` : une ligne `valeur: X` par valeur, puis `total: S`'
-    indice: 'Ouvre le fichier en mode `"w"`. Écris avec `fichier.write(f"valeur: {valeur}\n")`, et `sum(valeurs)` pour le total.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_fichiers_exo.py -k ecrire_rapport'
+  - text: 'Écris `ecrire_rapport(chemin, valeurs)` : une ligne `valeur: X` par valeur, puis `total: S`'
+    hint: 'Ouvre le fichier en mode `"w"`. Écris avec `fichier.write(f"valeur: {valeur}\n")`, et `sum(valeurs)` pour le total.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_fichiers_exo.py -k ecrire_rapport'
     solution:
       - |
         cat > fichiers_exo.py <<'EOF'
@@ -208,11 +208,11 @@ etapes:
             """Lit un fichier « cle=valeur » (une paire par ligne) ; retourne {} si le fichier n'existe pas."""
             raise NotImplementedError("À toi de jouer : attrape FileNotFoundError")
         EOF
-  - texte: 'Écris `lire_config(chemin)` : un dictionnaire `{cle: valeur}`, ou `{}` si le fichier **n''existe pas**'
-    indice: 'Entoure l''appel à `lire_lignes` d''un `try` / `except FileNotFoundError`. Pour découper `cle=valeur`, `ligne.split("=", 1)`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'pytest -q test_fichiers_exo.py -k lire_config'
+  - text: 'Écris `lire_config(chemin)` : un dictionnaire `{cle: valeur}`, ou `{}` si le fichier **n''existe pas**'
+    hint: 'Entoure l''appel à `lire_lignes` d''un `try` / `except FileNotFoundError`. Pour découper `cle=valeur`, `ligne.split("=", 1)`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'pytest -q test_fichiers_exo.py -k lire_config'
     solution:
       - |
         cat > fichiers_exo.py <<'EOF'
@@ -252,11 +252,11 @@ etapes:
                 return {}
             return dict(ligne.split("=", 1) for ligne in lignes)
         EOF
-  - texte: 'Fais un rapport réel : exécute `somme_nombres("nombres.txt")` et écris le résultat avec `ecrire_rapport` dans `rapport.txt`'
-    indice: 'Une ligne `python3 -c "..."` suffit : importe les deux fonctions depuis `fichiers_exo`, puis `ecrire_rapport("rapport.txt", [somme_nombres("nombres.txt")])`.'
-    apres: [2, 3]
-    verif:
-      - fichier-contient-dans-env: [rapport.txt, '^total: 49$']
+  - text: 'Fais un rapport réel : exécute `somme_nombres("nombres.txt")` et écris le résultat avec `ecrire_rapport` dans `rapport.txt`'
+    hint: 'Une ligne `python3 -c "..."` suffit : importe les deux fonctions depuis `fichiers_exo`, puis `ecrire_rapport("rapport.txt", [somme_nombres("nombres.txt")])`.'
+    after: [2, 3]
+    checks:
+      - env-file-contains: [rapport.txt, '^total: 49$']
     solution:
       - python3 -c 'from fichiers_exo import ecrire_rapport, somme_nombres; ecrire_rapport("rapport.txt", [somme_nombres("nombres.txt")])'
 :::

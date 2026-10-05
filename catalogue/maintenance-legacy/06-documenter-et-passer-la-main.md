@@ -1,9 +1,9 @@
 ---
 id: documenter-et-passer-la-main
-titre: "Documenter et passer la main"
-resume: "Laisser derrière toi un journal de montée de version, des vérifications simples et un projet que la personne suivante peut reprendre."
-duree: 30
-objectifs:
+title: "Documenter et passer la main"
+summary: "Laisser derrière toi un journal de montée de version, des vérifications simples et un projet que la personne suivante peut reprendre."
+minutes: 30
+objectives:
   - Expliquer pourquoi documenter une montée de version fait partie du travail
   - Rédiger un journal de montée de version utile à la personne suivante
   - Vérifier automatiquement que l'environnement correspond à ce qui est attendu
@@ -101,24 +101,24 @@ Avant de partir, relis le projet comme si tu le découvrais :
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le projet `adherents` vient d'être monté en Django 5.2 : il est dans ton dossier de travail, déjà enregistré dans un dépôt Git (le dossier contient `README.md`, `requirements.txt`, `requirements-old.txt` et le script `verifier_env.py`). Tu prépares la passation. Pour exécuter Python avec Django 5.2, utilise `/opt/venvs/django52/bin/python`. Les commandes fonctionnent hors ligne.
-commandes:
+commands:
   - cp -R /opt/exercices/06-passer-la-main/. .
   - git init -q
   - git config --global user.name "Apprenant"
   - git config --global user.email "apprenant@exemple.invalid"
   - git add -A
   - git commit -q -m "Projet monté en Django 5.2"
-etapes:
-  - texte: 'Écris le journal `docs/montees-de-version.md` avec une entrée `## Django 3.1 vers 3.2` qui contient les lignes `Pourquoi`, `Laissé de côté` et `Retour arrière`'
-    indice: 'Crée le dossier `docs`, puis le fichier avec `nano docs/montees-de-version.md`. Suis le modèle de la leçon : un titre `## Django 3.1 vers 3.2`, puis une ligne `- Pourquoi : …`, `- Laissé de côté : …` et `- Retour arrière : …`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy doc journal'
+steps:
+  - text: 'Écris le journal `docs/montees-de-version.md` avec une entrée `## Django 3.1 vers 3.2` qui contient les lignes `Pourquoi`, `Laissé de côté` et `Retour arrière`'
+    hint: 'Crée le dossier `docs`, puis le fichier avec `nano docs/montees-de-version.md`. Suis le modèle de la leçon : un titre `## Django 3.1 vers 3.2`, puis une ligne `- Pourquoi : …`, `- Laissé de côté : …` et `- Retour arrière : …`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy doc journal'
     solution:
-      - ecrire:
+      - write:
           docs/montees-de-version.md: |
             ## Django 3.1 vers 3.2 (LTS)
 
@@ -127,42 +127,42 @@ etapes:
             - Laissé de côté : passage de `re_path` à `path`.
             - Retour arrière : revenir au tag `avant-django-3.2`.
 
-  - texte: 'Pose le tag Git `avant-django-3.2` sur le commit actuel'
-    indice: '`git tag avant-django-3.2` ; `git tag` seul liste les tags.'
-    verif:
-      - commande-reussit: git rev-parse -q --verify refs/tags/avant-django-3.2
+  - text: 'Pose le tag Git `avant-django-3.2` sur le commit actuel'
+    hint: '`git tag avant-django-3.2` ; `git tag` seul liste les tags.'
+    checks:
+      - command-succeeds: git rev-parse -q --verify refs/tags/avant-django-3.2
     solution:
       - git tag avant-django-3.2
 
-  - texte: 'Complète `README.md` : indique les versions `Python 3.10` et `Django 5.2`, et la commande `python manage.py test`'
-    indice: 'Remplace « À écrire. » dans `README.md` (avec `nano`) par quelques lignes, par exemple « Versions : Python 3.10, Django 5.2 » puis « Tests : `python manage.py test` ».'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy doc readme'
+  - text: 'Complète `README.md` : indique les versions `Python 3.10` et `Django 5.2`, et la commande `python manage.py test`'
+    hint: 'Remplace « À écrire. » dans `README.md` (avec `nano`) par quelques lignes, par exemple « Versions : Python 3.10, Django 5.2 » puis « Tests : `python manage.py test` ».'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy doc readme'
     solution:
       - |-
         printf '%s\n' 'Versions : Python 3.10, Django 5.2.' 'Tests : `python manage.py test`.' >> README.md
 
-  - texte: 'Lance `verifier_env.py` avec le Python de Django 5.2 et garde le résultat dans `verification.txt` ; la ligne de Django doit se terminer par `ok`'
-    indice: '`/opt/venvs/django52/bin/python verifier_env.py > verification.txt`. Le script compare les versions installées à celles qu''il attend.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie verification.txt verification'
-      - fichier-contient-dans-env: [verification.txt, '(?m)^Django: 5\.2\.\d+ \(attendu 5\.2\.x\) ok$']
+  - text: 'Lance `verifier_env.py` avec le Python de Django 5.2 et garde le résultat dans `verification.txt` ; la ligne de Django doit se terminer par `ok`'
+    hint: '`/opt/venvs/django52/bin/python verifier_env.py > verification.txt`. Le script compare les versions installées à celles qu''il attend.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie verification.txt verification'
+      - env-file-contains: [verification.txt, '(?m)^Django: 5\.2\.\d+ \(attendu 5\.2\.x\) ok$']
     solution:
       - /opt/venvs/django52/bin/python verifier_env.py > verification.txt
 
-  - texte: 'Vérifie la cohérence de l''environnement Django 5.2 avec `pip check` et écris le résultat dans `pip-check.txt`'
-    indice: 'Lance pip par le Python de l''environnement : `/opt/venvs/django52/bin/python -m pip check > pip-check.txt`.'
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy sortie pip-check.txt pip-check'
-      - fichier-contient-dans-env: [pip-check.txt, 'No broken requirements found']
+  - text: 'Vérifie la cohérence de l''environnement Django 5.2 avec `pip check` et écris le résultat dans `pip-check.txt`'
+    hint: 'Lance pip par le Python de l''environnement : `/opt/venvs/django52/bin/python -m pip check > pip-check.txt`.'
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy sortie pip-check.txt pip-check'
+      - env-file-contains: [pip-check.txt, 'No broken requirements found']
     solution:
       - /opt/venvs/django52/bin/python -m pip check > pip-check.txt
 
-  - texte: 'Dis dans le `README.md` que `requirements.txt` fait foi, puis supprime l''ancien gel `requirements-old.txt`'
-    indice: 'Ajoute une phrase qui cite `requirements.txt` à la fin de `README.md` (`>>` ajoute à la fin), puis `rm requirements-old.txt`.'
-    apres: [3]
-    verif:
-      - commande-reussit: '/opt/outils/verifier-legacy doc readme-requirements'
+  - text: 'Dis dans le `README.md` que `requirements.txt` fait foi, puis supprime l''ancien gel `requirements-old.txt`'
+    hint: 'Ajoute une phrase qui cite `requirements.txt` à la fin de `README.md` (`>>` ajoute à la fin), puis `rm requirements-old.txt`.'
+    after: [3]
+    checks:
+      - command-succeeds: '/opt/outils/verifier-legacy doc readme-requirements'
     solution:
       - printf '%s\n' 'Les dépendances sont dans `requirements.txt` (il fait foi).' >> README.md
       - rm requirements-old.txt

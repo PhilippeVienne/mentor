@@ -1,9 +1,9 @@
 ---
 id: ssh
-titre: "Se connecter en SSH"
-resume: "Ouvrir une session distante, créer une clé, copier des fichiers et éviter les erreurs courantes."
-duree: 30
-objectifs:
+title: "Se connecter en SSH"
+summary: "Ouvrir une session distante, créer une clé, copier des fichiers et éviter les erreurs courantes."
+minutes: 30
+objectives:
   - Te connecter à un serveur avec `ssh`
   - Créer une paire de clés et comprendre quelle partie reste secrète
   - Copier des fichiers avec `scp` et configurer un raccourci dans `~/.ssh/config`
@@ -79,49 +79,49 @@ Le terminal du labo n'a pas de réseau : tu ne peux pas te connecter à un vrai
 
 ## Entraîne-toi
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Tu prépares tout ce qu'il faut pour te connecter à un serveur imaginaire, `serveur.example.org`, sans réellement t'y connecter. Les clés se rangent dans le dossier caché `~/.ssh`, que `ssh-keygen` crée au besoin. `~` désigne ton dossier personnel.
-commandes:
+commands:
   - cp -R /opt/exercices/06-ssh/. .
-etapes:
-  - texte: 'Crée une paire de clés ed25519 dans les fichiers par défaut `~/.ssh/id_ed25519` (privée) et `~/.ssh/id_ed25519.pub` (publique), avec une phrase de passe vide'
-    indice: '`ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""` : `-f` donne le fichier de la clé privée, `-N` la phrase de passe (ici vide).'
-    verif:
-      - commande-reussit: 'grep -q "^ssh-ed25519 " "$HOME/.ssh/id_ed25519.pub" && test "$(ssh-keygen -y -f "$HOME/.ssh/id_ed25519" < /dev/null | cut -d" " -f1,2)" = "$(cut -d" " -f1,2 "$HOME/.ssh/id_ed25519.pub")"'
+steps:
+  - text: 'Crée une paire de clés ed25519 dans les fichiers par défaut `~/.ssh/id_ed25519` (privée) et `~/.ssh/id_ed25519.pub` (publique), avec une phrase de passe vide'
+    hint: '`ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""` : `-f` donne le fichier de la clé privée, `-N` la phrase de passe (ici vide).'
+    checks:
+      - command-succeeds: 'grep -q "^ssh-ed25519 " "$HOME/.ssh/id_ed25519.pub" && test "$(ssh-keygen -y -f "$HOME/.ssh/id_ed25519" < /dev/null | cut -d" " -f1,2)" = "$(cut -d" " -f1,2 "$HOME/.ssh/id_ed25519.pub")"'
     solution:
       - ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
-  - texte: 'Écris l''empreinte de ta clé publique dans `empreinte.txt` (à la racine de ton dossier de travail)'
-    indice: '`ssh-keygen -lf ~/.ssh/id_ed25519.pub > empreinte.txt` : `-l` affiche l''empreinte du fichier donné avec `-f`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | cmp -s - empreinte.txt'
+  - text: 'Écris l''empreinte de ta clé publique dans `empreinte.txt` (à la racine de ton dossier de travail)'
+    hint: '`ssh-keygen -lf ~/.ssh/id_ed25519.pub > empreinte.txt` : `-l` affiche l''empreinte du fichier donné avec `-f`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | cmp -s - empreinte.txt'
     solution:
       - ssh-keygen -lf ~/.ssh/id_ed25519.pub > empreinte.txt
-  - texte: 'Autorise ta propre clé publique, comme le ferait `ssh-copy-id` sur un serveur : ajoute-la à `~/.ssh/authorized_keys`, et donne à ce fichier les droits `600`'
-    indice: '`cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys` (`>>` ajoute à la fin), puis `chmod 600 ~/.ssh/authorized_keys`.'
-    apres: [1]
-    verif:
-      - commande-reussit: 'grep -qxF "$(cat "$HOME/.ssh/id_ed25519.pub")" "$HOME/.ssh/authorized_keys"'
-      - sortie-contient: ['stat -c %a "$HOME/.ssh/authorized_keys"', '^600$']
+  - text: 'Autorise ta propre clé publique, comme le ferait `ssh-copy-id` sur un serveur : ajoute-la à `~/.ssh/authorized_keys`, et donne à ce fichier les droits `600`'
+    hint: '`cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys` (`>>` ajoute à la fin), puis `chmod 600 ~/.ssh/authorized_keys`.'
+    after: [1]
+    checks:
+      - command-succeeds: 'grep -qxF "$(cat "$HOME/.ssh/id_ed25519.pub")" "$HOME/.ssh/authorized_keys"'
+      - output-contains: ['stat -c %a "$HOME/.ssh/authorized_keys"', '^600$']
     solution:
       - cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
       - chmod 600 ~/.ssh/authorized_keys
-  - texte: 'Le fichier `fausse-cle` imite une clé privée mais il est lisible par tout le monde, ce que SSH refuserait. Donne-lui les droits `600`'
-    indice: 'Tu as vu cela dans la leçon précédente : `chmod 600 fausse-cle`, puis `ls -l fausse-cle` pour contrôler (`-rw-------`).'
-    verif:
-      - sortie-contient: ['stat -c %a fausse-cle', '^600$']
+  - text: 'Le fichier `fausse-cle` imite une clé privée mais il est lisible par tout le monde, ce que SSH refuserait. Donne-lui les droits `600`'
+    hint: 'Tu as vu cela dans la leçon précédente : `chmod 600 fausse-cle`, puis `ls -l fausse-cle` pour contrôler (`-rw-------`).'
+    checks:
+      - output-contains: ['stat -c %a fausse-cle', '^600$']
     solution:
       - chmod 600 fausse-cle
-  - texte: 'Crée `~/.ssh/config` avec un raccourci `demo-dev` : machine `serveur.example.org`, utilisateur `alice`, port `2222`'
-    indice: 'Reprends le bloc `Host demo-dev` de la leçon (les lignes suivantes sont décalées de quatre espaces). Vérifie avec `ssh -G demo-dev`, qui affiche la configuration retenue sans se connecter.'
-    verif:
-      - sortie-contient: ['ssh -G demo-dev', '^hostname serveur\.example\.org$']
-      - sortie-contient: ['ssh -G demo-dev', '^user alice$']
-      - sortie-contient: ['ssh -G demo-dev', '^port 2222$']
+  - text: 'Crée `~/.ssh/config` avec un raccourci `demo-dev` : machine `serveur.example.org`, utilisateur `alice`, port `2222`'
+    hint: 'Reprends le bloc `Host demo-dev` de la leçon (les lignes suivantes sont décalées de quatre espaces). Vérifie avec `ssh -G demo-dev`, qui affiche la configuration retenue sans se connecter.'
+    checks:
+      - output-contains: ['ssh -G demo-dev', '^hostname serveur\.example\.org$']
+      - output-contains: ['ssh -G demo-dev', '^user alice$']
+      - output-contains: ['ssh -G demo-dev', '^port 2222$']
     solution:
-      - |
+      - |-
         mkdir -p ~/.ssh && cat > ~/.ssh/config <<'EOF'
         Host demo-dev
             HostName serveur.example.org

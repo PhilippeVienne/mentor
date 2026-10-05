@@ -1,9 +1,9 @@
 ---
 id: restauration
-titre: "Tester une restauration"
-resume: "Restaurer un objet, même ancien, et une base de données, puis prouver régulièrement que ta sauvegarde est utilisable."
-duree: 35
-objectifs:
+title: "Tester une restauration"
+summary: "Restaurer un objet, même ancien, et une base de données, puis prouver régulièrement que ta sauvegarde est utilisable."
+minutes: 35
+objectives:
   - Restaurer la dernière version ou une version datée avec `restore.py`
   - Préparer une restauration sans écraser les données en production
   - Tester une restauration de base de données dans une base vide
@@ -98,55 +98,55 @@ Restaurer à la place des données actuelles est irréversible pour ce qui n'a p
 
 Le labo prépare un scénario : un bucket `sauvegardes` versionné contient **deux versions** de l'archive `backup.tgz` (le fichier `notes.txt` qu'elle contient dit « version A » dans la plus ancienne et « version B » dans la plus récente), ainsi que le dump `asso.dump` de la base PostgreSQL `asso`. À toi de restaurer, sans toucher à la base `asso`.
 
-:::labo
-moteur: reel
+:::lab
+engine: real
 intro: |
   Le bucket `sauvegardes` de ton MinIO local est versionné et contient deux versions de `backup.tgz` ainsi que `asso.dump` (le dump de la base `asso`, qui contient 5 adhérent·e·s). Tu restaures la version ancienne par sa date, la plus récente, puis la base dans une base vide, et tu consignes ton RTO. Les identifiants sont factices et déjà configurés. Les étapes sont vérifiées sur les fichiers restaurés et sur l'état des bases.
-commandes:
+commands:
   - preparer-restauration
-etapes:
-  - texte: 'Trouve la date UTC de la plus ancienne version de `backup.tgz` et écris-la dans `date-ancienne.txt`, au format `AAAA-MM-JJ HH:MM:SS`'
-    indice: 'Commence par aws s3api list-object-versions --bucket sauvegardes --prefix backup.tgz pour voir les deux versions, puis utilise la commande du cours (avec --query, puis xargs et date) en ajoutant > date-ancienne.txt'
-    verif:
-      - commande-reussit: test "$(cat date-ancienne.txt)" = "$(controle-date-ancienne)"
+steps:
+  - text: 'Trouve la date UTC de la plus ancienne version de `backup.tgz` et écris-la dans `date-ancienne.txt`, au format `AAAA-MM-JJ HH:MM:SS`'
+    hint: 'Commence par aws s3api list-object-versions --bucket sauvegardes --prefix backup.tgz pour voir les deux versions, puis utilise la commande du cours (avec --query, puis xargs et date) en ajoutant > date-ancienne.txt'
+    checks:
+      - command-succeeds: test "$(cat date-ancienne.txt)" = "$(controle-date-ancienne)"
     solution:
       - aws s3api list-object-versions --bucket sauvegardes --prefix backup.tgz --query 'sort_by(Versions, &LastModified)[0].LastModified' --output text | xargs -I{} date -u -d {} '+%Y-%m-%d %H:%M:%S' > date-ancienne.txt
-  - texte: 'Restaure cette version ancienne de `backup.tgz` dans le dossier `restauration-ancienne/` avec `restore.py --date`'
-    indice: 'restore.py -v -c --date "$(cat date-ancienne.txt)" sauvegardes backup.tgz restauration-ancienne/'
-    apres: [1]
-    verif:
-      - fichier-contient-dans-env: [restauration-ancienne/data/notes.txt, 'version A']
+  - text: 'Restaure cette version ancienne de `backup.tgz` dans le dossier `restauration-ancienne/` avec `restore.py --date`'
+    hint: 'restore.py -v -c --date "$(cat date-ancienne.txt)" sauvegardes backup.tgz restauration-ancienne/'
+    after: [1]
+    checks:
+      - env-file-contains: [restauration-ancienne/data/notes.txt, 'version A']
     solution:
       - restore.py -v -c --date "$(cat date-ancienne.txt)" sauvegardes backup.tgz restauration-ancienne/
-  - texte: 'Restaure la version la plus récente dans le dossier `restauration-recente/` (sans `--date`)'
-    indice: 'restore.py -v -c sauvegardes backup.tgz restauration-recente/'
-    verif:
-      - fichier-contient-dans-env: [restauration-recente/data/notes.txt, 'version B']
+  - text: 'Restaure la version la plus récente dans le dossier `restauration-recente/` (sans `--date`)'
+    hint: 'restore.py -v -c sauvegardes backup.tgz restauration-recente/'
+    checks:
+      - env-file-contains: [restauration-recente/data/notes.txt, 'version B']
     solution:
       - restore.py -v -c sauvegardes backup.tgz restauration-recente/
-  - texte: 'Crée une base vide `asso_restauration` avec `createdb`'
-    indice: 'createdb asso_restauration'
-    verif:
-      - sortie-contient:
+  - text: 'Crée une base vide `asso_restauration` avec `createdb`'
+    hint: 'createdb asso_restauration'
+    checks:
+      - output-contains:
           - psql -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname = 'asso_restauration'"
           - '^1$'
     solution:
       - createdb asso_restauration
-  - texte: 'Télécharge `asso.dump` depuis le bucket `sauvegardes`, puis restaure-le dans `asso_restauration` avec `pg_restore -d`'
-    indice: 'aws s3 cp s3://sauvegardes/asso.dump asso.dump, puis pg_restore -d asso_restauration asso.dump'
-    apres: [4]
-    verif:
-      - sortie-contient:
+  - text: 'Télécharge `asso.dump` depuis le bucket `sauvegardes`, puis restaure-le dans `asso_restauration` avec `pg_restore -d`'
+    hint: 'aws s3 cp s3://sauvegardes/asso.dump asso.dump, puis pg_restore -d asso_restauration asso.dump'
+    after: [4]
+    checks:
+      - output-contains:
           - psql -d asso_restauration -Atc "SELECT count(*) FROM adherents"
           - '^5$'
     solution:
       - aws s3 cp s3://sauvegardes/asso.dump asso.dump
       - pg_restore -d asso_restauration asso.dump
-  - texte: 'Consigne ton test : écris dans `rapport-restauration.txt` une ligne `RTO : ` suivie de la durée (en minutes) que tu estimes avoir mise pour restaurer, par exemple `RTO : 2 minutes`'
-    indice: 'echo "RTO : 2 minutes" > rapport-restauration.txt'
-    apres: [5]
-    verif:
-      - fichier-contient-dans-env: [rapport-restauration.txt, '^RTO ?: ?[0-9]+']
+  - text: 'Consigne ton test : écris dans `rapport-restauration.txt` une ligne `RTO : ` suivie de la durée (en minutes) que tu estimes avoir mise pour restaurer, par exemple `RTO : 2 minutes`'
+    hint: 'echo "RTO : 2 minutes" > rapport-restauration.txt'
+    after: [5]
+    checks:
+      - env-file-contains: [rapport-restauration.txt, '^RTO ?: ?[0-9]+']
     solution:
       - 'echo "RTO : 2 minutes" > rapport-restauration.txt'
 :::
