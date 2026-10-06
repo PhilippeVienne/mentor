@@ -45,6 +45,14 @@ cargo run -p mentor-content --example export       # compile catalogue/ and prin
 cargo clippy --all-targets && cargo fmt --check
 ```
 
+Labs are proved by replaying them: [`tools/replay_labs.py`](tools/replay_labs.py) builds the environment of each
+course, starts it without network and checks, step by step, that the solution makes the checks pass and that
+they did not pass before it. It needs Docker and takes a while; the Docker courses need a privileged container.
+
+```shell
+python tools/replay_labs.py                        # every course; or name some: git-basics python
+```
+
 The database tests need a real PostgreSQL and are skipped without it:
 
 ```shell
