@@ -43,7 +43,7 @@ RUN set -eux; \
 FROM debian:trixie-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends awscli bash ca-certificates less nano openssh-server procps \
+    && apt-get install -y --no-install-recommends awscli bash ca-certificates curl less nano openssh-server procps systemd-sysv \
         python3 python3-boto3 tzdata postgresql postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -72,5 +72,7 @@ RUN chmod -R a+rX /opt/exercices
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 RUN echo '. /opt/outils/mentor-labo.sh' >> /etc/bash.bashrc
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

@@ -12,7 +12,7 @@ ARG GO_SHA256_AMD64=a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee
 ARG GO_SHA256_ARM64=9bf234ea70ffec9347fdf6b22ce4add51717d3386a38a441e8c8743fceb5eaee
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash ca-certificates curl git less nano openssh-server procps python3 tmux \
+    && apt-get install -y --no-install-recommends bash ca-certificates curl git less nano openssh-server procps python3 systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
 
@@ -65,5 +65,7 @@ RUN set -eux; \
     chmod -R a+rX /opt/gomodcache /opt/exercices; \
     rm -rf /tmp/gocache-build /root/.cache
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

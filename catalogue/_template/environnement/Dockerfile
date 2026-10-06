@@ -9,7 +9,7 @@
 FROM debian:trixie-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash ca-certificates git less nano openssh-server procps python3 tmux \
+    && apt-get install -y --no-install-recommends bash ca-certificates curl git less nano openssh-server procps python3 systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
 
@@ -17,5 +17,7 @@ RUN apt-get update \
 # est copié à la création de l'utilisateur).
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

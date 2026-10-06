@@ -12,6 +12,7 @@ use serde_yaml::{Mapping, Value as Yaml};
 use sha1::{Digest, Sha1};
 
 use crate::document::{render_document, Quiz, QuizOption};
+use crate::environment::dockerfile_warnings;
 use crate::error::{ContentError, Result};
 use crate::lab::{Checks, Lab, LabContext};
 use crate::markdown::{md_inline, Render};
@@ -44,8 +45,8 @@ pub struct Course {
     pub banner: String,
     pub description_html: String,
     pub cheatsheet_html: String,
-    /// Real environments used by the course, by folder name. The devcontainer specification is not
-    /// validated here yet (to be ported with the execution plane).
+    /// Real environments used by the course, by folder name, each with the `warnings` raised by reading its
+    /// `Dockerfile`. The devcontainer specification is not validated here yet.
     pub environments: BTreeMap<String, Json>,
     pub exam: Option<Exam>,
     pub lessons: Vec<Lesson>,
@@ -153,7 +154,11 @@ impl Environments<'_> {
             if !folder.join("devcontainer.json").is_file() {
                 return Err(ContentError::new(&folder, "real environment not found: `devcontainer.json` is missing"));
             }
-            self.seen.insert(name.to_string(), Json::Object(Default::default()));
+            // The devcontainer specification is not validated yet; the `Dockerfile`, when there is one, is read
+            // for what would keep the image from starting (see `environment`).
+            let dockerfile = folder.join("Dockerfile");
+            let warnings = if dockerfile.is_file() { dockerfile_warnings(&read(&dockerfile)?) } else { Vec::new() };
+            self.seen.insert(name.to_string(), serde_json::json!({ "warnings": warnings }));
         }
         Ok(())
     }

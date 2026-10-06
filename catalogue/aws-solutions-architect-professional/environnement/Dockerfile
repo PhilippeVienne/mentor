@@ -15,7 +15,7 @@
 FROM debian:trixie-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends awscli bash ca-certificates curl jq less nano openssh-server procps \
+    && apt-get install -y --no-install-recommends awscli bash ca-certificates curl jq less nano openssh-server procps systemd-sysv \
         python3 python3-venv tzdata unzip zip \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant \
@@ -40,5 +40,7 @@ RUN chmod 755 /opt/outils/lanceur /opt/outils/demarrer-aws \
     && echo '. /opt/outils/mentor-aws.sh' >> /etc/bash.bashrc
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

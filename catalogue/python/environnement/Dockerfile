@@ -7,7 +7,7 @@
 FROM python:3.13.7-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash less nano openssh-server procps tmux \
+    && apt-get install -y --no-install-recommends bash curl less nano openssh-server procps systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir pytest==8.3.5 \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -16,5 +16,7 @@ RUN apt-get update \
 COPY exercices /opt/exercices
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

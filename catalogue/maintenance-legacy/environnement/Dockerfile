@@ -11,7 +11,7 @@
 FROM python:3.10.22-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash git less nano openssh-server procps tmux \
+    && apt-get install -y --no-install-recommends bash curl git less nano openssh-server procps systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant \
     && pip install --no-cache-dir pytest==9.1.1 coverage==7.16.2
@@ -32,5 +32,7 @@ COPY outils /opt/outils
 RUN chmod 755 /opt/outils/* && chmod a-w /opt/outils
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

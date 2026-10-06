@@ -13,7 +13,7 @@ ARG TERRAFORM_SHA256=2bc2fcfff033265c9e02ca0351f01794eb122f62a9b2a49a3294b9e49ea
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends bash ca-certificates coreutils curl findutils grep less nano \
-       openssh-server procps python3 tree unzip \
+       openssh-server systemd-sysv procps python3 tree unzip \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
 
@@ -42,5 +42,7 @@ RUN chmod 0755 /usr/local/bin/terraform
 COPY exercices /opt/exercices
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

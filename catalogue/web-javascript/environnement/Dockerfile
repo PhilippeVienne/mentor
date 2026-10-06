@@ -10,7 +10,7 @@ FROM node:24.18.1-bookworm-slim
 
 # python3 : requis par le pont de VS Code dans le navigateur. openssh-server : VS Code (Remote-SSH).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash less nano openssh-server procps python3 tmux \
+    && apt-get install -y --no-install-recommends bash curl less nano openssh-server procps python3 systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # Outils de vérification (en lecture seule pour tout le monde) : jsdom et acorn (analyseur JavaScript) sont installés
@@ -33,5 +33,7 @@ COPY paquets /opt/paquets
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 RUN chmod -R a+rX /opt/exercices /opt/paquets
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown node:node /workspace
 USER node

@@ -207,3 +207,14 @@ fn the_built_in_catalogue_is_a_package() {
     // 19 courses taken over from v1, and the three AWS courses written for v2.
     assert_eq!(package.catalogue.courses.len(), 22);
 }
+
+#[test]
+fn the_environments_of_the_built_in_catalogue_raise_no_warning() {
+    let package =
+        load_package(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalogue")).expect("the built-in catalogue is a valid package");
+    for course in &package.catalogue.courses {
+        for (name, environment) in &course.environments {
+            assert_eq!(environment["warnings"], serde_json::json!([]), "{}: environment `{name}`", course.slug);
+        }
+    }
+}

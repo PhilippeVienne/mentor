@@ -12,7 +12,7 @@ FROM debian:bookworm-slim
 RUN mkdir -p /etc/postgresql-common \
     && printf 'create_main_cluster = false\n' > /etc/postgresql-common/createcluster.conf \
     && apt-get update \
-    && apt-get install -y --no-install-recommends bash less nano openssh-server procps python3 tzdata \
+    && apt-get install -y --no-install-recommends bash curl less nano openssh-server procps python3 systemd-sysv tzdata \
         postgresql-15 postgresql-client-15 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -28,5 +28,7 @@ COPY exercices /opt/exercices
 RUN chmod 755 /opt/exercices/demarrer.sh
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

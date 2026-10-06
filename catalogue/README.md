@@ -393,6 +393,12 @@ Existing environments use only these keys, and nothing else is known to be suppo
 - The working folder (`/workspace`) starts **empty** and is erased when the environment stops: what a lab needs there comes from its `files` and `commands`.
 - An untrusted author's `Dockerfile` is built in a disposable build microVM: put no secret in it.
 
+The image is started as a microVM, and three things make that fail without a message. The compiler reads the `Dockerfile` and warns about each (`mentor package-check` prints the warnings):
+
+- **An init, or no systemd at all.** `openssh-server` brings systemd without `/sbin/init`; such an image never boots. Install `systemd-sysv` with it.
+- **`curl`**, which the platform uses inside the guest to open a session.
+- **A working folder that belongs to the learner**: nothing is mounted on it, so give it away in the image, just before the final `USER`: `RUN chown apprenant:apprenant /workspace`.
+
 ### Docker courses
 
 A course that teaches Docker needs a Docker daemon. Set `customizations.mentor.dockerInDocker: true` in `devcontainer.json`: the platform then runs an ordinary Docker daemon **inside the learner's microVM**. The image does not start it; the learner (uid 1000) reaches it through the `docker` group:
@@ -400,6 +406,8 @@ A course that teaches Docker needs a Docker daemon. Set `customizations.mentor.d
 ```dockerfile
 RUN useradd --create-home --uid 1000 --user-group --groups docker --shell /bin/bash apprenant
 ```
+
+The reference environment also carries what the execution plane needs today, each explained in its `Dockerfile`: an alias account `vscode` with the learner's uid in the `docker` group, the legacy iptables back end, and a setting that makes Docker do without the iptables `raw` table (the guest kernel has neither `nf_tables` nor that table). Copy them with the rest.
 
 Since there is no network at run time, images come from a **local read-only registry mirror filled at build time**. The reference is [`docker-hello/environnement/`](docker-hello/environnement/):
 

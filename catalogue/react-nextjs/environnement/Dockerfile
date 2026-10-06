@@ -11,7 +11,7 @@ FROM node:24.21.0-bookworm-slim
 # L'image Node.js fournit déjà l'utilisateur « node » (uid 1000) : on le remplace par « apprenant ».
 # python3 est requis par le pont de VS Code dans le navigateur.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash less nano openssh-server procps python3 \
+    && apt-get install -y --no-install-recommends bash curl less nano openssh-server procps python3 systemd-sysv \
     && rm -rf /var/lib/apt/lists/* \
     && userdel -r node \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -42,5 +42,7 @@ ENV PATH="/opt/outils/node_modules/.bin:${PATH}" \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_NO_WARNINGS=1
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

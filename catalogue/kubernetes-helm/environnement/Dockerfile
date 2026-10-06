@@ -22,7 +22,7 @@ ARG KUBECONFORM_SHA256_ARM64=1f53fc8e81258197a35e8603054162a5af1de8c5af13746c71a
 ARG SCHEMAS_COMMIT=8df8a883b68a24a104b4a9e43c1288090ae60b3b
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash ca-certificates curl git jq less nano openssh-server procps \
+    && apt-get install -y --no-install-recommends bash ca-certificates curl git jq less nano openssh-server procps systemd-sysv \
        python3 python3-yaml yamllint \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -74,5 +74,7 @@ ENV PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 COPY exercices /opt/exercices
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

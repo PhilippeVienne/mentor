@@ -116,6 +116,10 @@ fn package_check(directory: &Path) -> Result<(), Failure> {
             plural(course.lessons.len(), "lesson"),
             plural(labs, "lab")
         );
+        for (name, environment) in &course.environments {
+            let raised = environment["warnings"].as_array().into_iter().flatten().filter_map(|warning| warning.as_str());
+            warnings.extend(raised.map(|warning| format!("{}: environment `{name}`: {warning}", course.slug)));
+        }
         if let Some(exam) = &course.exam {
             warnings.extend(exam.warnings.iter().map(|warning| format!("{}: exam: {warning}", course.slug)));
         }

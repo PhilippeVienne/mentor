@@ -223,6 +223,12 @@ What isolates one organisation's Workshops from another's today:
 
 ## 10. Conclusion and next steps
 
+> Since this was written, item 4 was done in Mentor: every environment of the catalogue carries `systemd-sysv`,
+> `curl` and a working folder owned by the learner (and the Docker ones the three changes of §3), the compiler
+> warns when a `Dockerfile` lacks one of them, and all labs were replayed with `tools/replay_labs.py`. The
+> modified environments were not started again in Atelier.
+
+
 Atelier's isolation, image builder and exec are real and did the job: a learner's command ran as uid 1000 in
 a Firecracker microVM with no way out, and Mentor's server verified 62 lab steps through it. What is missing is
 the layer between "a sandbox for one agent" and "a lab session for a learner", which is the base that

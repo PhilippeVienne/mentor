@@ -10,7 +10,7 @@
 FROM python:3.13.7-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash git jq less nano openssh-server procps \
+    && apt-get install -y --no-install-recommends bash curl git jq less nano openssh-server procps systemd-sysv \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir PyYAML==6.0.2 yamllint==1.35.1 \
     && useradd --create-home --uid 1000 --user-group --shell /bin/bash apprenant
@@ -27,5 +27,7 @@ RUN chmod 755 /opt/outils/verifier-ci /opt/outils/verifier-renovate /opt/outils/
     && ln -s /opt/outils/lint-yaml /usr/local/bin/lint-yaml
 ENV PATH="/opt/outils:${PATH}"
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown apprenant:apprenant /workspace
 USER apprenant

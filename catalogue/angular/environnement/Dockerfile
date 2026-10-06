@@ -11,7 +11,7 @@ FROM node:24.18.1-bookworm-slim
 
 # python3 : requis par le pont de VS Code dans le navigateur. openssh-server : VS Code (Remote-SSH).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash less nano openssh-server procps python3 tmux \
+    && apt-get install -y --no-install-recommends bash curl less nano openssh-server procps python3 systemd-sysv tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # Les outils : node_modules (275 Mo) est installé une fois ici, en lecture seule. Chaque labo crée dans son projet un lien
@@ -43,5 +43,7 @@ RUN cd /opt/exercices/07-tests-et-build \
 COPY bienvenue.sh /etc/profile.d/mentor-bienvenue.sh
 RUN chmod -R a+rX /opt/angular /opt/exercices
 
+# Le dossier de travail appartient à l'apprenant·e dans l'image : la plateforme n'y monte rien.
 WORKDIR /workspace
+RUN chown node:node /workspace
 USER node
