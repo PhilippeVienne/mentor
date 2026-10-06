@@ -32,6 +32,10 @@ RUN update-alternatives --set iptables /usr/sbin/iptables-legacy \
     && mkdir -p /etc/systemd/system/docker.service.d \
     && printf '[Service]\nEnvironment=DOCKER_INSECURE_NO_IPTABLES_RAW=1\n' > /etc/systemd/system/docker.service.d/mentor.conf
 
+# Le paquet docker-registry installe un service qui démarrerait tout seul sur le port 5000 : il est neutralisé,
+# les registries de l'environnement sont lancés par `mentor-docker`, sous le compte de l'apprenant·e.
+RUN ln -s /dev/null /etc/systemd/system/docker-registry.service
+
 # Le moteur cherche d'abord les images de Docker Hub dans le miroir local.
 COPY daemon.json /etc/docker/daemon.json
 COPY miroir.yml images.txt /opt/mentor/

@@ -225,8 +225,8 @@ What isolates one organisation's Workshops from another's today:
 
 > Since this was written, item 4 was done in Mentor: every environment of the catalogue carries `systemd-sysv`,
 > `curl` and a working folder owned by the learner (and the Docker ones the three changes of §3), the compiler
-> warns when a `Dockerfile` lacks one of them, and all labs were replayed with `tools/replay_labs.py`. The
-> modified environments were not started again in Atelier.
+> warns when a `Dockerfile` lacks one of them, and all labs were replayed with `tools/replay_labs.py`. Five of
+> these environments were then started unmodified in Atelier: see [§11](#11-second-run-the-catalogues-environments-unmodified-6-october-2026).
 
 
 Atelier's isolation, image builder and exec are real and did the job: a learner's command ran as uid 1000 in
@@ -251,3 +251,80 @@ course does not fit on the disk, and a learner of a course without systemd is ro
    labs) can be replayed against Atelier after each of its releases.
 6. **Trial 3**, once image reuse exists: thirty sessions of one environment started together, with the
    terminal driven for real.
+
+## 11. Second run: the catalogue's environments, unmodified (6 October 2026)
+
+Same machine, same method and same two local patches as §2, on Mentor `fe3e854`. The scratch git source was
+rebuilt from the committed environment folders of five courses, **with no variant and no lesson**
+(`$V/git2`); logs are in `$V/run2/`. Each Workshop was created with the CPU and memory its
+`hostRequirements` ask for, its network was cut (allow-list emptied, suspend, resume), then every lab of the
+course was replayed through `replay_atelier.py --commit fe3e854 --reset`.
+
+### 11.1 Result
+
+**All five environments start unmodified.** `git-basics`, `python` and `aws-cloud-practitioner` pass all their
+labs; the two Docker courses start and Docker works, but most of their labs still fail, for three causes of
+which one is new and Mentor's.
+
+| Environment (guest) | Reaches `Running` | Labs replayed | Steps passed |
+| --- | --- | --- | --- |
+| `git-basics` (1 CPU, 512 MiB) | yes, 108 s ¹ | 7 of 7 pass | 31 of 31 |
+| `python` (1 CPU, 512 MiB) | yes, 106 s ¹ | 6 of 6 pass | 31 of 31 |
+| `aws-cloud-practitioner` (1 CPU, 512 MiB) | yes, 170 s ¹ | 12 of 12 pass | 59 of 59 |
+| `docker-hello` (2 CPU, 2 GiB) | yes, 178 s ¹ | 1 of 4 passes | 8 of 19 |
+| `docker-advanced` (2 CPU, 2 GiB) | yes, 140 s | 1 of 5 passes | 10 of 26 |
+
+¹ The first four images were built at the same time; alone, a build takes about half of that (§6). Image
+ready → `Running` took 16 s every time.
+
+In all five (`ps`, `id`, `touch` through exec): systemd is the init; **the web terminal (`ttyd`) and
+`code-server` run as uid 1000**; exec runs as uid 1000; **`/workspace` belongs to the learner and is
+writable**. In the two Docker environments the learner has the `docker` group through exec, in the terminal
+and in VS Code, `HOME` is `/home/apprenant`, `dockerd` 29.8.2 is up and `mentor-docker` answers "Docker est
+prêt." with no network.
+
+### 11.2 The AWS environment, first time in a microVM
+
+- All 12 labs pass with no network, 18 s to 40 s per lab; a check takes about 1.25 s (the start-up time of
+  the `aws` command), against 0.34 s elsewhere.
+- **Nothing starts the emulator by itself**: Atelier ignores `postStartCommand` and no systemd unit exists
+  for it. It was started by `demarrer-aws` through exec (once, as the platform would, and again by each lab's
+  setup commands). It then runs **as uid 1000**, re-parented to init, and outlives the exec that started it.
+- Memory: MiniStack 95 MB resident, plus 38 MB for a Lambda worker; 190 MB used and 295 MB available in the
+  512 MiB guest after the twelve labs, Atelier's `code-server` included. 512 MiB is enough.
+- It survives a suspend and resume **with its state**: a bucket created before was listed after.
+- Its state is never reset between labs in one VM (it lives in memory): the twelve labs passed in a row on
+  the same emulator, which is what one long session would do.
+
+### 11.3 What still fails in the Docker courses, step by step
+
+| Cause | Where it belongs | `docker-hello` | `docker-advanced` |
+| --- | --- | --- | --- |
+| **Port 8080 taken in the guest** by Atelier's `code-server` (`failed to bind host port 0.0.0.0:8080/tcp: address already in use`) | Atelier (gap 8), or the labs | Lab 2 step 2, and steps 3, 4, 5 which wait for it; lab 3 setup command, step 2, and steps 3 and 6 which wait for it | Lab 3 step 3, and steps 4 and 5 which wait for it |
+| **Disk full**: 322 MiB and 276 MiB free at start (`no space left on device` while unpacking `postgres`, building, or writing a file) | Atelier (gap 3) | Lab 4 step 2 (`postgres` cannot be unpacked), steps 3 and 4 which wait for it, step 5 | Lab 1 step 5; lab 3 step 2; lab 4 steps 1 and 4, and steps 2, 5, 6 which wait for them; lab 5 step 2, and steps 3 and 4 which need its image |
+| **Port 5000 taken in the guest by Debian's own `docker-registry.service`**: the `docker-registry` package ships an enabled unit, which systemd now starts (in a plain container nothing did). It answers 401 like the course's registry, so `mentor-docker registre` believes its registry is up and `mentor-docker sans-registre` cannot stop it | **Mentor's environment** | none (port 5000 is not used) | Lab 1 step 3 (`-p 5000:5000`: address already in use) and step 4 which waits for it; lab 5 step 5 (`docker login localhost:5000` → 401) and step 6 |
+
+Passing: `docker-hello` lab 1, lab 2 step 1, lab 3 steps 1, 4, 5, lab 4 step 1; `docker-advanced` lab 2
+entirely (volumes), lab 1 steps 1 and 2 (an image is built), lab 3 step 1, lab 4 step 3, lab 5 step 1.
+
+### 11.4 What still has to change in the environments
+
+1. **The three Docker environments** (`docker-hello`, `docker-advanced`, `_template/environnement-docker`):
+   stop Debian's packaged registry from starting, for instance
+   `RUN ln -s /dev/null /etc/systemd/system/docker-registry.service` after the package is installed. Not
+   verified by a run. The same reasoning applies to `ssh.service` of `openssh-server`, which now starts in
+   every environment (its start was seen on the guest console in the first run); it is harmless, since port 22
+   is not reachable from outside the guest.
+2. **Labs that publish port 8080** (`docker-hello` labs 2 and 3, `docker-advanced` lab 3): use another port,
+   or wait for Atelier to free it. Port 8081 was checked in the first run (§5).
+3. **Nothing for the disk**: no change in an environment gives a session more than "image + 512 MiB". The
+   Docker courses cannot run fully until Atelier honours `resources.disk` (`docker-advanced` asks for 4 GB).
+4. **Nothing in the AWS environment.** Mentor's server has to run `postStartCommand` itself when a session
+   starts, there as everywhere.
+5. Optional, all non-Docker environments: with exec and in the terminal, `HOME` is `/home/vscode` and the
+   login name `vscode` (§4). The alias account the Docker environments already carry (`vscode`, uid and gid
+   1000, home `/home/apprenant`) fixes both; it was only observed there.
+
+Unchanged from the first run, and not environment matters: the image is rebuilt for every Workshop, the git
+source is cloned into `/workspaces/` (here it held only environments), cutting the network costs a suspend and
+resume (37 s to 82 s to suspend, 16 s to 18 s to resume, four at once).
