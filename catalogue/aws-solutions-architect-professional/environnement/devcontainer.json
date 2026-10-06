@@ -1,0 +1,32 @@
+// Environnement réel des parcours AWS (voir catalogue/README.md, « Environments »).
+// L'AWS CLI et MiniStack, un émulateur local d'AWS : ni compte AWS, ni Internet, ni Docker dans l'environnement.
+{
+    "name": "Labo AWS local (MiniStack)",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    // Utilisateur non-root de l'image (uid 1000) : obligatoire, jamais root. L'émulateur tourne sous ce compte.
+    "containerUser": "apprenant",
+    "remoteUser": "apprenant",
+    "workspaceFolder": "/workspace",
+    "containerEnv": {
+        "EDITOR": "nano",
+        "LANG": "C.UTF-8",
+        "PAGER": "cat"
+    },
+    // Démarre l'émulateur et attend qu'il réponde (rejouable ; chaque labo le relance aussi par sécurité).
+    "postStartCommand": "demarrer-aws",
+    // Mesuré en rejouant tous les labos (tools/replay_labs.py, limite de 512 Mo) : environ 40 Mo au repos, pic de
+    // 160 Mo pour l'environnement entier (émulateur, fonctions Lambda, fichiers du dossier de travail compris).
+    "hostRequirements": {
+        "cpus": 1,
+        "memory": "512mb",
+        "storage": "512mb"
+    },
+    "customizations": {
+        "mentor": {
+            "vscodeWeb": true
+        }
+    }
+}

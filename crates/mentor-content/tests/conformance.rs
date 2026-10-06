@@ -43,6 +43,10 @@ const CORRECTED_SINCE_V1: [&str; 5] = [
 /// still compared.
 const REWRITTEN_SINCE_V1: [&str; 2] = ["docker-hello", "docker-advanced"];
 
+/// Courses written for v2: v1 never had them, so there is nothing to compare them with. They are left out of
+/// the comparison, which still covers every course of the v1 export.
+const ADDED_SINCE_V1: [&str; 3] = ["aws-cloud-practitioner", "aws-solutions-architect-associate", "aws-solutions-architect-professional"];
+
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
@@ -215,7 +219,8 @@ fn report() -> (Vec<String>, Vec<String>, usize) {
     let mut v2 = serde_json::to_value(mentor_content::load_catalogue(&root().join("catalogue")).expect("the catalogue compiles")).unwrap();
     let (mut structure, mut html) = (Vec::new(), Vec::new());
     let (a, b) = (v1["courses"].as_array_mut().unwrap(), v2["courses"].as_array_mut().unwrap());
-    assert_eq!(a.len(), b.len(), "number of courses");
+    b.retain(|course| !ADDED_SINCE_V1.contains(&course["slug"].as_str().unwrap_or_default()));
+    assert_eq!(a.len(), b.len(), "number of courses that existed in v1");
     for (x, y) in a.iter_mut().zip(b) {
         translate_v1(x, &names);
         let slug = x["slug"].as_str().unwrap().to_string();

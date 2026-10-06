@@ -204,5 +204,6 @@ fn the_built_in_catalogue_is_a_package() {
     assert_eq!(load_manifest(&directory).unwrap(), package.manifest);
     // Same courses, same order, same compiled output as the catalogue the web server loads today.
     assert_eq!(package.catalogue, load_catalogue(&directory).unwrap());
-    assert_eq!(package.catalogue.courses.len(), 19);
+    // 19 courses taken over from v1, and the three AWS courses written for v2.
+    assert_eq!(package.catalogue.courses.len(), 22);
 }

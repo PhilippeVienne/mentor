@@ -1,0 +1,33 @@
+#!/bin/sh
+# Démarre l'émulateur AWS (MiniStack) SANS root, sur localhost uniquement. Rejouable sans danger : s'il répond déjà,
+# ne fait rien. Lancé par postStartCommand et par les commandes de chaque labo ; relançable à la main.
+#   - AUTH=true : IAM est réellement appliqué (clé « test » = utilisateur racine du compte fictif 000000000000) ;
+#   - CLOUDTRAIL_RECORDING=1 : les appels d'API sont consignés dans l'historique CloudTrail (2 000 derniers) ;
+#   - l'état vit en mémoire : il est perdu si l'émulateur s'arrête. Le journal est ~/ministack.log ;
+#   - « demarrer-aws --etat » dit seulement si l'émulateur répond.
+set -e
+. /opt/outils/mentor-aws.sh
+pret() {
+    curl -fs -m 2 -o /dev/null "$AWS_ENDPOINT_URL/_ministack/health"
+}
+if [ "${1:-}" = "--etat" ]; then
+    if pret; then echo "L'émulateur AWS répond sur $AWS_ENDPOINT_URL."; exit 0; fi
+    echo "L'émulateur AWS ne répond pas : lance « demarrer-aws »." >&2
+    exit 1
+fi
+if pret; then
+    exit 0
+fi
+AUTH=true BIND_HOST=127.0.0.1 GATEWAY_PORT=4566 MINISTACK_HOST=127.0.0.1 MINISTACK_REGION="$AWS_DEFAULT_REGION" \
+    LOG_LEVEL=WARNING PERSIST_STATE=0 CLOUDTRAIL_RECORDING=1 CLOUDTRAIL_MAX_EVENTS=2000 IOT_MTLS_ENABLED=0 SFTP_ENABLED=0 \
+    setsid nohup /opt/ministack/venv/bin/ministack > "$HOME/ministack.log" 2>&1 < /dev/null &
+i=0
+while [ "$i" -lt 60 ]; do
+    if pret; then
+        exit 0
+    fi
+    i=$((i + 1))
+    sleep 1
+done
+echo "L'émulateur AWS n'a pas démarré : voir ~/ministack.log" >&2
+exit 1

@@ -575,6 +575,9 @@ Every lab runs in the course's `environnement/` folder unless noted.
 | Terraform | [`terraform/`](terraform/) | 6 | kubernetes-helm | Published |
 | Sauvegardes et stockage objet | [`sauvegardes-s3/`](sauvegardes-s3/) | 6 | docker-advanced | Published |
 | Go | [`go/`](go/) | 7 | — | Published |
+| AWS : les bases du cloud (Cloud Practitioner) | [`aws-cloud-practitioner/`](aws-cloud-practitioner/) | 12 | — | Published; AWS CLI against a local emulator (MiniStack), prepares for CLF-C02 |
+| AWS : concevoir des architectures (Solutions Architect Associate) | [`aws-solutions-architect-associate/`](aws-solutions-architect-associate/) | 12 | aws-cloud-practitioner | Published; same environment, prepares for SAA-C03 |
+| AWS : architectures d'entreprise (Solutions Architect Professional) | [`aws-solutions-architect-professional/`](aws-solutions-architect-professional/) | 10 | aws-solutions-architect-associate | Published; same environment, 9 labs and one theory lesson, prepares for SAP-C02 |
 
 ## 16. Training paths (`paths.yml`)
 

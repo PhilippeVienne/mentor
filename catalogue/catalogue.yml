@@ -21,3 +21,7 @@ courses:
   - terraform
   - sauvegardes-s3
   - go
+  # Certifications AWS, sur un émulateur local (MiniStack) : chaque parcours requiert le précédent
+  - aws-cloud-practitioner
+  - aws-solutions-architect-associate
+  - aws-solutions-architect-professional

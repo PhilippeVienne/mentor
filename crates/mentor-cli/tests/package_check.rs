@@ -20,7 +20,7 @@ fn the_built_in_catalogue_is_a_valid_package() {
     assert!(stdout.starts_with("package mentor-courses 1.0.0 (format 1, AGPL-3.0-or-later): "), "{stdout}");
     assert!(stdout.contains("\n  git-basics: 7 lessons, 7 labs, exam of "), "{stdout}");
     assert!(stdout.contains("\n  django (not published): 0 lessons, 0 labs, no exam, environments: none\n"), "{stdout}");
-    assert!(stdout.contains("\n19 courses, "), "{stdout}");
+    assert!(stdout.contains("\n22 courses, "), "{stdout}");
     assert!(stdout.trim_end().ends_with("bytes: valid"), "{stdout}");
 }
 

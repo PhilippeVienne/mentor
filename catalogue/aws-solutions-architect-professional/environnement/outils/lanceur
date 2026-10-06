@@ -1,0 +1,11 @@
+#!/bin/sh
+# Lanceur : ce fichier est appelé sous les noms « aws » et « python3 ». Il charge les réglages du labo (point d'accès
+# local, région, identifiants factices) puis exécute le vrai programme. Les vérifications du serveur ne reçoivent que
+# PATH, HOME, USER et LANG : c'est ici que les outils retrouvent l'émulateur.
+. /opt/outils/mentor-aws.sh
+case "$(basename "$0")" in
+    aws) exec /usr/bin/aws "$@" ;;
+    # Le Python de l'environnement isolé : il fournit boto3 aux scripts des labos.
+    python3) exec /opt/ministack/venv/bin/python3 "$@" ;;
+    *) echo "lanceur : nom inconnu « $0 »" >&2; exit 2 ;;
+esac

@@ -27,6 +27,9 @@ courses:
   - terraform
   - sauvegardes-s3
   - go
+  - aws-cloud-practitioner
+  - aws-solutions-architect-associate
+  - aws-solutions-architect-professional
 # docker-hello and docker-advanced run a Docker daemon in their environment.
 features:
   - docker
