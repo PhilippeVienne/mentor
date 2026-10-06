@@ -1,143 +1,78 @@
 # Mentor
 
-White-label interactive training platform: learners practise in real isolated environments, validate
-quizzes, earn XP, level up and unlock badges. Courses are plain Markdown files.
+White-label interactive training platform. Learners follow short courses, practise in **real isolated
+environments** verified by the server, answer quizzes, pass validation exams, and earn XP, levels and badges.
+Courses are plain Markdown files; several organisations can share one instance, each under its own brand.
 
-This repository is **Mentor v2**: a rewrite in Rust, with Firecracker microVMs for real labs and multi-tenancy.
-v1 is a Python/Django application and stays the reference implementation while v2 is built.
-The direction, threat model and migration plan are in [doc/architecture.md](doc/architecture.md).
+![The map of a training path, with the learner's progress](doc/screenshots/path-map.png)
 
-## Status
-
-Phase 0 (foundations) is in progress. What exists today:
-
-| Crate | What it does |
+| | |
 | --- | --- |
-| [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
-| [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams; course packages (a `mentor.yml` manifest and its courses) |
+| ![Dashboard](doc/screenshots/dashboard.png) | ![A course](doc/screenshots/course.png) |
+| ![A lesson quiz](doc/screenshots/quiz.png) | ![Badges and levels, dark theme](doc/screenshots/badges.png) |
 
-| [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
-| [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export, validation of a course package |
-| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, records quiz scores and lesson progress for a signed-in learner, shows them their dashboard and badges, draws training paths (courses arranged towards a goal, declared in `catalogue/paths.yml`) as maps of courses and prerequisites with the learner's advancement, and runs course validation exams, drawn, timed and graded on the server (development sign-in only, OIDC is not there yet) |
+More pictures, page by page, in the [tour](doc/tour.md).
 
-Not built yet: sign-in, progress and interactive labs and quizzes in the web server; the catalogue linter; lab orchestration.
+This repository is **Mentor v2**, a rewrite in Rust of a Python/Django application (v1), which stays the
+reference while v2 is built. The interface and the courses shipped here are in French; code, documentation and
+the course format are in English.
 
-Real labs run in Firecracker microVMs, but Mentor does not implement that isolation: it will come from a base
-shared with the [Atelier](https://github.com/PhilippeVienne/atelier) project, on Kubernetes. The integration
-study is in [doc/execution-plane.md](doc/execution-plane.md).
+## What works today
 
-## Layout
+- **Catalogue**: 22 courses (Git, Docker, Linux, Python, SQL, web front ends, CI, Kubernetes, Terraform, three
+  AWS certification courses…), 140 lessons each with a lab and a quiz, compiled from Markdown. What authors
+  write is not trusted: the HTML rendered from it is filtered.
+- **Learning**: sign-in (development only, see below), quizzes, lesson and course completion, prerequisites
+  between courses, validation exams drawn, timed and graded on the server, XP, levels, badges, a dashboard.
+- **Training paths**: ordered sets of courses drawn as a map, with the learner's advancement and next step.
+- **Multi-tenancy**: one instance, several organisations resolved by host name, each with its brand; data is
+  isolated by PostgreSQL row-level security.
+- **Labs proven by replay**: every lab of the catalogue is replayed in its environment, without network, by
+  [`tools/replay_labs.py`](tools/replay_labs.py): each check must fail before the solution and hold after it.
+- **Course packages**: a course, or a set of courses, as a Git repository with a `mentor.yml` manifest, which
+  can be validated and replayed on its own.
 
-```text
-crates/          Rust workspace
-static/          style sheets, scripts and default brand images served by mentor-web (copied from v1)
-catalogue/       the 19 courses, converted from v1 (French content, English format)
-tools/           one-off tools (v1 catalogue migration)
-conformance/     reference output exported from v1, and the v1 commit it comes from
-doc/             architecture and decisions
-```
+## What does not work yet
 
-Courses are meant to be distributed as **packages**: a Git repository holding a `mentor.yml` manifest and one
-or more courses, installed per tenant at a pinned commit. The design, and what exists of it, is in
-[doc/course-packages.md](doc/course-packages.md). Today a package directory can be validated and its labs
-replayed; `catalogue/` is itself a package.
+- **Labs cannot be run from the web interface.** Environments are meant to run as Firecracker microVMs
+  provided by the [Atelier](https://github.com/PhilippeVienne/atelier) project. The catalogue's environments
+  start there and labs were verified through it, but the web server is not connected to it; until then a
+  lesson is its text and its quiz. See [doc/atelier-lab-validation.md](doc/atelier-lab-validation.md).
+- **Real sign-in.** There is no OIDC yet, only a password-less development sign-in (`--dev-login`) that must
+  never be enabled on a reachable deployment.
+- Installing course packages per tenant, the management area for tutors, the help pages, and the catalogue
+  linter of v1.
 
-```shell
-cargo run -p mentor-cli -- package-check catalogue  # manifest, files and courses of a package; no database needed
-```
+## Quick start
 
-## Build and test
-
-```shell
-cargo test                                         # unit tests and conformance with v1
-cargo run -p mentor-content --example export       # compile catalogue/ and print it as JSON
-cargo clippy --all-targets && cargo fmt --check
-```
-
-Labs are proved by replaying them: [`tools/replay_labs.py`](tools/replay_labs.py) builds the environment of each
-course, starts it without network and checks, step by step, that the solution makes the checks pass and that
-they did not pass before it. It needs Docker and takes a while; the Docker courses need a privileged container.
+You need Rust (stable) and Docker. Full details in [doc/getting-started.md](doc/getting-started.md).
 
 ```shell
-python tools/replay_labs.py                        # every course; or name some: git-basics python
+docker run -d --name mentor-pg -e POSTGRES_PASSWORD=mentor -p 127.0.0.1:5432:5432 postgres:16-alpine
+
+export MENTOR_DATABASE_URL=postgres://postgres:mentor@127.0.0.1:5432/postgres
+cargo run -p mentor-cli -- migrate
+cargo run -p mentor-cli -- tenant-create demo "Mentor" --host localhost --host 127.0.0.1
+docker exec mentor-pg psql -U postgres -c "CREATE ROLE mentor_web LOGIN PASSWORD 'mentor' IN ROLE mentor_app"
+
+MENTOR_APP_DATABASE_URL=postgres://mentor_web:mentor@127.0.0.1:5432/postgres \
+    cargo run -p mentor-web -- --dev-login
 ```
 
-The database tests need a real PostgreSQL and are skipped without it:
+Then open <http://localhost:8300> and sign in with any user name.
 
-```shell
-docker run -d --name mentor-test-pg -e POSTGRES_PASSWORD=mentor-test -p 127.0.0.1:55439:5432 postgres:16-alpine
-MENTOR_TEST_DATABASE_URL=postgres://postgres:mentor-test@127.0.0.1:55439/postgres cargo test -p mentor-db
-```
+## Documentation
 
-The superuser of that URL only creates a database and two ordinary roles per test. Migrations and platform
-operations then run as a non-superuser owner, and the application side as a role that is only a member of
-`mentor_app`: a superuser would bypass row-level security and the isolation tests would prove nothing.
-PostgreSQL 16 or later is required.
-
-The conformance test compiles `catalogue/` and compares it with `conformance/v1-catalogue.json`: structure must be
-strictly equal, and HTML fragments must have the same text.
-
-## Running the web server
-
-```shell
-export MENTOR_DATABASE_URL=postgres://owner:…@host/mentor          # the owning role
-mentor migrate
-mentor tenant-create demo "Mentor" --host localhost --host 127.0.0.1
-MENTOR_APP_DATABASE_URL=postgres://app:…@host/mentor cargo run -p mentor-web   # a member of mentor_app
-```
-
-Then open <http://localhost:8300>. A request whose host name belongs to no tenant gets a bare 404. A second
-tenant on `acme.localhost` shows the same catalogue under its own name and colours: brand settings are a JSON
-object in `tenant.branding` (see `crates/mentor-web/src/brand.rs` for the keys); there is no command to edit it
-yet.
-
-Sessions are a cookie signed with `--session-secret` (`MENTOR_SESSION_SECRET`); without one a random secret is
-drawn at start-up, so sessions do not survive a restart. Until OIDC is implemented the only way to sign in is
-`--dev-login`, which mounts `/dev/login`: a user name, no password. **Never enable it on a reachable
-deployment**: anyone could sign in as anyone. Requests that change state are accepted only from the site's own
-origin.
-
-Limits of this first version: one catalogue shared by every tenant; fonts are the system's; the interface
-texts are French, like the catalogue.
-
-What authors write in the catalogue is not trusted: the HTML rendered from their Markdown is filtered when the
-catalogue is compiled (scripts, event handlers, forms, frames, styles and classes are removed; links keep only
-`http`, `https`, `mailto` and relative addresses). Text meant to be shown as code, such as `docker logs <name>`,
-must be written as code, or its tags are removed like any other.
-
-## Moving a v1 portal into a tenant
-
-```shell
-# on the v1 side: Django's own export, no change to v1 needed
-python manage.py dumpdata auth.user training.lesson training.lessonprogress training.xpevent \
-    training.userbadge training.cohort training.cohortmembership training.examattempt -o v1.json
-
-# on the v2 side, with the role that owns the database
-export MENTOR_DATABASE_URL=postgres://owner:…@host/mentor
-mentor migrate
-mentor tenant-create acme "Acme" --host acme.mentor.example
-mentor import-v1 v1.json --tenant acme --v1-catalogue conformance/v1-catalogue.json --catalogue catalogue
-```
-
-The import runs in one transaction and can be replayed. Dates are kept. Tried on v1's demonstration data (5
-users, 210 XP events): XP totals, badges and completed lessons came out identical for every user. Imported
-accounts get a placeholder identity (`v1:<username>`) until their first login, which the web server will have
-to reconcile; that part does not exist yet.
-
-## Language and catalogue format
-
-Everything is in English: code, comments, tests, documentation, compiler diagnostics and the **catalogue format**
-(file names, front matter keys, lab keys, directive and check names). Course *content* stays in the language of
-its authors; the 19 courses shipped here are written in French, and so are the default callout titles and the
-labels of generated buttons.
-
-The catalogue was converted from the French v1 format with
-[`tools/migrate_v1_catalogue.py`](tools/migrate_v1_catalogue.py), driven by the name table
-[`conformance/v1-names.json`](conformance/v1-names.json). The same table lets the conformance test compare v2's
-output with v1's export.
-
-The authoring guide is [`catalogue/README.md`](catalogue/README.md); [`catalogue/_template/`](catalogue/_template)
-is the course to copy when starting a new one.
+| Document | What it covers |
+| --- | --- |
+| [doc/tour.md](doc/tour.md) | The product, page by page, with screenshots |
+| [doc/getting-started.md](doc/getting-started.md) | Running an instance: database, roles, tenants, brand, sessions |
+| [doc/development.md](doc/development.md) | Working on the code: layout, tests, conformance with v1, replaying labs, screenshots |
+| [catalogue/README.md](catalogue/README.md) | Writing courses: lessons, labs and their checks, quizzes, exams, environments, training paths |
+| [doc/course-packages.md](doc/course-packages.md) | Courses distributed as Git repositories: design and what exists |
+| [doc/architecture.md](doc/architecture.md) | Direction, threat model, migration plan from v1, decisions taken |
+| [doc/execution-plane.md](doc/execution-plane.md) | How labs are to run on a base shared with Atelier |
+| [doc/atelier-lab-validation.md](doc/atelier-lab-validation.md) | What was actually run on Atelier, and what is missing |
 
 ## Licence
 
