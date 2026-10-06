@@ -233,9 +233,9 @@ Still open:
    as Git repositories that are packages; the question that remains is its §11, point 1.
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
-4. **Docker inside an environment**: `customizations.mentor.dockerInDocker` asks the platform to run a Docker
-   daemon as root in the microVM and to give the learner's account access to its socket. The Docker courses were
-   replayed with that arrangement in a privileged container standing in for the microVM; whether Atelier's
-   guest can start the daemon this way is not verified.
+4. **Running labs on Atelier**: validated on 6 October 2026 by replaying real labs in Atelier microVMs
+   ([atelier-lab-validation.md](atelier-lab-validation.md)). It works, Docker included, but no environment of
+   the catalogue starts unmodified and several of Mentor's rules (account, empty working folder, disk size,
+   one image per source, a web terminal that is never root) need changes in Atelier or in the environments.
 5. **The cut between the shared base and Atelier**, and what a lab check costs through it: see
    [execution-plane.md](execution-plane.md) §2, §4 and §7.
