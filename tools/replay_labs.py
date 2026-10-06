@@ -4,7 +4,8 @@
 Usage:
     python tools/replay_labs.py [course ...] [--only TEXT] [--jobs N] [--no-build] [--catalogue DIR]
 
-Without a course, every course of `catalogue.yml` that has labs is replayed. For each lab the tool builds the
+`--catalogue` names a catalogue directory or a course package (a directory with a `mentor.yml` manifest, see
+`doc/course-packages.md`). Without a course, every course it lists that has labs is replayed. For each lab the tool builds the
 image of its environment, starts a fresh container without network, runs the setup (`files`, `commands`), then
 for each step, in order:
 
@@ -283,16 +284,24 @@ def replay_course(catalogue, course, options):
     return "\n".join(lines), failures, warnings
 
 
+def listed_courses(directory):
+    """The course folders of a package (`mentor.yml`), or of a catalogue without a manifest (`catalogue.yml`)."""
+    for name in ("mentor.yml", "catalogue.yml"):
+        if (directory / name).is_file():
+            return yaml.safe_load((directory / name).read_text())["courses"]
+    sys.exit(f"{directory}: neither mentor.yml nor catalogue.yml: not a course package or a catalogue")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("courses", nargs="*", help="course folders (default: every course of catalogue.yml)")
-    parser.add_argument("--catalogue", default="catalogue", type=Path)
+    parser.add_argument("courses", nargs="*", help="course folders (default: every course of mentor.yml, or of catalogue.yml)")
+    parser.add_argument("--catalogue", default="catalogue", type=Path, help="catalogue or course package directory")
     parser.add_argument("--only", help="replay only the lessons whose file name contains this text")
     parser.add_argument("--jobs", type=int, default=1, help="courses replayed at the same time")
     parser.add_argument("--no-build", action="store_true", help="reuse the images built by a previous run")
     options = parser.parse_args()
 
-    courses = options.courses or yaml.safe_load((options.catalogue / "catalogue.yml").read_text())["courses"]
+    courses = options.courses or listed_courses(options.catalogue)
     courses = [course for course in courses if any(True for _ in labs_of(options.catalogue / course))]
     total, warned = 0, 0
     with ThreadPoolExecutor(max_workers=max(1, options.jobs)) as pool:

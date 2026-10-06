@@ -1,0 +1,113 @@
+/* Training paths (« cursus »): path cards, the map of a path, and the chips on a course page.
+   The dimensions of the map (--pm-*) are computed by crates/mentor-web/src/path_map.rs and set on .path-map:
+   cards and the SVG links drawn behind them only line up when both follow them. */
+
+/* ── Path cards (list of paths, dashboard) ───────────────────────────────── */
+.paths { padding-block: var(--space-3) var(--space-5); }
+.grid--paths { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+@media (min-width: 900px) { .grid--paths { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.path-card { position: relative; display: flex; flex-direction: column; gap: .75rem; padding: 1.25rem 1.4rem 1.4rem; background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent, var(--primary)); border-radius: var(--radius); box-shadow: var(--shadow); transition: transform .15s, border-color .15s; }
+.path-card:hover, .path-card:focus-within { transform: translateY(-3px); border-color: var(--accent, var(--primary)); }
+.path-card__head { display: flex; gap: 1rem; align-items: flex-start; }
+.path-card__icon { flex: none; display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: 14px; font-size: 1.8rem; background: color-mix(in srgb, var(--accent, var(--primary)) 18%, var(--surface-2)); }
+.path-card__heading { min-width: 0; }
+.path-card__title { margin: 0 0 .25rem; font-size: 1.3rem; }
+.path-card__title a { color: var(--text); text-decoration: none; }
+.path-card .meta { margin: 0; }
+.path-card__summary { margin: 0; color: var(--muted); font-size: .95rem; flex: 1; }
+.path-card .progress__label { margin-top: -.25rem; }
+
+/* The courses of a path at a glance: one group per stage, an arrow between stages. */
+.path-strip { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.path-strip li { display: flex; gap: .3rem; align-items: center; }
+.path-strip li + li::before { content: "→"; color: var(--muted); margin-right: .1rem; }
+.path-strip__dot { position: relative; display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%; font-size: 1.05rem; background: var(--surface-2); border: 2px solid var(--border); }
+.path-strip__dot--done { border-color: var(--tip); }
+.path-strip__dot--done::after { content: "✓"; position: absolute; right: -.3rem; bottom: -.3rem; display: grid; place-items: center; width: 1rem; height: 1rem; border-radius: 50%; background: var(--tip); color: #052e16; font-size: .65rem; font-weight: 800; }
+.path-strip__dot--started { border-color: var(--warning); border-style: double; border-width: 4px; }
+.path-strip__dot--locked, .path-strip__dot--soon { border-style: dashed; filter: grayscale(1); opacity: .6; }
+
+/* ── Page of a path ──────────────────────────────────────────────────────── */
+.path-head .progress { max-width: 36rem; }
+.path-head .progress__label { color: rgba(255, 255, 255, .85); }
+.path-page { --pm-line: color-mix(in srgb, var(--muted) 75%, var(--bg)); padding-bottom: var(--space-5); }
+.path-legend { display: flex; flex-wrap: wrap; gap: .3rem 1.25rem; align-items: center; margin: 0 0 var(--space-3); color: var(--muted); font-size: .9rem; }
+.path-legend__item { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+
+/* ── The map ─────────────────────────────────────────────────────────────── */
+.path-map__inner { position: relative; }
+.path-map__stages, .path-stage__courses { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.path-map__stages { margin-left: var(--pm-rail); }
+.path-stage { display: flex; flex-direction: column; min-width: 0; }
+.path-stage__title { display: flex; align-items: center; gap: .6rem; height: var(--pm-stage-narrow); margin: 0; font-size: 1.05rem; white-space: nowrap; overflow: hidden; }
+.path-stage__number { flex: none; padding: .1rem .6rem; border-radius: 99px; background: var(--surface-2); color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.path-node { position: relative; height: var(--pm-node-narrow); margin: 0 0 var(--pm-gap-narrow); scroll-margin-top: 6rem; }
+
+.path-map__links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.path-map__links--wide { display: none; }
+.path-map__links--narrow { width: var(--pm-rail); height: var(--pm-height-narrow); }
+.path-link { fill: none; stroke: var(--pm-line); stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.path-arrow { fill: var(--pm-line); }
+/* A completed prerequisite is a solid green line, one still to do is dashed: never colour alone. */
+.path-link--done { stroke: var(--tip); }
+.path-arrow--done { fill: var(--tip); }
+.path-link--todo { stroke-dasharray: 5 5; }
+
+/* A course on the map. Its height is fixed (the links depend on it), so its texts are clamped. */
+.path-node__card { position: relative; z-index: 1; display: flex; gap: .75rem; height: 100%; padding: .7rem .9rem .9rem; overflow: hidden; background: var(--surface); border: 1.5px solid var(--border); border-left: 5px solid var(--accent, var(--primary)); border-radius: 12px; box-shadow: var(--shadow); transition: border-color .15s, transform .15s; }
+.path-node__card:hover { border-color: var(--accent, var(--primary)); transform: translateY(-2px); }
+.path-node__card:focus-within { outline: 3px solid var(--primary); outline-offset: 2px; }
+.path-node__card a:focus-visible { outline: none; }
+.path-node:target .path-node__card { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, var(--primary)) 45%, transparent), var(--shadow); }
+.path-node__icon { flex: none; font-size: 1.6rem; line-height: 1.25; }
+.path-node__body { min-width: 0; flex: 1; }
+.path-node__title { margin: 0 0 .3rem; font-size: 1rem; font-weight: 650; line-height: 1.25; letter-spacing: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.path-node__title a { color: var(--text); text-decoration: none; }
+.path-node__state { display: flex; flex-wrap: wrap; gap: .25rem .45rem; align-items: center; margin: 0 0 .25rem; font-size: .8rem; line-height: 1.4; }
+.path-state { font-weight: 700; white-space: nowrap; }
+.path-state--done { color: var(--tip); }
+.path-state--started { color: var(--warning); }
+.path-state--available { color: var(--primary-text); }
+.path-state--locked, .path-state--soon { color: var(--muted); }
+.path-tag { padding: 0 .5rem; border: 1px solid var(--border); border-radius: 99px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.path-tag--next { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.path-node__note { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.path-node__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; border-radius: 0; }
+
+.path-node--done .path-node__card { background: color-mix(in srgb, var(--tip) 9%, var(--surface)); border-color: color-mix(in srgb, var(--tip) 50%, var(--border)); border-left-color: var(--accent, var(--primary)); }
+.path-node--locked .path-node__card, .path-node--soon .path-node__card { background: var(--bg); border-style: dashed; border-left-style: solid; box-shadow: none; }
+.path-node--locked .path-node__icon, .path-node--soon .path-node__icon { filter: grayscale(1); opacity: .6; }
+.path-node--soon .path-node__title { color: var(--muted); }
+.path-node.is-next .path-node__card { border-color: var(--primary); border-left-color: var(--accent, var(--primary)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent), var(--shadow); }
+
+/* Wide: one column per stage. A card leaves a tenth of its column free on each side for the links. */
+@media (min-width: 900px) {
+    .path-map { overflow-x: auto; padding: 4px 0 12px; }
+    .path-map__inner { min-width: calc(var(--pm-columns) * 15rem); }
+    .path-map__stages { flex-direction: row; margin-left: 0; }
+    .path-stage { flex: 1 1 0; }
+    .path-stage__title { flex-direction: column; justify-content: center; gap: .15rem; height: var(--pm-head-wide); padding-inline: 10%; text-align: center; }
+    .path-stage__courses { padding-top: var(--pm-top-wide); }
+    .path-node { height: var(--pm-node-wide); margin: 0 10% var(--pm-gap-wide); }
+    .path-map__links--narrow { display: none; }
+    .path-map__links--wide { display: block; top: var(--pm-head-wide); width: 100%; height: var(--pm-height-wide); }
+
+    /* A path without stages spreads its courses, one per column. */
+    .path-map--flat .path-stage__courses { flex-direction: row; }
+    .path-map--flat .path-node { flex: 1 1 0; min-width: 0; margin-inline: calc(10% / var(--pm-columns)); }
+
+    /* Arrow heads: the wide SVG is stretched, so they are drawn on the card a link arrives at. */
+    .path-node.has-in-left::before, .path-node.has-in-top::after { content: ""; position: absolute; z-index: 2; border: 6px solid transparent; }
+    .path-node.has-in-left::before { left: 0; top: 50%; transform: translate(-100%, -50%); border-left-color: var(--pm-line); border-right-width: 0; }
+    .path-node.has-in-top::after { top: 0; left: 50%; transform: translate(-50%, -100%); border-top-color: var(--pm-line); border-bottom-width: 0; }
+}
+
+/* ── Course page: the paths a course belongs to ──────────────────────────── */
+.course-paths { display: flex; flex-wrap: wrap; gap: .4rem .5rem; align-items: center; margin: 0 0 1rem; font-size: .9rem; }
+.course-paths__label { color: rgba(255, 255, 255, .85); }
+.path-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .7rem; border: 1px solid rgba(255, 255, 255, .45); border-radius: 99px; background: rgba(2, 6, 23, .28); color: #fff; font-weight: 600; text-decoration: none; }
+.path-chip:hover, .path-chip:focus-visible { background: rgba(2, 6, 23, .5); border-color: #fff; }
+
+@media print {
+    .path-map { overflow: visible; }
+}

@@ -25,11 +25,19 @@ struct LoginPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     error: &'a str,
 }
 
 fn page(site: &Site, status: StatusCode, error: &str) -> Response {
-    let page = LoginPage { brand: &site.brand, section: "", viewer: site.viewer.as_ref(), dev_login: site.dev_login, error };
+    let page = LoginPage {
+        brand: &site.brand,
+        section: "",
+        viewer: site.viewer.as_ref(),
+        dev_login: site.dev_login,
+        has_paths: site.has_paths,
+        error,
+    };
     match page.render() {
         Ok(html) => (status, Html(html)).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),

@@ -23,7 +23,7 @@ const SIMULATED_ONLY: [&str; 2] = ["server", "effect"];
 static FILE_NAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9._-][A-Za-z0-9._/-]*$").unwrap());
 
 /// Declaration of a check in `_checks.yml`.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 pub struct CheckSpec {
     #[serde(default)]
     pub arguments: Vec<String>,
@@ -32,6 +32,30 @@ pub struct CheckSpec {
 }
 
 pub type Checks = BTreeMap<String, CheckSpec>;
+
+/// The checks the server implements, with the names of their arguments.
+///
+/// A package cannot declare checks: they are code of the platform, run by the server. The built-in
+/// catalogue still reads the same table from its `_checks.yml`; a test keeps the two identical.
+pub fn platform_checks() -> Checks {
+    const TABLE: [(&str, &[&str]); 6] = [
+        ("command-succeeds", &["command"]),
+        ("command-fails", &["command"]),
+        ("output-contains", &["command", "regex"]),
+        ("env-file-exists", &["path"]),
+        ("env-file-absent", &["path"]),
+        ("env-file-contains", &["path", "regex"]),
+    ];
+    TABLE
+        .iter()
+        .map(|(name, arguments)| {
+            (
+                name.to_string(),
+                CheckSpec { arguments: arguments.iter().map(|argument| argument.to_string()).collect(), optional: Vec::new() },
+            )
+        })
+        .collect()
+}
 
 /// Validates the name of a real environment (a folder of the course); fails with the message to show.
 pub type Resolver<'a> = &'a mut dyn FnMut(&Yaml) -> Result<()>;
@@ -273,6 +297,17 @@ mod tests {
 
     const STEP: &str =
         "steps:\n  - text: 'Lance `git init`'\n    checks:\n      - command-succeeds: 'test -d .git'\n    solution: git init\n";
+
+    #[test]
+    fn platform_checks_are_those_of_the_built_in_catalogue() {
+        #[derive(Deserialize)]
+        struct ChecksFile {
+            checks: Checks,
+        }
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalogue/_checks.yml");
+        let file: ChecksFile = serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        assert_eq!(file.checks, platform_checks());
+    }
 
     #[test]
     fn minimal_lab() {

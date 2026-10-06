@@ -14,11 +14,11 @@ Phase 0 (foundations) is in progress. What exists today:
 | Crate | What it does |
 | --- | --- |
 | [`mentor-core`](crates/mentor-core) | Business rules, free of I/O: XP and levels, lesson progress and idempotent awards, course unlocking, streaks, badge rules, exam drawing and grading |
-| [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams |
+| [`mentor-content`](crates/mentor-content) | Catalogue compiler: front matter, Markdown, code blocks, callouts, quizzes, labs, exams; course packages (a `mentor.yml` manifest and its courses) |
 
 | [`mentor-db`](crates/mentor-db) | PostgreSQL storage: tenants, learners, progress, XP, badges, cohorts, exam attempts, and the import of v1 data. Tenant isolation is enforced by row-level security |
-| [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export |
-| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, records quiz scores and lesson progress for a signed-in learner, shows them their dashboard and badges, and runs course validation exams, drawn, timed and graded on the server (development sign-in only, OIDC is not there yet) |
+| [`mentor-cli`](crates/mentor-cli) | The `mentor` command: database migrations, tenant creation, import of a v1 export, validation of a course package |
+| [`mentor-web`](crates/mentor-web) | The web server: resolves the tenant from the host name, serves home, catalogue, course and lesson pages with that tenant's brand, records quiz scores and lesson progress for a signed-in learner, shows them their dashboard and badges, draws training paths (courses arranged towards a goal, declared in `catalogue/paths.yml`) as maps of courses and prerequisites with the learner's advancement, and runs course validation exams, drawn, timed and graded on the server (development sign-in only, OIDC is not there yet) |
 
 Not built yet: sign-in, progress and interactive labs and quizzes in the web server; the catalogue linter; lab orchestration.
 
@@ -35,6 +35,15 @@ catalogue/       the 19 courses, converted from v1 (French content, English form
 tools/           one-off tools (v1 catalogue migration)
 conformance/     reference output exported from v1, and the v1 commit it comes from
 doc/             architecture and decisions
+```
+
+Courses are meant to be distributed as **packages**: a Git repository holding a `mentor.yml` manifest and one
+or more courses, installed per tenant at a pinned commit. The design, and what exists of it, is in
+[doc/course-packages.md](doc/course-packages.md). Today a package directory can be validated and its labs
+replayed; `catalogue/` is itself a package.
+
+```shell
+cargo run -p mentor-cli -- package-check catalogue  # manifest, files and courses of a package; no database needed
 ```
 
 ## Build and test

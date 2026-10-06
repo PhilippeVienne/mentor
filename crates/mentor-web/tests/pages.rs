@@ -31,6 +31,11 @@ async fn ensure_role(admin: &PgPool, definition: &str) {
 /// A server with three tenants: `acme.test` with its own brand, `plain.test` with none, and `hostile.test`
 /// whose brand texts contain markup.
 async fn app_with(dev_login: bool) -> Option<Router> {
+    app_built(dev_login, true).await
+}
+
+/// Same, with or without the training paths of the catalogue.
+async fn app_built(dev_login: bool, with_paths: bool) -> Option<Router> {
     let Ok(url) = std::env::var("MENTOR_TEST_DATABASE_URL") else {
         eprintln!("skipped: MENTOR_TEST_DATABASE_URL is not set");
         return None;
@@ -58,7 +63,9 @@ async fn app_with(dev_login: bool) -> Option<Router> {
     let db = PgPoolOptions::new().max_connections(4).connect_with(connect("mentor_test_app")).await.unwrap();
     let catalogue_dir = root().join("catalogue");
     let catalogue = mentor_content::load_catalogue(&catalogue_dir).expect("the catalogue compiles");
-    let state = AppState::new(db, catalogue, b"a secret that only these tests know".to_vec(), dev_login);
+    let paths =
+        if with_paths { mentor_content::load_paths(&catalogue_dir, &catalogue.courses).expect("the paths are valid") } else { Vec::new() };
+    let state = AppState::new(db, catalogue, b"a secret that only these tests know".to_vec(), dev_login).with_paths(paths);
     Some(router(state, &root().join("static"), &catalogue_dir))
 }
 
@@ -519,4 +526,186 @@ async fn exams_are_refused_to_visitors_other_sites_and_locked_courses() {
     let visitor = call(&app, Call { host: "acme.test", path: "/courses/git-basics/exam/", cookie: None, body: None, origin: None }).await;
     assert_eq!(visitor.status, StatusCode::SEE_OTHER);
     assert!(!get(&app, "acme.test", "/courses/git-basics/").await.1.contains("exam-cta"));
+}
+
+/// Records a full quiz score on every lesson of `course`, which completes it while labs are not run.
+async fn complete(app: &Router, cookie: &str, course: &str) {
+    let catalogue = mentor_content::load_catalogue(&root().join("catalogue")).unwrap();
+    for lesson in &catalogue.courses.iter().find(|candidate| candidate.slug == course).unwrap().lessons {
+        let json = format!(r#"{{"course": "{course}", "lesson": "{}", "type": "quiz", "score": {}}}"#, lesson.slug, lesson.quiz.len());
+        assert_eq!(progress(app, "acme.test", Some(cookie), &json).await.0, StatusCode::OK, "{json}");
+    }
+}
+
+/// The state of a course on the map of a path, as its card declares it.
+fn node_state(page: &str, course: &str) -> String {
+    let marker = format!(r#"data-course="{course}" data-state=""#);
+    let start = page.find(&marker).unwrap_or_else(|| panic!("{course} is not on the map")) + marker.len();
+    page[start..].split('"').next().unwrap().to_string()
+}
+
+/// Number of prerequisite links drawn on the map in `state` (`done`, `todo`), in both layouts together.
+/// The legend above the map shows a sample of each: it is left out.
+fn links(page: &str, state: &str) -> usize {
+    let map = &page[page.find(r#"<div class="path-map"#).expect("the page has a map")..];
+    map.matches(&format!(r#"<path class="path-link path-link--{state}" d="M"#)).count()
+}
+
+#[tokio::test]
+async fn a_visitor_sees_the_paths_and_their_map_without_progress() {
+    let Some(app) = app().await else { return };
+    let (status, list) = get(&app, "acme.test", "/paths/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(list.contains("<h1>Les cursus</h1>") && list.contains(r#"href="/paths/" aria-current="page""#));
+    for path in ["socle-commun", "developpement-frontend", "backend-python", "devops-infrastructure"] {
+        assert!(list.contains(&format!(r#"data-path="{path}""#)) && list.contains(&format!(r#"href="/paths/{path}/""#)), "{path}");
+    }
+    assert!(list.contains("8 parcours") && list.contains("3 étapes") && list.contains("7 parcours (dont 1 en option)"));
+    // The strip of a card is decoration; the same courses are named in text.
+    assert!(list.contains("ordre : Linux et shell, Git basics, Docker hello world, SQL et PostgreSQL.</p>"));
+    assert!(!list.contains("progressbar") && list.contains("Acme Academy") && list.contains("--primary: #112233"));
+    // Every page links to the paths.
+    assert!(get(&app, "acme.test", "/catalogue/").await.1.contains(r#"<a href="/paths/">Cursus</a>"#));
+
+    let (status, map) = get(&app, "acme.test", "/paths/devops-infrastructure/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(map.contains("<h1>DevOps et infrastructure</h1>") && map.contains("Acme Academy") && map.contains("--accent: #326CE5"));
+    // Three stages, eight courses in order, each a link to its course.
+    assert!(map.contains("Étape 3</span> Orchestrer et exploiter") && !map.contains("Étape 4"));
+    let order: Vec<usize> =
+        ["linux-shell", "git-basics", "docker-hello", "ci-gitlab", "docker-advanced", "kubernetes-helm", "terraform", "sauvegardes-s3"]
+            .iter()
+            .map(|course| map.find(&format!(r#"id="course-{course}""#)).unwrap_or_else(|| panic!("{course} is missing")))
+            .collect();
+    assert!(order.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(map.contains(r#"<a class="stretched" href="/courses/docker-advanced/">Docker advanced</a>"#));
+    // Five prerequisite links, drawn once for each layout, and said in words on the course they lead to.
+    assert_eq!(map.matches(r#"<path class="path-link" d="M"#).count(), 10);
+    assert_eq!(map.matches(r#"<polygon class="path-arrow" points=""#).count(), 5);
+    assert!(map.contains(r#"viewBox="0 0 3000 "#) && map.contains(r#"preserveAspectRatio="none""#) && map.contains("--pm-columns: 3;"));
+    assert!(map.contains("Prérequis dans ce cursus : Docker advanced."));
+    // No state, no progress, nothing to resume: only where to start.
+    assert_eq!(node_state(&map, "docker-advanced"), "plain");
+    assert!(!map.contains("progressbar") && !map.contains("Verrouillé") && !map.contains("path-link--") && !map.contains("À suivre"));
+    assert!(map.contains("Par où commencer") && map.contains(r#"href="/courses/linux-shell/">Voir ce parcours"#));
+
+    // A course that is not published yet is announced, without a link.
+    let backend = get(&app, "acme.test", "/paths/backend-python/").await.1;
+    assert_eq!(node_state(&backend, "django"), "soon");
+    assert!(backend.contains("Bientôt disponible") && !backend.contains(r#"href="/courses/django/""#) && backend.contains("En option"));
+    // A path written as a plain list has no stage.
+    let flat = get(&app, "acme.test", "/paths/socle-commun/").await.1;
+    assert!(flat.contains("path-map--flat") && flat.contains("--pm-columns: 4;") && !flat.contains("path-stage__title"));
+
+    // A course page names the paths it belongs to.
+    let course = get(&app, "acme.test", "/courses/docker-advanced/").await.1;
+    assert!(course.contains("Fait partie du cursus") && course.contains(r#"href="/paths/devops-infrastructure/#course-docker-advanced""#));
+    assert!(get(&app, "acme.test", "/courses/git-basics/").await.1.contains("Fait partie des cursus"));
+    assert!(!get(&app, "acme.test", "/courses/go/").await.1.contains("Fait partie d"));
+
+    let (status, body) = get(&app, "acme.test", "/paths/nope/").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert!(body.contains("Page introuvable") && body.contains("Acme Academy"));
+    assert_eq!(get(&app, "elsewhere.test", "/paths/").await.0, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn the_map_of_a_path_follows_what_the_learner_did() {
+    let Some(app) = app().await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+    let path = "/paths/devops-infrastructure/";
+
+    let map = page(&app, &cookie, path).await;
+    assert!(map.contains("0 / 8 parcours · 0 %") && map.contains(r#"aria-label="Progression dans le cursus""#));
+    assert_eq!((node_state(&map, "linux-shell"), node_state(&map, "git-basics")), ("available".into(), "available".into()));
+    // A course whose prerequisite is not completed is locked, and says what to complete.
+    assert_eq!((node_state(&map, "docker-advanced"), node_state(&map, "terraform")), ("locked".into(), "locked".into()));
+    assert!(map.contains("🔒 Verrouillé") && map.contains("abord : Docker hello world</p>"));
+    assert_eq!((links(&map, "done"), links(&map, "todo")), (0, 10));
+    // The first course of the path is the next thing to do, and is marked on the map.
+    assert!(
+        map.contains("Prochaine étape du cursus") && map.contains(r#"href="/courses/linux-shell/naviguer-fichiers/">Commencer"#),
+        "next step"
+    );
+    assert_eq!(map.matches("À suivre").count(), 1);
+    let marked = map.find("is-next").unwrap();
+    assert!(map[..marked].ends_with(r#"data-course="linux-shell" data-state="available" class="path-node path-node--available "#));
+
+    // One lesson of seven in one course of eight.
+    assert_eq!(progress(&app, "acme.test", Some(&cookie), QUIZ).await.0, StatusCode::OK);
+    let map = page(&app, &cookie, path).await;
+    assert_eq!(node_state(&map, "git-basics"), "started");
+    assert!(map.contains("En cours · 14 %") && map.contains("0 / 8 parcours · 2 %"));
+    assert_eq!(node_state(&map, "ci-gitlab"), "locked");
+
+    // A completed course opens what it leads to; the link between them is drawn as done.
+    complete(&app, &cookie, "docker-hello").await;
+    let map = page(&app, &cookie, path).await;
+    assert_eq!((node_state(&map, "docker-hello"), node_state(&map, "docker-advanced")), ("done".into(), "available".into()));
+    assert_eq!(node_state(&map, "kubernetes-helm"), "locked");
+    assert!(map.contains("✓ Terminé") && map.contains("1 / 8 parcours · 14 %"));
+    assert_eq!((links(&map, "done"), links(&map, "todo")), (2, 8));
+
+    // The dashboard and the list show the same advancement; paths the learner is in come first.
+    let dashboard = page(&app, &cookie, "/dashboard/").await;
+    assert!(dashboard.contains("Voir tous les cursus") && dashboard.contains("1 / 8 parcours · 14 %"));
+    assert!(dashboard.contains(r#"aria-label="Progression dans le cursus DevOps et infrastructure""#));
+    assert!(dashboard.find(r#"data-path="socle-commun""#).unwrap() < dashboard.find(r#"data-path="devops-infrastructure""#).unwrap());
+    let list = page(&app, &cookie, "/paths/").await;
+    assert!(list.contains("path-strip__dot--done") && list.contains("path-strip__dot--locked") && list.contains("1 / 4 parcours"));
+
+    // A whole path: its three other courses have no prerequisite.
+    for course in ["linux-shell", "git-basics", "sql-postgresql"] {
+        complete(&app, &cookie, course).await;
+    }
+    let done = page(&app, &cookie, "/paths/socle-commun/").await;
+    assert!(done.contains("4 / 4 parcours · 100 % · ✓ Cursus terminé") && done.contains("Bravo, tu es allé·e au bout"));
+    assert!(!done.contains("À suivre"));
+    assert!(page(&app, &cookie, "/paths/").await.contains(r#"class="path-card is-done""#));
+    // Completing a path stores nothing: no badge is named after it.
+    assert!(!page(&app, &cookie, "/badges/").await.contains("Socle commun"));
+}
+
+#[tokio::test]
+async fn a_path_shows_only_the_progress_made_on_its_own_tenant() {
+    let Some(app) = app().await else { return };
+    let acme = sign_in(&app, "acme.test", "alice").await;
+    let plain = sign_in(&app, "plain.test", "alice").await;
+    complete(&app, &acme, "docker-hello").await;
+    let path = "/paths/devops-infrastructure/";
+    assert_eq!(node_state(&page(&app, &acme, path).await, "docker-hello"), "done");
+
+    // The same user name on the other tenant has done nothing, and sees that tenant's brand.
+    let elsewhere = call(&app, Call { host: "plain.test", path, cookie: Some(&plain), body: None, origin: None }).await;
+    assert_eq!(elsewhere.status, StatusCode::OK);
+    assert_eq!(
+        (node_state(&elsewhere.body, "docker-hello"), node_state(&elsewhere.body, "docker-advanced")),
+        ("available".into(), "locked".into())
+    );
+    assert!(elsewhere.body.contains("0 / 8 parcours · 0 %"));
+    assert_eq!((links(&elsewhere.body, "done"), links(&elsewhere.body, "todo")), (0, 10));
+    assert!(elsewhere.body.contains("<strong>Plain</strong>") && !elsewhere.body.contains("Acme"));
+    let list = call(&app, Call { host: "plain.test", path: "/paths/", cookie: Some(&plain), body: None, origin: None }).await;
+    assert!(list.body.contains("0 / 8 parcours · 0 %") && !list.body.contains("path-strip__dot--done"));
+
+    // A session of one tenant is nobody on the other: the path is shown as to a visitor.
+    let crossed = call(&app, Call { host: "plain.test", path, cookie: Some(&acme), body: None, origin: None }).await;
+    assert_eq!(crossed.status, StatusCode::OK);
+    assert_eq!(node_state(&crossed.body, "docker-hello"), "plain");
+    assert!(!crossed.body.contains("progressbar") && !crossed.body.contains("Déconnexion"));
+}
+
+#[tokio::test]
+async fn a_catalogue_without_paths_shows_none() {
+    let Some(app) = app_built(true, false).await else { return };
+    let cookie = sign_in(&app, "acme.test", "alice").await;
+    for path in ["/", "/catalogue/", "/courses/git-basics/"] {
+        let body = get(&app, "acme.test", path).await.1;
+        assert!(!body.contains("/paths/") && !body.contains("Cursus") && !body.contains("cursus"), "{path}");
+    }
+    assert!(!page(&app, &cookie, "/dashboard/").await.contains("ursus"));
+    let (status, list) = get(&app, "acme.test", "/paths/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(list.contains("Aucun cursus pour le moment"));
+    assert_eq!(get(&app, "acme.test", "/paths/devops-infrastructure/").await.0, StatusCode::NOT_FOUND);
 }

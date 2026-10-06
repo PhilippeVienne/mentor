@@ -1,0 +1,76 @@
+# Training paths: ordered selections of the courses of this catalogue (format: README.md, "Training paths").
+# The interface calls a path « cursus » and a course « parcours ».
+# A path lists every prerequisite of its courses, before them: it can be followed from start to end.
+paths:
+  - id: socle-commun
+    title: "Socle commun"
+    icon: "🧭"
+    summary: "Les quatre outils que toute l'équipe utilise, quel que soit ton poste : le terminal, Git, Docker et SQL."
+    color: "#0F766E"
+    courses:
+      - linux-shell
+      - git-basics
+      - docker-hello
+      - sql-postgresql
+
+  - id: developpement-frontend
+    title: "Développement frontend"
+    icon: "🎨"
+    summary: "Du HTML aux deux frameworks de l'équipe : React pour MiniShop, Angular pour l'administration d'Adhésion."
+    color: "#3178C6"
+    stages:
+      - title: "Fondamentaux"
+        courses:
+          - web-javascript
+          - typescript
+          - git-basics
+      - title: "Frameworks"
+        courses:
+          - react-nextjs
+          - angular
+      - title: "Pour aller plus loin"
+        courses:
+          - course: ci-gitlab
+            optional: true
+
+  - id: backend-python
+    title: "Backend Python et Django"
+    icon: "🐍"
+    summary: "De tes premiers scripts Python à l'API d'Adhésion : le langage, la base de données, puis Django et son écosystème."
+    color: "#0C4B33"
+    stages:
+      - title: "Fondamentaux"
+        courses:
+          - python
+          - sql-postgresql
+          - git-basics
+      - title: "Django"
+        courses:
+          - django
+          - django-rest
+          - maintenance-legacy
+      - title: "Pour aller plus loin"
+        courses:
+          - course: oidc-keycloak
+            optional: true
+
+  - id: devops-infrastructure
+    title: "DevOps et infrastructure"
+    icon: "☸️"
+    summary: "Du terminal au cluster : conteneurs, pipelines, Kubernetes, Terraform et sauvegardes, comme sur l'infra de l'équipe."
+    color: "#326CE5"
+    stages:
+      - title: "Fondamentaux"
+        courses:
+          - linux-shell
+          - git-basics
+          - docker-hello
+      - title: "Industrialiser"
+        courses:
+          - ci-gitlab
+          - docker-advanced
+      - title: "Orchestrer et exploiter"
+        courses:
+          - kubernetes-helm
+          - terraform
+          - sauvegardes-s3

@@ -1,7 +1,7 @@
 //! `mentor`: administration of a Mentor platform.
 //!
-//! Every command connects with the role that owns the database (see `mentor-db`), never with the
-//! application role.
+//! Commands that touch the database connect with the role that owns it (see `mentor-db`), never with the
+//! application role. `package-check` needs no database: it is the command an author runs on a course package.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -51,6 +51,12 @@ enum Command {
         #[arg(long, requires = "v1_catalogue")]
         catalogue: Option<PathBuf>,
     },
+    /// Validates a course package: its `mentor.yml` manifest, its files and its courses. Needs no database.
+    PackageCheck {
+        /// Directory of the package (the one holding `mentor.yml`).
+        #[arg(default_value = ".")]
+        directory: PathBuf,
+    },
 }
 
 type Failure = Box<dyn std::error::Error>;
@@ -85,7 +91,51 @@ fn question_ids(v1_catalogue: &Path, catalogue: &Path) -> Result<BTreeMap<String
     Ok(ids)
 }
 
+fn plural(count: usize, noun: &str) -> String {
+    format!("{count} {noun}{}", if count == 1 { "" } else { "s" })
+}
+
+/// Compiles a package and prints what it holds; the first error stops it and names the file.
+fn package_check(directory: &Path) -> Result<(), Failure> {
+    let package = mentor_content::load_package(directory)?;
+    let manifest = &package.manifest;
+    println!("package {} {} (format {}, {}): {}", manifest.name, manifest.version, manifest.format, manifest.license, manifest.title);
+    let mut warnings = Vec::new();
+    for course in &package.catalogue.courses {
+        let labs = course.lessons.iter().filter(|lesson| lesson.lab.is_some()).count();
+        let exam = match &course.exam {
+            Some(exam) => format!("exam of {}", plural(exam.questions.len(), "question")),
+            None => "no exam".to_string(),
+        };
+        let environments: Vec<&str> = course.environments.keys().map(String::as_str).collect();
+        let environments = if environments.is_empty() { "none".to_string() } else { environments.join(", ") };
+        let state = if course.published { "" } else { " (not published)" };
+        println!(
+            "  {}{state}: {}, {}, {exam}, environments: {environments}",
+            course.slug,
+            plural(course.lessons.len(), "lesson"),
+            plural(labs, "lab")
+        );
+        if let Some(exam) = &course.exam {
+            warnings.extend(exam.warnings.iter().map(|warning| format!("{}: exam: {warning}", course.slug)));
+        }
+    }
+    println!(
+        "{}, {}, {} bytes: valid",
+        plural(package.catalogue.courses.len(), "course"),
+        plural(package.tree.files, "file"),
+        package.tree.bytes
+    );
+    for warning in &warnings {
+        eprintln!("warning: {warning}");
+    }
+    Ok(())
+}
+
 async fn run(cli: Cli) -> Result<(), Failure> {
+    if let Command::PackageCheck { directory } = &cli.command {
+        return package_check(directory);
+    }
     let url = cli.database_url.ok_or("no database: pass --database-url or set MENTOR_DATABASE_URL")?;
     let owner: PgPool = PgPoolOptions::new().max_connections(2).connect(&url).await?;
     match cli.command {
@@ -114,6 +164,7 @@ async fn run(cli: Cli) -> Result<(), Failure> {
                 eprintln!("warning: {warning}");
             }
         }
+        Command::PackageCheck { .. } => unreachable!("handled before connecting to the database"),
     }
     Ok(())
 }

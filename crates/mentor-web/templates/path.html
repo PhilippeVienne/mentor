@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ path.title }} · Cursus{% endblock %}
+{% block description %}{{ path.summary }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
+
+{% block content %}
+<section class="course-head path-head"{% if !path.accent.is_empty() %} style="--accent: {{ path.accent }}"{% endif %}>
+    <div class="container">
+        <nav aria-label="Fil d'Ariane" class="breadcrumb"><a href="/paths/">Cursus</a> <span aria-hidden="true">/</span> <span>{{ path.title }}</span></nav>
+        <p class="course-head__icon" aria-hidden="true">{{ path.icon }}</p>
+        <h1>{{ path.title }}</h1>
+        <p class="lead">{{ path.summary }}</p>
+        <ul class="meta meta--lg">
+            <li>{{ card.courses }} parcours{% if card.optional > 0 %} (dont {{ card.optional }} en option){% endif %}</li>
+            {% if card.stages > 0 %}<li>{{ card.stages }} étape{% if card.stages > 1 %}s{% endif %}</li>{% endif %}
+            <li>{{ card.duration }}</li>
+        </ul>
+        {% if let Some(advancement) = card.advancement %}
+        <div class="progress progress--lg progress--on-dark path-head__progress" role="progressbar" aria-valuenow="{{ advancement.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le cursus">
+            <span style="width: {{ advancement.percent }}%"></span>
+        </div>
+        <p class="progress__label">{{ advancement.done }} / {{ advancement.required }} parcours · {{ advancement.percent }} %{% if advancement.completed %} · ✓ Cursus terminé{% endif %}</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="container path-page">
+    {% if let Some(advancement) = card.advancement %}
+    {% if let Some(next) = next %}
+    <section class="resume-card" aria-labelledby="next-title">
+        <div>
+            <p class="eyebrow" id="next-title">{% if next.started %}Reprendre là où tu t'étais arrêté·e{% else if advancement.completed %}Pour aller plus loin{% else %}Prochaine étape du cursus{% endif %}</p>
+            <h2>{{ next.lesson.title }}</h2>
+            <p class="muted">{{ next.course.icon }} {{ next.course.title }} · ≈ {{ next.lesson.minutes }} min</p>
+        </div>
+        <a class="btn btn--primary btn--lg" href="/courses/{{ next.course.slug }}/{{ next.lesson.slug }}/">{% if next.started %}Reprendre{% else %}Commencer{% endif %} →</a>
+    </section>
+    {% else if advancement.completed %}
+    <section class="resume-card" aria-labelledby="next-title">
+        <div>
+            <p class="eyebrow" id="next-title">Cursus terminé</p>
+            <h2>Bravo, tu es allé·e au bout 🎉</h2>
+            <p class="muted">Tous les parcours de ce cursus sont terminés.</p>
+        </div>
+        <a class="btn btn--ghost btn--lg" href="/paths/">Voir les autres cursus →</a>
+    </section>
+    {% else %}
+    <section class="resume-card" aria-labelledby="next-title">
+        <div>
+            <p class="eyebrow" id="next-title">La suite arrive</p>
+            <h2>Tu as terminé tout ce qui est disponible</h2>
+            <p class="muted">Les parcours restants de ce cursus ne sont pas encore publiés.</p>
+        </div>
+        <a class="btn btn--ghost btn--lg" href="/catalogue/">Voir le catalogue →</a>
+    </section>
+    {% endif %}
+    {% else if let Some(first) = first %}
+    <section class="resume-card" aria-labelledby="next-title">
+        <div>
+            <p class="eyebrow" id="next-title">Par où commencer</p>
+            <h2>{{ first.icon }} {{ first.title }}</h2>
+            <p class="muted">{% if dev_login %}Connecte-toi pour suivre ta progression sur la carte.{% else %}Le premier parcours de ce cursus.{% endif %}</p>
+        </div>
+        <a class="btn btn--primary btn--lg" href="/courses/{{ first.slug }}/">Voir ce parcours →</a>
+    </section>
+    {% endif %}
+
+    <section aria-labelledby="map-title">
+        <h2 id="map-title" class="section-title">La carte du cursus</h2>
+        <p class="path-legend">Une flèche part d'un parcours et pointe vers celui qu'il débloque.{% if card.advancement.is_some() %}
+            <span class="path-legend__item"><svg viewBox="0 0 28 8" width="28" height="8" aria-hidden="true" focusable="false"><path class="path-link path-link--done" d="M1 4 H27"/></svg> prérequis terminé</span>
+            <span class="path-legend__item"><svg viewBox="0 0 28 8" width="28" height="8" aria-hidden="true" focusable="false"><path class="path-link path-link--todo" d="M1 4 H27"/></svg> prérequis à terminer</span>{% endif %}
+        </p>
+        <div class="path-map{% if !titled %} path-map--flat{% endif %}" style="{{ map.style() }}">
+            <div class="path-map__inner">
+                <svg class="path-map__links path-map__links--wide" viewBox="{{ map.wide_view_box() }}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    {% for link in links %}<path class="path-link{% if !link.state.is_empty() %} path-link--{{ link.state }}{% endif %}" d="{{ link.wide }}"/>
+                    {% endfor %}
+                </svg>
+                <svg class="path-map__links path-map__links--narrow" viewBox="{{ map.narrow_view_box() }}" aria-hidden="true" focusable="false">
+                    {% for link in links %}<path class="path-link{% if !link.state.is_empty() %} path-link--{{ link.state }}{% endif %}" d="{{ link.narrow }}"/><polygon class="path-arrow{% if !link.state.is_empty() %} path-arrow--{{ link.state }}{% endif %}" points="{{ link.arrow }}"/>
+                    {% endfor %}
+                </svg>
+                <ol class="path-map__stages">
+                    {% for stage in stages %}
+                    <li class="path-stage">
+                        {% if titled %}<h3 class="path-stage__title"><span class="path-stage__number">Étape {{ loop.index }}</span> {{ stage.title }}</h3>{% endif %}
+                        <ol class="path-stage__courses">
+                            {% for node in stage.nodes %}
+                            <li id="course-{{ node.course.slug }}" data-course="{{ node.course.slug }}" data-state="{{ node.state }}" class="path-node path-node--{{ node.state }}{% if node.next %} is-next{% endif %}{% if node.optional %} is-optional{% endif %}{% if node.slot.enters_left %} has-in-left{% endif %}{% if node.slot.enters_top %} has-in-top{% endif %}"{% if !node.course.accent.is_empty() %} style="--accent: {{ node.course.accent }}"{% endif %}>
+                                <div class="path-node__card">
+                                    <span class="path-node__icon" aria-hidden="true">{{ node.course.icon }}</span>
+                                    <div class="path-node__body">
+                                        <h4 class="path-node__title">{% if node.course.published %}<a class="stretched" href="/courses/{{ node.course.slug }}/">{{ node.course.title }}</a>{% else %}{{ node.course.title }}{% endif %}</h4>
+                                        <p class="path-node__state">
+                                            {% if !node.label.is_empty() %}<span class="path-state path-state--{{ node.state }}">{{ node.label }}</span>{% endif %}
+                                            {% if node.next %}<span class="path-tag path-tag--next">À suivre</span>{% endif %}
+                                            {% if node.optional %}<span class="path-tag">En option</span>{% endif %}
+                                        </p>
+                                        {% if !node.note.is_empty() %}<p class="path-node__note" title="{{ node.note }}">{{ node.note }}</p>{% endif %}
+                                        {% if !node.prerequisites.is_empty() %}<p class="sr-only">Prérequis dans ce cursus : {{ node.prerequisites|join(", ") }}.</p>{% endif %}
+                                    </div>
+                                    {% if let Some(percent) = node.percent %}
+                                    <div class="progress path-node__bar" role="progressbar" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans {{ node.course.title }}">
+                                        <span style="width: {{ percent }}%"></span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

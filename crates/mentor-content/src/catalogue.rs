@@ -18,9 +18,11 @@ use crate::markdown::{md_inline, Render};
 use crate::yaml::{is_falsy, text};
 
 static LESSON_FILE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+)-(.+)\.md$").unwrap());
+/// An environment is a folder directly inside its course: never a path, which could leave the course.
+static ENVIRONMENT_NAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9][A-Za-z0-9._-]*$").unwrap());
 
 const CHECKS_FILE: &str = "_checks.yml";
-const COURSE_FILE: &str = "course.md";
+pub(crate) const COURSE_FILE: &str = "course.md";
 const EXAM_FILE: &str = "exam.md";
 /// `exam` is the URL segment of a course's validation exam.
 const RESERVED_LESSON_IDS: [&str; 1] = ["exam"];
@@ -140,6 +142,12 @@ impl Environments<'_> {
         let Some(name) = name.as_str() else {
             return Err(ContentError::new(&self.directory.join(COURSE_FILE), "`environment` must be the name of a folder of the course"));
         };
+        if !ENVIRONMENT_NAME_RE.is_match(name) {
+            return Err(ContentError::new(
+                &self.directory.join(COURSE_FILE),
+                format!("`environment` must be the name of a folder of the course, not a path (got `{name}`)"),
+            ));
+        }
         if !self.seen.contains_key(name) {
             let folder = self.directory.join(name);
             if !folder.join("devcontainer.json").is_file() {
@@ -332,12 +340,18 @@ pub fn load_catalogue(directory: &Path) -> Result<Catalogue> {
         .map_err(|e| unreadable(e.to_string()))?
         .checks;
 
-    let courses = slugs.iter().map(|slug| load_course(&directory.join(slug), &checks)).collect::<Result<Vec<_>>>()?;
-    for course in &courses {
+    let catalogue = load_courses(directory, &slugs, &checks)?;
+    for course in &catalogue.courses {
         if let Some(unknown) = course.requires.iter().find(|required| !slugs.contains(required)) {
             return Err(ContentError::new(&directory.join(&course.slug).join(COURSE_FILE), format!("unknown prerequisite: {unknown}")));
         }
     }
+    Ok(catalogue)
+}
+
+/// Compiles the course folders `slugs` of `directory`, in that order. Prerequisites are left to the caller.
+pub(crate) fn load_courses(directory: &Path, slugs: &[String], checks: &Checks) -> Result<Catalogue> {
+    let courses = slugs.iter().map(|slug| load_course(&directory.join(slug), checks)).collect::<Result<Vec<_>>>()?;
     Ok(Catalogue { courses })
 }
 

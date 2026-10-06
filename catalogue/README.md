@@ -8,7 +8,7 @@ The **format** is in English (file names, keys, directive and check names). The 
 
 A complete, commented course to copy is in [`_template/`](_template/). It is not listed in `catalogue.yml`, so the build does not compile it: check what you copy from it.
 
-Contents: [layout](#1-layout) · [front matter](#2-front-matter) · [lesson structure](#3-structure-of-a-lesson) · [XP scale](#4-time-steps-and-xp) · [syntax](#5-syntax) · [quiz](#6-quizzes) · [labs](#7-labs) · [environments](#8-environments) · [exam](#9-validation-exam-exammd) · [writing rules](#10-writing-rules) · [review](#11-review-checklist) · [testing](#12-testing-your-changes) · [new course](#13-adding-a-course) · [limits](#14-known-limits) · [existing courses](#15-existing-courses)
+Contents: [layout](#1-layout) · [front matter](#2-front-matter) · [lesson structure](#3-structure-of-a-lesson) · [XP scale](#4-time-steps-and-xp) · [syntax](#5-syntax) · [quiz](#6-quizzes) · [labs](#7-labs) · [environments](#8-environments) · [exam](#9-validation-exam-exammd) · [writing rules](#10-writing-rules) · [review](#11-review-checklist) · [testing](#12-testing-your-changes) · [new course](#13-adding-a-course) · [limits](#14-known-limits) · [existing courses](#15-existing-courses) · [training paths](#16-training-paths-pathsyml)
 
 ## 1. Layout
 
@@ -16,6 +16,8 @@ Contents: [layout](#1-layout) · [front matter](#2-front-matter) · [lesson stru
 catalogue/
 ├── README.md                 ← this guide
 ├── catalogue.yml             ← ordered index of the courses
+├── paths.yml                 ← (optional) training paths: courses arranged towards a goal (§16)
+├── mentor.yml                ← the same list, as the manifest of a course package (see below)
 ├── _checks.yml               ← checks available to lab steps
 ├── _template/                ← commented model course (not compiled, to copy)
 └── git-basics/               ← one folder per course: its name is the course identifier (slug)
@@ -36,7 +38,8 @@ catalogue/
     - docker-hello
   ```
 
-- Folder and file names are lower case, without accents or spaces (`05-conflits.md`).
+- **`mentor.yml`** makes this folder a **course package**, the form in which courses are distributed as Git repositories ([`doc/course-packages.md`](../doc/course-packages.md)). It repeats the course list: until `catalogue.yml` is removed, **add a course to both**; a test fails when they differ. A package of your own needs only `mentor.yml` and its course folders: no `catalogue.yml`, no `_checks.yml`.
+- Folder and file names are lower case, without accents or spaces (`05-conflits.md`). In a package, names may only hold letters, digits, `.`, `_` and `-`.
 - Only files named `NN-name.md` (digits, a hyphen, a name) are lessons.
 - Images are served under `/static/catalogue/<course>/images/…`.
 
@@ -498,6 +501,9 @@ These apply to the French courses shipped here.
 # Compile the whole catalogue: an error names the file and the line or step
 cargo test -p mentor-content
 
+# Validate a course package (this folder, or a repository of your own): manifest, files, courses
+cargo run -p mentor-cli -- package-check catalogue
+
 # Read the result in the portal (needs a PostgreSQL database and a tenant: see ../README.md)
 cargo run -p mentor-web -- --dev-login
 ```
@@ -528,7 +534,7 @@ Common errors:
 2. Fill in `course.md` (prerequisites, colour, banner, environment) and add `images/banniere.svg`.
 3. Keep one environment folder, adapt its `Dockerfile` (delete `environnement-docker/` unless the course teaches Docker).
 4. Write the lessons `01-…`, `02-…`, the `cheatsheet.md` and the `exam.md`.
-5. Add the slug to [`catalogue.yml`](catalogue.yml), at the wanted position.
+5. Add the slug to [`catalogue.yml`](catalogue.yml) and to [`mentor.yml`](mentor.yml), at the wanted position.
 6. Test (§12), update the table of §15, open the pull request.
 
 To **announce** a course without publishing it: `published: false` and no lesson.
@@ -569,3 +575,107 @@ Every lab runs in the course's `environnement/` folder unless noted.
 | Terraform | [`terraform/`](terraform/) | 6 | kubernetes-helm | Published |
 | Sauvegardes et stockage objet | [`sauvegardes-s3/`](sauvegardes-s3/) | 6 | docker-advanced | Published |
 | Go | [`go/`](go/) | 7 | — | Published |
+
+## 16. Training paths (`paths.yml`)
+
+A **training path** arranges existing courses towards a goal: "to work on the infrastructure, follow these courses, in this order". It holds no content of its own and changes nothing to what a course requires. The portal lists the paths, draws each one as a map (courses in order, prerequisite links between them, the learner's state on every course) and shows on a course page the paths it belongs to.
+
+> The French interface calls a path « cursus », because « parcours » already names a course there. Write titles and summaries accordingly: « ce cursus », never « ce parcours », for a path.
+
+Paths are declared in one file, `paths.yml`, at the root of the catalogue. They are not in `catalogue.yml` (that index is being replaced by the package manifest, which accepts no other key) nor in one file each (a path is ten lines, and they are easier to keep coherent side by side). The file is optional: without it the portal shows no path.
+
+```yaml
+paths:
+  - id: devops-infrastructure
+    title: "DevOps et infrastructure"
+    icon: "☸️"
+    summary: "Du terminal au cluster : conteneurs, pipelines, Kubernetes, Terraform et sauvegardes."
+    color: "#326CE5"
+    stages:
+      - title: "Fondamentaux"
+        courses:
+          - linux-shell
+          - git-basics
+          - docker-hello
+      - title: "Industrialiser"
+        courses:
+          - ci-gitlab
+          - docker-advanced
+      - title: "Pour aller plus loin"
+        courses:
+          - course: kubernetes-helm
+            optional: true
+```
+
+### A path
+
+| Key | Required | Role |
+| --- | :---: | --- |
+| `id` | yes | **Stable** identifier, unique among paths: lower-case words separated by hyphens. It appears in the URL (`/paths/<id>/`). |
+| `title` | yes | Name of the path. |
+| `icon` | yes | An emoji. |
+| `summary` | yes | One sentence: where the path leads. |
+| `color` | no | Hexadecimal accent colour, quoted (`"#326CE5"`). Text is written in white over it: pick a colour dark enough. |
+| `stages` | one of the two | Groups of courses, in order (see below). |
+| `courses` | one of the two | A plain list of courses, for a short path that needs no group. |
+
+A path has either `stages` or `courses`, never both. Prefer `stages` from five courses on: on a wide screen each stage is a column of the map, while a plain list puts every course in a column of its own.
+
+### A stage
+
+| Key | Required | Role |
+| --- | :---: | --- |
+| `title` | yes | Name of the stage (« Fondamentaux », « Spécialisation »). Keep it short: it heads a column. |
+| `courses` | yes | The courses of the stage, at least one, in the order to follow them. |
+
+### A course of a path
+
+A course is named by its folder (`docker-hello`). To mark it **optional**, write it as a mapping:
+
+```yaml
+courses:
+  - docker-advanced
+  - course: sauvegardes-s3
+    optional: true
+```
+
+An optional course is shown on the map with the mention « En option », and is **not needed to complete the path**. A path is completed when every other course of it is; nothing is awarded for it (no XP, no badge) beyond what its courses give.
+
+A course may belong to several paths. A course that is not published yet (`published: false`) may be listed: it is announced on the map as « Bientôt disponible », and the path cannot be completed until it is published, unless it is optional.
+
+### Rules the compiler enforces
+
+`paths.yml` is checked strictly when the catalogue is loaded; unlike front matter, **an unknown key is an error**.
+
+- **A path is self-contained.** Every prerequisite (`requires`) of a course of the path must be in the path too, **earlier**: in a previous stage, or above it in the same stage. Someone who follows the path from its first course to its last never meets a lock they cannot open from inside it, and every prerequisite link can be drawn. To include `typescript`, list `web-javascript` before it.
+- A course that is needed to complete the path cannot require a course that is optional in it.
+- A course appears once in a path. At least one course is not optional.
+- Courses are those of the catalogue; `color` is hexadecimal; `id` is unique.
+
+| Message | Cause |
+| --- | --- |
+| `path #2: unknown key …` | A misspelt key; the known ones are listed. |
+| ``path `x`: unknown course `y` `` | `y` is not a course folder of the catalogue. |
+| ``path `x`: the course `y` is listed twice`` | The same course in two places of the path. |
+| ``path `x`: `a` requires `b`, which is not in the path`` | Add `b` to the path, before `a`. |
+| ``path `x`: `a` requires `b`, which comes after it`` | Move `b` above `a`, or to an earlier stage. |
+| ``path `x`: `a` is needed to complete the path but requires `b`, which is optional in it`` | Make `b` required, or `a` optional. |
+| ``path `x`: every course is optional`` | Nothing would complete the path. |
+| ``path `x`: give either `stages` or `courses`, not both`` | Choose one form. |
+
+### Drawing a readable map
+
+The map draws one arrow per prerequisite between two courses of the path, and nothing else: order alone draws no arrow.
+
+- Inside a stage, order the courses so that arrows do not cross: put next to each other the courses that lead to the same place.
+- Keep a stage to **four courses at most** and a path to **four or five stages**: beyond that the map scrolls sideways on a desktop screen.
+- Test with `cargo test -p mentor-content` (the paths of this folder are validated by `tests/paths.rs`), then look at `/paths/<id>/` in the portal, on a wide window and on a narrow one.
+
+### Existing paths
+
+| Path | Id | Courses |
+| --- | --- | --- |
+| Socle commun | `socle-commun` | linux-shell, git-basics, docker-hello, sql-postgresql |
+| Développement frontend | `developpement-frontend` | web-javascript, typescript, git-basics → react-nextjs, angular → ci-gitlab (optional) |
+| Backend Python et Django | `backend-python` | python, sql-postgresql, git-basics → django, django-rest, maintenance-legacy → oidc-keycloak (optional) |
+| DevOps et infrastructure | `devops-infrastructure` | linux-shell, git-basics, docker-hello → ci-gitlab, docker-advanced → kubernetes-helm, terraform, sauvegardes-s3 |

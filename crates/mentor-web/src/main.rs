@@ -33,7 +33,13 @@ struct Options {
 
 async fn run(options: Options) -> Result<(), Box<dyn std::error::Error>> {
     let catalogue = mentor_content::load_catalogue(&options.catalogue)?;
-    eprintln!("mentor-web: {} courses compiled from {}", catalogue.courses.len(), options.catalogue.display());
+    let paths = mentor_content::load_paths(&options.catalogue, &catalogue.courses)?;
+    eprintln!(
+        "mentor-web: {} courses and {} training paths compiled from {}",
+        catalogue.courses.len(),
+        paths.len(),
+        options.catalogue.display()
+    );
     let db = PgPoolOptions::new().max_connections(10).connect(&options.database_url).await?;
     let secret = match options.session_secret {
         Some(secret) if secret.len() >= 32 => secret.into_bytes(),
@@ -46,7 +52,7 @@ async fn run(options: Options) -> Result<(), Box<dyn std::error::Error>> {
     if options.dev_login {
         eprintln!("mentor-web: WARNING: development sign-in is enabled, anyone can sign in as anyone");
     }
-    let app = router(AppState::new(db, catalogue, secret, options.dev_login), &options.static_dir, &options.catalogue);
+    let app = router(AppState::new(db, catalogue, secret, options.dev_login).with_paths(paths), &options.static_dir, &options.catalogue);
     let listener = tokio::net::TcpListener::bind(options.listen).await?;
     eprintln!("mentor-web: listening on http://{}", options.listen);
     axum::serve(listener, app).await?;

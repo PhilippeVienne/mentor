@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ course.title }}{% endblock %}
 {% block description %}{{ course.summary }}{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/exam.css">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/exam.css">
+<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
 
 {% block content %}
 <section class="course-head"{% if !course.accent.is_empty() %} style="--accent: {{ course.accent }}"{% endif %}>
@@ -15,6 +16,12 @@
                 <li>{{ lessons_label }}</li>
                 <li>≈ {{ minutes }} min</li>
             </ul>
+            {% if !paths.is_empty() %}
+            <p class="course-paths">
+                <span class="course-paths__label">{% if paths.len() > 1 %}Fait partie des cursus{% else %}Fait partie du cursus{% endif %}</span>
+                {% for path in paths %}<a class="path-chip" href="/paths/{{ path.id }}/#course-{{ course.slug }}"><span aria-hidden="true">{{ path.icon }}</span> {{ path.title }}</a>{% endfor %}
+            </p>
+            {% endif %}
             {% if let Some(progress) = progress %}
             {% if progress.unlocked %}
             <div class="progress progress--lg" role="progressbar" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le parcours">

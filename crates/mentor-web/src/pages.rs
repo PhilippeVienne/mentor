@@ -1,4 +1,5 @@
-//! Pages: home, catalogue, course, lesson, and the learner's own ones (dashboard, badges).
+//! Pages: home, catalogue, course, lesson, and the learner's own ones (dashboard, badges). Training paths
+//! have their own module, [`crate::paths`].
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -7,7 +8,7 @@ use axum::extract::{Path, State};
 use axum::http::header::LOCATION;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
-use mentor_content::{Course, Lesson};
+use mentor_content::{Course, LearningPath, Lesson};
 use mentor_core::badges::{default_badges, Tier, COURSE_BADGE_PREFIX};
 use mentor_core::gamification::{DEFAULT_LEVEL_TITLES, LEVEL_THRESHOLDS, XP_LESSON, XP_QUIZ, XP_TASK};
 use mentor_core::progress::{completed_courses, LessonProgress};
@@ -16,6 +17,7 @@ use mentor_db::TenantTx;
 
 use crate::brand::Brand;
 use crate::learning::{rules, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
+use crate::paths::{dashboard_cards, paths_of, PathCard};
 use crate::site::now;
 use crate::site::{Site, Viewer};
 use crate::AppState;
@@ -27,7 +29,7 @@ const HOME_COURSES: usize = 8;
 const DASHBOARD_BADGES: usize = 8;
 
 /// What the signed-in learner has done so far.
-struct Progress {
+pub(crate) struct Progress {
     /// By `course/lesson` reference; a lesson never touched is absent.
     lessons: BTreeMap<String, LessonState>,
     courses_done: BTreeSet<String>,
@@ -36,13 +38,13 @@ struct Progress {
 }
 
 impl Progress {
-    fn lesson(&self, course: &Course, lesson: &Lesson) -> LessonState {
+    pub(crate) fn lesson(&self, course: &Course, lesson: &Lesson) -> LessonState {
         self.lessons.get(&format!("{}/{}", course.slug, lesson.slug)).copied().unwrap_or_default()
     }
 }
 
 /// Progress of the viewer, `None` for a visitor.
-async fn load_progress(state: &AppState, site: &Site) -> Result<Option<Progress>, mentor_db::Error> {
+pub(crate) async fn load_progress(state: &AppState, site: &Site) -> Result<Option<Progress>, mentor_db::Error> {
     let Some(viewer) = &site.viewer else { return Ok(None) };
     let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
     let lessons = tx.lesson_states(viewer.learner.id).await?;
@@ -52,7 +54,7 @@ async fn load_progress(state: &AppState, site: &Site) -> Result<Option<Progress>
     Ok(Some(Progress { courses_done: completed_courses(&state.view.courses, &done), lessons, badges }))
 }
 
-fn unavailable(err: mentor_db::Error) -> Response {
+pub(crate) fn unavailable(err: mentor_db::Error) -> Response {
     eprintln!("mentor-web: progress not loaded: {err}");
     (StatusCode::SERVICE_UNAVAILABLE, "The service is temporarily unavailable.\n").into_response()
 }
@@ -68,17 +70,17 @@ fn state_name(state: LessonState) -> &'static str {
 }
 
 /// The viewer's advancement in a course.
-struct CourseProgress<'a> {
-    done: usize,
-    percent: u32,
-    completed: bool,
-    unlocked: bool,
+pub(crate) struct CourseProgress<'a> {
+    pub(crate) done: usize,
+    pub(crate) percent: u32,
+    pub(crate) completed: bool,
+    pub(crate) unlocked: bool,
     /// Titles of the required courses that are not completed yet.
-    missing: Vec<&'a str>,
+    pub(crate) missing: Vec<&'a str>,
 }
 
 impl<'a> CourseProgress<'a> {
-    fn new(state: &'a AppState, course: &'a Course, progress: &Progress) -> Self {
+    pub(crate) fn new(state: &'a AppState, course: &'a Course, progress: &Progress) -> Self {
         let total = course.lessons.len();
         let done = course.lessons.iter().filter(|lesson| progress.lesson(course, lesson).completed).count();
         let missing: Vec<&str> = course
@@ -116,7 +118,7 @@ struct Card<'a> {
 }
 
 /// « 1 leçon », « 7 leçons ».
-fn lessons_label(count: usize) -> String {
+pub(crate) fn lessons_label(count: usize) -> String {
     format!("{count} leçon{}", if count > 1 { "s" } else { "" })
 }
 
@@ -124,7 +126,7 @@ fn banner_url(course: &Course) -> Option<String> {
     (!course.banner.is_empty()).then(|| format!("/static/catalogue/{}/{}", course.slug, course.banner))
 }
 
-fn minutes(course: &Course) -> u32 {
+pub(crate) fn minutes(course: &Course) -> u32 {
     course.lessons.iter().map(|lesson| lesson.minutes).sum()
 }
 
@@ -168,6 +170,7 @@ struct LandingPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     stats: Stats,
     cards: Vec<Card<'a>>,
 }
@@ -179,6 +182,7 @@ struct CataloguePage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     cards: Vec<Card<'a>>,
     has_upcoming: bool,
 }
@@ -190,6 +194,7 @@ struct CoursePage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     course: &'a Course,
     banner: Option<String>,
     lessons_label: String,
@@ -198,6 +203,8 @@ struct CoursePage<'a> {
     lessons: Vec<LessonRow<'a>>,
     /// The exam of the course, for a signed-in learner.
     exam: Option<ExamInfo<'a>>,
+    /// The training paths the course belongs to.
+    paths: Vec<&'a LearningPath>,
 }
 
 /// The exam of a course and where the viewer stands with it.
@@ -240,6 +247,7 @@ struct ExamPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     course: &'a Course,
     info: ExamInfo<'a>,
     intro_html: &'a str,
@@ -283,7 +291,7 @@ struct Step<'a> {
     state: &'static str,
 }
 
-/// « Mes parcours »: level, the lesson to resume, courses and badges.
+/// « Mes parcours »: level, the lesson to resume, training paths, courses and badges.
 #[derive(Template)]
 #[template(path = "dashboard.html")]
 struct DashboardPage<'a> {
@@ -291,10 +299,13 @@ struct DashboardPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     me: &'a Viewer,
     /// XP still to earn before the next level.
     to_next: Option<u32>,
     resume: Option<Resume<'a>>,
+    /// Training paths, those the learner is in first.
+    paths: Vec<PathCard<'a>>,
     cards: Vec<Card<'a>>,
     badges: Vec<BadgeItem>,
     badges_owned: usize,
@@ -329,6 +340,7 @@ struct BadgesPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     me: &'a Viewer,
     owned: usize,
     items: Vec<BadgeItem>,
@@ -390,6 +402,7 @@ struct LessonPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
     course: &'a Course,
     lesson: &'a Lesson,
     /// Position of the lesson in its course, starting at 1.
@@ -441,9 +454,10 @@ struct NotFoundPage<'a> {
     section: &'a str,
     viewer: Option<&'a Viewer>,
     dev_login: bool,
+    has_paths: bool,
 }
 
-fn render(status: StatusCode, page: impl Template) -> Response {
+pub(crate) fn render(status: StatusCode, page: impl Template) -> Response {
     match page.render() {
         Ok(html) => (status, Html(html)).into_response(),
         Err(err) => {
@@ -453,8 +467,17 @@ fn render(status: StatusCode, page: impl Template) -> Response {
     }
 }
 
-fn missing(site: &Site) -> Response {
-    render(StatusCode::NOT_FOUND, NotFoundPage { brand: &site.brand, section: "", viewer: site.viewer.as_ref(), dev_login: site.dev_login })
+pub(crate) fn missing(site: &Site) -> Response {
+    render(
+        StatusCode::NOT_FOUND,
+        NotFoundPage {
+            brand: &site.brand,
+            section: "",
+            viewer: site.viewer.as_ref(),
+            dev_login: site.dev_login,
+            has_paths: site.has_paths,
+        },
+    )
 }
 
 /// Published courses come first: the home page only shows the first few.
@@ -484,7 +507,15 @@ pub async fn landing(site: Site, State(state): State<AppState>) -> Response {
     cards.truncate(HOME_COURSES);
     render(
         StatusCode::OK,
-        LandingPage { brand: &site.brand, section: "home", viewer: site.viewer.as_ref(), dev_login: site.dev_login, stats, cards },
+        LandingPage {
+            brand: &site.brand,
+            section: "home",
+            viewer: site.viewer.as_ref(),
+            dev_login: site.dev_login,
+            has_paths: site.has_paths,
+            stats,
+            cards,
+        },
     )
 }
 
@@ -502,6 +533,7 @@ pub async fn catalogue(site: Site, State(state): State<AppState>) -> Response {
             section: "catalogue",
             viewer: site.viewer.as_ref(),
             dev_login: site.dev_login,
+            has_paths: site.has_paths,
             cards,
             has_upcoming,
         },
@@ -538,6 +570,7 @@ pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<
         section: "catalogue",
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
+        has_paths: site.has_paths,
         course,
         banner: banner_url(course),
         lessons_label: lessons_label(course.lessons.len()),
@@ -545,6 +578,7 @@ pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<
         exam: progress.as_ref().and_then(|progress| ExamInfo::new(&state, course, progress)),
         progress: progress.as_ref().map(|progress| CourseProgress::new(&state, course, progress)),
         lessons,
+        paths: paths_of(&state, &course.slug),
     };
     render(StatusCode::OK, page)
 }
@@ -591,6 +625,7 @@ pub async fn lesson(site: Site, State(state): State<AppState>, Path((course_slug
         section: "catalogue",
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
+        has_paths: site.has_paths,
         course,
         lesson,
         index: position + 1,
@@ -631,9 +666,11 @@ pub async fn dashboard(site: Site, State(state): State<AppState>) -> Response {
         section: "dashboard",
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
+        has_paths: site.has_paths,
         me,
         to_next: me.level.next.map(|next| next - me.level.xp),
         resume,
+        paths: dashboard_cards(&state, &progress),
         cards: cards(&state, Some(&progress)).into_iter().filter(|card| card.published).collect(),
         badges,
         badges_owned,
@@ -661,6 +698,7 @@ pub async fn badges(site: Site, State(state): State<AppState>) -> Response {
         section: "badges",
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
+        has_paths: site.has_paths,
         me,
         owned: items.iter().filter(|item| item.awarded.is_some()).count(),
         items,
@@ -703,6 +741,7 @@ pub async fn exam(site: Site, State(state): State<AppState>, Path(slug): Path<St
         section: "dashboard",
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
+        has_paths: site.has_paths,
         course,
         info,
         intro_html: without_trailing_headings(&exam.intro_html),

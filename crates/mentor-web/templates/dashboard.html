@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Mes parcours{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
 
 {% block content %}
 <section class="page-head">
@@ -31,6 +32,18 @@
             <p class="muted">{{ resume.course.icon }} {{ resume.course.title }} · ≈ {{ resume.lesson.minutes }} min</p>
         </div>
         <a class="btn btn--primary btn--lg" href="/courses/{{ resume.course.slug }}/{{ resume.lesson.slug }}/">{% if resume.started %}Reprendre{% else %}Commencer{% endif %} →</a>
+    </section>
+    {% endif %}
+
+    {% if !paths.is_empty() %}
+    <section aria-labelledby="cursus-title">
+        <div class="section__head section__head--row">
+            <h2 id="cursus-title" class="section-title">Cursus</h2>
+            <a href="/paths/">Voir tous les cursus →</a>
+        </div>
+        <div class="grid grid--paths">
+            {% for card in paths %}{% include "_path_card.html" %}{% endfor %}
+        </div>
     </section>
     {% endif %}
 

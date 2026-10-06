@@ -1,6 +1,6 @@
 [package]
 name = "mentor-cli"
-description = "Administration of a Mentor platform: database migrations, tenants, import of v1 data."
+description = "Administration of a Mentor platform: database migrations, tenants, import of v1 data, validation of course packages."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

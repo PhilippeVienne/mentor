@@ -1,0 +1,24 @@
+<article data-path="{{ card.path.id }}" class="path-card{% if let Some(advancement) = card.advancement %}{% if advancement.completed %} is-done{% endif %}{% endif %}"{% if !card.path.accent.is_empty() %} style="--accent: {{ card.path.accent }}"{% endif %}>
+    <div class="path-card__head">
+        <span class="path-card__icon" aria-hidden="true">{{ card.path.icon }}</span>
+        <div class="path-card__heading">
+            <h3 class="path-card__title"><a class="stretched" href="/paths/{{ card.path.id }}/">{{ card.path.title }}</a></h3>
+            <ul class="meta">
+                <li>{{ card.courses }} parcours{% if card.optional > 0 %} (dont {{ card.optional }} en option){% endif %}</li>
+                {% if card.stages > 0 %}<li>{{ card.stages }} étape{% if card.stages > 1 %}s{% endif %}</li>{% endif %}
+                <li>{{ card.duration }}</li>
+            </ul>
+        </div>
+    </div>
+    <p class="path-card__summary">{{ card.path.summary }}</p>
+    <ol class="path-strip" aria-hidden="true">
+        {% for stage in card.strip %}<li>{% for dot in stage %}<span class="path-strip__dot path-strip__dot--{{ dot.state }}">{{ dot.icon }}</span>{% endfor %}</li>{% endfor %}
+    </ol>
+    <p class="sr-only">Dans l'ordre : {{ card.titles }}.</p>
+    {% if let Some(advancement) = card.advancement %}
+    <div class="progress" role="progressbar" aria-valuenow="{{ advancement.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le cursus {{ card.path.title }}">
+        <span style="width: {{ advancement.percent }}%"></span>
+    </div>
+    <p class="progress__label">{{ advancement.done }} / {{ advancement.required }} parcours · {{ advancement.percent }} %{% if advancement.completed %} · ✓ Cursus terminé{% endif %}</p>
+    {% endif %}
+</article>

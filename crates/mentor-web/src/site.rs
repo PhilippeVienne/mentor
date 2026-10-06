@@ -28,6 +28,8 @@ pub struct Site {
     pub viewer: Option<Viewer>,
     /// The development sign-in page exists on this server.
     pub dev_login: bool,
+    /// The catalogue has training paths: the navigation links to them.
+    pub has_paths: bool,
 }
 
 /// Why a request could not be served at all.
@@ -103,7 +105,13 @@ impl FromRequestParts<AppState> for Site {
             },
             None => None,
         };
-        Ok(Site { tenant, brand: Brand::from_settings(&name, &settings), viewer, dev_login: state.dev_login })
+        Ok(Site {
+            tenant,
+            brand: Brand::from_settings(&name, &settings),
+            viewer,
+            dev_login: state.dev_login,
+            has_paths: !state.paths.is_empty(),
+        })
     }
 }
 

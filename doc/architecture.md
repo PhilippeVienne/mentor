@@ -229,6 +229,8 @@ Still open:
 1. **Hosting**: which Kubernetes cluster with KVM nodes (physical machines, nested virtualisation at a
    provider); this drives network design and CI.
 2. **Shared catalogue**: are the 19 current courses offered to every tenant, or does each tenant bring its own?
+   How a tenant brings its own is designed in [course-packages.md](course-packages.md): courses are distributed
+   as Git repositories that are packages; the question that remains is its §11, point 1.
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
 4. **Docker inside an environment**: `customizations.mentor.dockerInDocker` asks the platform to run a Docker
