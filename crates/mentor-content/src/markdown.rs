@@ -25,11 +25,13 @@ pub struct Render<'a> {
     pub path: &'a Path,
     pub course: &'a str,
     pub blocks: Vec<String>,
+    /// Pictures referenced outside the course's `images/` folder, the only one that is served.
+    misplaced_images: Vec<String>,
 }
 
 impl<'a> Render<'a> {
     pub fn new(path: &'a Path, course: &'a str) -> Self {
-        Self { path, course, blocks: Vec::new() }
+        Self { path, course, blocks: Vec::new(), misplaced_images: Vec::new() }
     }
 
     pub fn fail<T>(&self, message: impl Into<String>) -> Result<T> {
@@ -187,8 +189,16 @@ fn extract_fences(text: &str, ctx: &mut Render) -> Result<String> {
 }
 
 /// Builds the figure of an image, captioned with its alt text.
-fn figure(alt: &str, src: &str, ctx: &Render) -> String {
-    let src = if ABSOLUTE_URL_RE.is_match(src) { src.to_string() } else { ctx.asset_url(src) };
+fn figure(alt: &str, src: &str, ctx: &mut Render) -> String {
+    let src = if ABSOLUTE_URL_RE.is_match(src) {
+        src.to_string()
+    } else {
+        // Of a course, only the `images/` folder is served: the rest holds solutions and answers.
+        if !src.starts_with("images/") || src.split('/').any(|part| part == "..") {
+            ctx.misplaced_images.push(src.to_string());
+        }
+        ctx.asset_url(src)
+    };
     let caption = if alt.is_empty() { String::new() } else { format!("<figcaption>{}</figcaption>", escape(alt)) };
     format!(r#"<figure class="figure"><img src="{src}" alt="{}" loading="lazy">{caption}</figure>"#, escape(alt))
 }
@@ -214,7 +224,7 @@ fn extract_figures(text: &str, ctx: &mut Render) -> String {
 }
 
 /// Fallback for images the line pass did not catch (for instance with a title attribute).
-fn figures(rendered: &str, ctx: &Render) -> String {
+fn figures(rendered: &str, ctx: &mut Render) -> String {
     FIGURE_RE.replace_all(rendered, |caps: &Captures| figure(&unescape(&caps["alt"]), &caps["src"], ctx)).into_owned()
 }
 
@@ -223,6 +233,12 @@ pub fn render_md(text: &str, ctx: &mut Render) -> Result<String> {
     let text = extract_fences(text, ctx)?;
     let text = extract_figures(&text, ctx);
     let out = figures(&md(&text), ctx);
+    if let Some(src) = ctx.misplaced_images.first() {
+        return ctx.fail(format!(
+            "the picture `{src}` must be in the `images/` folder of the course (e.g. `images/{}`)",
+            src.rsplit('/').next().unwrap_or(src)
+        ));
+    }
     // A marker that designates no block was written by the author, not by this module: it stays as text.
     let block = |caps: &Captures| caps[1].parse::<usize>().ok().and_then(|index| ctx.blocks.get(index)).cloned();
     Ok(PLACEHOLDER_RE.replace_all(&out, |caps: &Captures| block(caps).unwrap_or_else(|| caps[0].to_string())).into_owned())
@@ -314,6 +330,16 @@ mod tests {
         assert!(out.contains("@@BLOCK7@@"));
         // A button written by the author is not the one of a command block.
         assert!(!render("<button class=\"cmd__run\" data-cmd=\"rm -rf ~\">Lancer</button>").contains("<button"));
+    }
+
+    #[test]
+    fn a_picture_outside_the_images_folder_is_refused() {
+        for src in ["schema.svg", "environnement/secret.png", "images/../exam.md", "../other/images/x.svg"] {
+            let err = render_md(&format!("![Un schéma]({src})"), &mut Render::new(Path::new("l.md"), "c")).unwrap_err();
+            assert!(err.message.contains("must be in the `images/` folder"), "{src}: {err}");
+        }
+        // A picture hosted elsewhere is the author's business.
+        assert!(render("![Logo](https://example.org/logo.png)").contains(r#"src="https://example.org/logo.png""#));
     }
 
     #[test]

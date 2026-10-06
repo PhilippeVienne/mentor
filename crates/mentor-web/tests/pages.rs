@@ -709,3 +709,34 @@ async fn a_catalogue_without_paths_shows_none() {
     assert!(list.contains("Aucun cursus pour le moment"));
     assert_eq!(get(&app, "acme.test", "/paths/devops-infrastructure/").await.0, StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn only_the_pictures_of_the_catalogue_can_be_downloaded() {
+    let Some(app) = app().await else { return };
+    let picture = call(
+        &app,
+        Call { host: "acme.test", path: "/static/catalogue/git-basics/images/banniere.svg", cookie: None, body: None, origin: None },
+    )
+    .await;
+    assert_eq!(picture.status, StatusCode::OK);
+    assert!(picture.body.contains("<svg"));
+    // Lesson sources carry the solutions of their labs, exam pools their answers, environments their tools.
+    for path in [
+        "/static/catalogue/git-basics/exam.md",
+        "/static/catalogue/git-basics/01-introduction.md",
+        "/static/catalogue/git-basics/course.md",
+        "/static/catalogue/git-basics/environnement/Dockerfile",
+        "/static/catalogue/mentor.yml",
+        "/static/catalogue/paths.yml",
+        "/static/catalogue/_checks.yml",
+        "/static/catalogue/git-basics/images/../exam.md",
+        "/static/catalogue/git-basics/images/%2e%2e/exam.md",
+        "/static/catalogue/git-basics/images/..%2fexam.md",
+        "/static/catalogue/nope/images/banniere.svg",
+        "/static/catalogue/git-basics/images/",
+    ] {
+        assert_eq!(get(&app, "acme.test", path).await.0, StatusCode::NOT_FOUND, "{path}");
+    }
+    // The style sheets and scripts of the site are still served.
+    assert_eq!(get(&app, "acme.test", "/static/css/portail.css").await.0, StatusCode::OK);
+}

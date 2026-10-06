@@ -181,7 +181,7 @@ A `shell run` block must contain only commands that work **in the lesson's envir
 ```
 
 - An image alone on its line becomes a figure. The text between brackets is both the **caption** and the **alternative text**: describe what the diagram shows. Markdown is not interpreted in a caption.
-- The path is relative to the course folder.
+- The path is relative to the course folder and **must be under `images/`**: it is the only folder of a course that the server gives out (the rest holds lab solutions and exam answers), and the compiler refuses a picture referenced elsewhere. Accepted formats: SVG, PNG, JPEG, GIF, WebP, AVIF. A picture is served with scripts disabled.
 - Naming: `images/<subject-in-lower-case>.svg`, one image per idea. The course banner is `banniere.svg`.
 
 **Style of SVG diagrams** (a common identity, readable on dark and light themes):

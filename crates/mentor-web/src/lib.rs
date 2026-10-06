@@ -9,6 +9,7 @@
 //! HTML is inserted as compiled: `mentor-content` filters what authors wrote when it compiles the catalogue.
 
 mod api;
+mod assets;
 pub mod brand;
 mod dev;
 mod learning;
@@ -18,7 +19,7 @@ mod paths;
 pub mod session;
 mod site;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use axum::routing::{get, post};
@@ -42,12 +43,22 @@ pub struct AppState {
     pub secret: Arc<Vec<u8>>,
     /// Whether the password-less development sign-in is offered. Never on a reachable deployment.
     pub dev_login: bool,
+    /// Where the catalogue is on disk, for the pictures of its courses; set by [`router`].
+    pub catalogue_dir: Arc<PathBuf>,
 }
 
 impl AppState {
     pub fn new(db: PgPool, catalogue: Catalogue, secret: Vec<u8>, dev_login: bool) -> Self {
         let view = Arc::new(learning::view(&catalogue));
-        Self { db, catalogue: Arc::new(catalogue), paths: Arc::default(), view, secret: Arc::new(secret), dev_login }
+        Self {
+            db,
+            catalogue: Arc::new(catalogue),
+            paths: Arc::default(),
+            view,
+            secret: Arc::new(secret),
+            dev_login,
+            catalogue_dir: Arc::default(),
+        }
     }
 
     /// Adds the training paths of the catalogue, as validated by `mentor_content::load_paths`.
@@ -59,7 +70,8 @@ impl AppState {
 
 /// Builds the application. `static_dir` holds the style sheets, scripts and default brand images;
 /// `catalogue_dir` is served for the images that lessons refer to.
-pub fn router(state: AppState, static_dir: &Path, catalogue_dir: &Path) -> Router {
+pub fn router(mut state: AppState, static_dir: &Path, catalogue_dir: &Path) -> Router {
+    state.catalogue_dir = Arc::new(catalogue_dir.to_path_buf());
     let mut app = Router::new()
         .route("/", get(pages::landing))
         .route("/catalogue/", get(pages::catalogue))
@@ -78,7 +90,9 @@ pub fn router(state: AppState, static_dir: &Path, catalogue_dir: &Path) -> Route
     if state.dev_login {
         app = app.route("/dev/login", get(dev::form).post(dev::sign_in));
     }
-    app.nest_service("/static/catalogue", ServeDir::new(catalogue_dir))
+    // Of the catalogue, only the pictures of the courses are served: its other files hold lab solutions and
+    // exam answers (see `assets`).
+    app.route("/static/catalogue/{course}/images/{*file}", get(assets::course_image))
         .nest_service("/static", ServeDir::new(static_dir))
         .fallback(pages::not_found)
         .with_state(state)

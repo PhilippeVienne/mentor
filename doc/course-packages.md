@@ -245,11 +245,10 @@ so a platform can set its own. The `.git` folder at the root of a working direct
 | Malicious `Dockerfile` | Built in a disposable build microVM whose egress is the platform's list plus `build_egress` (§8) | Designed, depends on Atelier |
 | Checks and solutions that attack the learner | They run as the learner, inside the learner's own microVM, without network | By design of the execution plane |
 
-**Found while writing this**: `mentor-web` serves the whole catalogue directory under `/static/catalogue/`
-(`ServeDir` on the directory, `crates/mentor-web/src/lib.rs`). Read from the code, not tried: `exam.md` with
-its ticked answers, lesson sources with lab solutions, and every `Dockerfile` would be downloadable by
-anyone. It is tolerable for a public catalogue; it is a leak for a tenant's private package. Phase 2 must
-serve an allow-list (`<course>/images/…`).
+**Found while writing this, fixed since**: `mentor-web` used to serve the whole catalogue directory under
+`/static/catalogue/`, so `exam.md` with its ticked answers, lesson sources with lab solutions and every
+`Dockerfile` could be downloaded. It now serves only the pictures of the `images/` folder of known courses
+(`crates/mentor-web/src/assets.rs`), and the compiler refuses a picture referenced outside that folder.
 
 ## 7. Dependencies between packages: not in format 1
 
