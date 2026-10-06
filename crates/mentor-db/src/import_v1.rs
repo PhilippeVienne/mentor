@@ -200,8 +200,18 @@ fn source(v1: &str) -> &'static str {
     }
 }
 
-/// Imports `dump` into `tenant`. `question_ids` maps v1 exam question identifiers to v2 ones.
-pub async fn import(owner: &PgPool, tenant: Uuid, dump: &Dump, question_ids: &BTreeMap<String, String>) -> Result<Report> {
+/// How what v1 stored is named in v2.
+#[derive(Debug, Default)]
+pub struct Names {
+    /// v1 exam question identifier → v2 one.
+    pub question_ids: BTreeMap<String, String>,
+    /// `course/lesson` → identifiers of the steps of its lab, in order: v1 named a step by its position.
+    pub step_ids: BTreeMap<String, Vec<String>>,
+}
+
+/// Imports `dump` into `tenant`, translating identifiers with `names`.
+pub async fn import(owner: &PgPool, tenant: Uuid, dump: &Dump, names: &Names) -> Result<Report> {
+    let question_ids = &names.question_ids;
     let mut tx = owner.begin().await?;
     let mut report = Report::default();
 
@@ -231,11 +241,17 @@ pub async fn import(owner: &PgPool, tenant: Uuid, dump: &Dump, question_ids: &BT
     }
     let unknown_user = |what: &str, user: i64, warnings: &mut Vec<String>| warnings.push(format!("{what} skipped: unknown user {user}"));
 
+    let mut untranslated_steps = 0;
     for row in &dump.progress {
         let (Some(learner), Some(lesson)) = (learners.get(&row.user), dump.lessons.get(&row.lesson)) else {
             report.warnings.push(format!("lesson progress skipped: unknown user {} or lesson {}", row.user, row.lesson));
             continue;
         };
+        // A position without a step (the lab has changed since, or no catalogue was given) is not kept.
+        let steps = names.step_ids.get(&format!("{}/{}", lesson.course, lesson.slug));
+        let tasks_done: Vec<&str> =
+            row.tasks_done.iter().filter_map(|&position| steps?.get(usize::try_from(position).ok()?).map(String::as_str)).collect();
+        untranslated_steps += row.tasks_done.len() - tasks_done.len();
         report.progress += sqlx::query(
             "INSERT INTO lesson_progress (tenant_id, learner_id, course, lesson, tasks_done, quiz_best, completed_at, validated_by_exam) \
              VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8) ON CONFLICT DO NOTHING",
@@ -244,13 +260,17 @@ pub async fn import(owner: &PgPool, tenant: Uuid, dump: &Dump, question_ids: &BT
         .bind(learner)
         .bind(&lesson.course)
         .bind(&lesson.slug)
-        .bind(&row.tasks_done)
+        .bind(&tasks_done)
         .bind(row.quiz_best)
         .bind(&row.completed_at)
         .bind(row.validated_by_exam)
         .execute(&mut *tx)
         .await?
         .rows_affected();
+    }
+
+    if untranslated_steps > 0 {
+        report.warnings.push(format!("{untranslated_steps} validated lab step(s) had no v2 equivalent and were not kept"));
     }
 
     for event in &dump.events {

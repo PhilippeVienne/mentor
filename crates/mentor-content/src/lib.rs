@@ -16,6 +16,7 @@ mod catalogue;
 mod document;
 mod environment;
 mod error;
+mod identity;
 mod lab;
 mod markdown;
 mod package;

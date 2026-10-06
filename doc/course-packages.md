@@ -128,7 +128,7 @@ publishing, the platform compares the two compiled packages and reports:
 | Text, images, hints changed | None | Publish |
 | Lesson added | A course that was complete is no longer (completion is derived from the current lesson list). The course award and badge already granted stay: awards are a journal | Publish; the report says how many learners lose "completed" |
 | Lesson `id` removed, or course removed | Its `lesson_progress` rows and awards refer to nothing | **Refused unless confirmed.** Rows are kept, never deleted: XP stays, and the lesson comes back with its progress if the id returns. A removed course no longer satisfies `requires` |
-| Lab steps added, removed or reordered | `tasks_done` holds step **positions**: they now point at other steps | Lessons already completed stay completed; for a lesson in progress, `tasks_done` is cleared. Needs a per-lesson fingerprint (step count and checks) to detect it. Owner's decision (§11) |
+| Lab steps added, removed or reordered | Nothing breaks: `tasks_done` holds step **identifiers** (the step's `id`, or a digest of its text) | Lessons already completed stay completed; for a lesson in progress, the steps still present keep their state, new or reworded ones are to do |
 | Quiz questions added or removed | `quiz_best` is a count compared with the new total | Completed stays completed; in progress, the learner retakes the quiz |
 | Exam pool changed | Open attempts refer to question ids that may be gone | Open attempts on that course are closed without penalty (no cooldown); finished attempts keep their score |
 | Environment folder changed | Its image must be rebuilt | Build before publishing (§8); a failed build blocks the update |
@@ -136,10 +136,8 @@ publishing, the platform compares the two compiled packages and reports:
 
 Rolling back is the same operation with the previous commit; that is why the last published commit is kept.
 
-**Exam question identifiers are fragile for another reason**: they digest *rendered* HTML, so a new version
-of the Markdown renderer changes them without any change in the package (this already happened between v1
-and v2, architecture §6.1). Recommendation before the first tenant package is published: digest the question
-**source text** instead, and migrate stored attempts once.
+**Exam question identifiers** digest the question's **source text** (the question and its answers, as
+written), not its rendered HTML: a new version of the Markdown renderer does not change them.
 
 ## 5. Installing a package for a tenant
 
@@ -352,7 +350,7 @@ What this increment added:
 | 1 | Do tenants get the built-in courses? (architecture §10, open point 2) | Nothing changes: every tenant sees them | Make them an ordinary package installed by default for a new tenant, which the tenant administrator can remove. Eventually move them to their own repository |
 | 2 | Is a one-lab package shown as a course? | Yes: it is a course of one lesson | Keep it so until a real stand-alone lab exists to look at; a `kind` in `course.md` can change the presentation later without changing the format |
 | 3 | Who may install a package: the platform operator only, or tenant administrators? | Not implemented | Operator only (CLI) through phase D; tenant administrators once builds have per-tenant quotas |
-| 4 | When a lab changes under learners who are half-way through it | Not implemented | Completed lessons stay completed; lessons in progress restart their lab (§4) |
+| 4 | When a lab changes under learners who are half-way through it | **Settled**: steps are followed by identifier, so the steps still present keep their state | Nothing more to decide, unless a reworded step should always keep its state (give it an `id`) |
 | 5 | Licence of the built-in courses | `AGPL-3.0-or-later`, because that is the `LICENSE` of the repository they are in | Decide whether content gets a licence of its own (Creative Commons is usual for courses); the manifest key is ready |
 | 6 | Must a package name be unique beyond a tenant? | No: there is no registry (a marketplace is out of scope, architecture §2) | Keep it per tenant |
 | 7 | The key is spelt `license` | American spelling, as SPDX, Cargo and npm write it, although the format says `catalogue` | Keep `license`; changing it later means a format 2 |

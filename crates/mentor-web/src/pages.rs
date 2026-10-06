@@ -16,7 +16,7 @@ use mentor_db::progress::LessonState;
 use mentor_db::TenantTx;
 
 use crate::brand::Brand;
-use crate::learning::{rules, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
+use crate::learning::{done_positions, rules, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
 use crate::paths::{dashboard_cards, paths_of, PathCard};
 use crate::site::now;
 use crate::site::{Site, Viewer};
@@ -431,9 +431,9 @@ fn lesson_data(course: &Course, lesson: &Lesson, progress: &LessonProgress, next
         "lesson": {
             "slug": lesson.slug,
             "title": lesson.title,
-            "tasks": rules.tasks,
+            "tasks": rules.steps.len(),
             "labRequired": rules.lab_required(),
-            "tasksDone": progress.tasks_done,
+            "tasksDone": done_positions(&rules, &progress.tasks_done),
             "quizBest": progress.quiz_best,
             "completed": progress.completed,
             "nextUrl": next_url,

@@ -88,9 +88,9 @@ impl TenantTx {
         .bind(&lesson.slug)
         .fetch_one(&mut *self.tx)
         .await?;
-        let tasks: Vec<i32> = row.get("tasks_done");
+        let tasks: Vec<String> = row.get("tasks_done");
         Ok(LessonProgress {
-            tasks_done: tasks.into_iter().map(|index| index as u32).collect::<BTreeSet<u32>>(),
+            tasks_done: tasks.into_iter().collect::<BTreeSet<String>>(),
             quiz_best: row.get::<i32, _>("quiz_best") as u32,
             completed: row.get("completed"),
             validated_by_exam: row.get("validated_by_exam"),
@@ -116,7 +116,7 @@ impl TenantTx {
     pub async fn record_event(&mut self, learner: Uuid, lesson: &LessonRules, event: Event, source: Source) -> Result<Recorded> {
         let mut progress = self.lesson_progress(learner, lesson).await?;
         let outcome = record(lesson, &mut progress, event, source).map_err(Error::Refused)?;
-        let tasks: Vec<i32> = progress.tasks_done.iter().map(|&index| index as i32).collect();
+        let tasks: Vec<&str> = progress.tasks_done.iter().map(String::as_str).collect();
         sqlx::query(
             "UPDATE lesson_progress SET tasks_done = $1, quiz_best = $2, \
              completed_at = CASE WHEN $3 AND completed_at IS NULL THEN now() ELSE completed_at END \

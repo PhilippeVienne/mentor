@@ -9,11 +9,11 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value as Json;
 use serde_yaml::{Mapping, Value as Yaml};
-use sha1::{Digest, Sha1};
 
 use crate::document::{render_document, Quiz, QuizOption};
 use crate::environment::dockerfile_warnings;
 use crate::error::{ContentError, Result};
+use crate::identity::fingerprint;
 use crate::lab::{Checks, Lab, LabContext};
 use crate::markdown::{md_inline, Render};
 use crate::yaml::{is_falsy, text};
@@ -86,7 +86,8 @@ pub struct Exam {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ExamQuestion {
-    /// Digest of the question text: stable when other questions are added or removed.
+    /// Digest of the question and its answers as written: stable when other questions are added or removed,
+    /// when the pool is reordered and when the renderer changes.
     pub id: String,
     pub question: String,
     pub options: Vec<QuizOption>,
@@ -204,12 +205,6 @@ fn load_lesson(path: &Path, course: &str, checks: &Checks, inherited: &str, envi
     })
 }
 
-/// Stable identifier of a pool question: digest of its text.
-fn question_id(question_html: &str) -> String {
-    let digest = Sha1::digest(question_html.as_bytes());
-    digest.iter().take(5).map(|byte| format!("{byte:02x}")).collect()
-}
-
 fn load_exam(path: &Path, course: &str) -> Result<Exam> {
     let (meta, body) = split_front_matter(&read(path)?, path)?;
     require(&meta, &["title", "draw", "pass_mark", "minutes"], path)?;
@@ -242,8 +237,10 @@ fn load_exam(path: &Path, course: &str) -> Result<Exam> {
     let mut seen = BTreeSet::new();
     let mut questions = Vec::with_capacity(pool.len());
     for entry in pool {
-        let id = question_id(&entry.question);
-        if !seen.insert(id.clone()) {
+        // The identifier follows the source text, so that neither another renderer nor a reordering of the
+        // pool changes it (see `identity`). The same question asked twice is a mistake, whatever its answers.
+        let id = fingerprint(&entry.source);
+        if !seen.insert(fingerprint(&entry.question)) {
             let excerpt: String = entry.question.chars().take(70).collect();
             return ctx.fail(format!("duplicate question in the pool: \"{excerpt}\""));
         }
@@ -383,11 +380,5 @@ mod tests {
         let (meta, _) = split_front_matter("---\ntitle: T\nsummary: ''\n---\n", Path::new("l.md")).unwrap();
         let err = require(&meta, &["title", "summary", "minutes"], Path::new("l.md")).unwrap_err();
         assert!(err.message.ends_with(": summary, minutes"));
-    }
-
-    #[test]
-    fn question_id_is_stable() {
-        // Same value as `hashlib.sha1(b"Question ?").hexdigest()[:10]` in v1.
-        assert_eq!(question_id("Question ?"), "782d7ec139");
     }
 }

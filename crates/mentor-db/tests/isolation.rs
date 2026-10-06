@@ -9,7 +9,13 @@ use mentor_db::{platform, resolve_tenant, Error, TenantTx};
 use sqlx::PgPool;
 
 fn lesson(tasks: u32, questions: u32) -> LessonRules {
-    LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, lab_available: true }
+    LessonRules {
+        course: "git".into(),
+        slug: "intro".into(),
+        steps: (0..tasks).map(|i| format!("s{i}")).collect(),
+        questions,
+        lab_available: true,
+    }
 }
 
 #[tokio::test]
@@ -92,8 +98,8 @@ async fn progress_and_xp_are_persisted_once() {
     // The quiz is refused before the lab; nothing is credited.
     let refused = tx.record_event(alice, &lesson, Event::Quiz(3), Source::Browser).await;
     assert!(matches!(refused, Err(Error::Refused(RecordError::LabNotDone))));
-    assert_eq!(tx.record_event(alice, &lesson, Event::Task(0), Source::Server).await.unwrap().xp_gained, XP_TASK);
-    assert_eq!(tx.record_event(alice, &lesson, Event::Task(0), Source::Server).await.unwrap().xp_gained, 0);
+    assert_eq!(tx.record_event(alice, &lesson, Event::Task("s0".into()), Source::Server).await.unwrap().xp_gained, XP_TASK);
+    assert_eq!(tx.record_event(alice, &lesson, Event::Task("s0".into()), Source::Server).await.unwrap().xp_gained, 0);
     tx.commit().await.unwrap();
 
     // A new transaction reads back what was stored and continues from there.
@@ -119,7 +125,7 @@ async fn concurrent_requests_do_not_pay_twice() {
 
     let attempt = |app: PgPool| async move {
         let mut tx = TenantTx::begin(&app, acme).await.unwrap();
-        let gained = tx.record_event(alice, &lesson(4, 0), Event::Task(2), Source::Server).await.unwrap().xp_gained;
+        let gained = tx.record_event(alice, &lesson(4, 0), Event::Task("s2".into()), Source::Server).await.unwrap().xp_gained;
         tx.commit().await.unwrap();
         gained
     };

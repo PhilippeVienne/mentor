@@ -231,6 +231,12 @@ fn report() -> (Vec<String>, Vec<String>, usize) {
             drop_rewritten(x);
             drop_rewritten(y);
         }
+        // Lab steps have an identifier in v2 only: v1 referred to them by position.
+        each(&mut y["lessons"], |lesson| {
+            if lesson["lab"].is_object() {
+                each(&mut lesson["lab"]["steps"], |step| remove(step, &["id"]));
+            }
+        });
         // Exam warnings are diagnostics, now in English: only their number is compared.
         for exam in [&mut x["exam"], &mut y["exam"]] {
             if exam.is_object() {

@@ -2,12 +2,10 @@
 
 mod common;
 
-use std::collections::BTreeMap;
-
 use common::database;
 use mentor_core::progress::LessonRules;
 use mentor_db::badges::CatalogueView;
-use mentor_db::import_v1::{import, Dump, Report};
+use mentor_db::import_v1::{import, Dump, Names, Report};
 use mentor_db::{platform, Error, TenantTx};
 
 /// A small export in the format of `manage.py dumpdata`.
@@ -34,19 +32,24 @@ async fn imports_once_keeps_dates_and_stays_inside_the_tenant() {
     let acme = platform::create_tenant(&db.owner, "acme", "Acme", &[]).await.unwrap();
     let globex = platform::create_tenant(&db.owner, "globex", "Globex", &[]).await.unwrap();
     let dump = Dump::parse(EXPORT).unwrap();
-    let question_ids: BTreeMap<String, String> = [("old-a".to_string(), "new-a".to_string())].into();
+    let names = Names {
+        question_ids: [("old-a".to_string(), "new-a".to_string())].into(),
+        // The lab of that lesson has two steps today: the third position of v1 has nowhere to go.
+        step_ids: [("git-basics/introduction".to_string(), vec!["init".to_string(), "config".to_string()])].into(),
+    };
 
-    let report = import(&db.owner, acme, &dump, &question_ids).await.unwrap();
+    let report = import(&db.owner, acme, &dump, &names).await.unwrap();
     assert_eq!(
         (report.learners, report.progress, report.awards, report.badges, report.cohorts, report.memberships, report.attempts),
         (2, 1, 3, 1, 1, 1, 1)
     );
-    assert_eq!(report.warnings.len(), 2, "{:?}", report.warnings);
+    assert_eq!(report.warnings.len(), 3, "{:?}", report.warnings);
     assert!(report.warnings[0].contains("unknown user 2 or lesson 999"));
-    assert!(report.warnings[1].starts_with("1 exam question identifier(s)"));
+    assert!(report.warnings[1].starts_with("1 validated lab step(s) had no v2 equivalent"));
+    assert!(report.warnings[2].starts_with("1 exam question identifier(s)"));
 
     // Replaying the import writes nothing more.
-    let again = import(&db.owner, acme, &dump, &question_ids).await.unwrap();
+    let again = import(&db.owner, acme, &dump, &names).await.unwrap();
     assert_eq!(Report { warnings: Vec::new(), ..again }, Report::default());
 
     let mut tx = TenantTx::begin(&db.app, acme).await.unwrap();
@@ -56,12 +59,20 @@ async fn imports_once_keeps_dates_and_stays_inside_the_tenant() {
     assert_eq!(tx.total_xp(alice).await.unwrap(), 70);
     assert_eq!(tx.badges_of(alice).await.unwrap().into_iter().collect::<Vec<_>>(), ["premier-pas"]);
     assert_eq!(tx.cohorts_of(alice).await.unwrap(), ["promo-2026"]);
-    let lesson = LessonRules { course: "git-basics".into(), slug: "introduction".into(), tasks: 3, questions: 3, lab_available: false };
+    let lesson = LessonRules {
+        course: "git-basics".into(),
+        slug: "introduction".into(),
+        steps: vec!["init".into(), "config".into()],
+        questions: 3,
+        lab_available: false,
+    };
     let progress = tx.lesson_progress(alice, &lesson).await.unwrap();
-    assert!(progress.completed && progress.tasks_done.len() == 3 && progress.quiz_best == 3);
+    // v1 named steps by position: they are imported under the identifiers of today's lab.
+    assert!(progress.completed && progress.quiz_best == 3);
+    assert_eq!(progress.tasks_done.iter().map(String::as_str).collect::<Vec<_>>(), ["config", "init"]);
     // The three events fall on three consecutive days: the streak survives the import because dates do.
     let stats = tx.learner_stats(alice, &CatalogueView::default(), 0).await.unwrap();
-    assert_eq!((stats.streak, stats.exams_passed, stats.tasks), (3, 1, 3));
+    assert_eq!((stats.streak, stats.exams_passed, stats.tasks), (3, 1, 2));
     drop(tx);
 
     let stored: (serde_json::Value, serde_json::Value, Vec<String>) = sqlx::query_as(

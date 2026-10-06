@@ -12,6 +12,7 @@ use serde_json::Value as Json;
 use serde_yaml::Value as Yaml;
 
 use crate::error::Result;
+use crate::identity::fingerprint;
 use crate::markdown::{md, md_inline, Render};
 use crate::yaml::{is_falsy, text, to_json};
 
@@ -20,6 +21,8 @@ const REAL_ENGINE: &str = "real";
 /// Keys that only meant something for simulated labs.
 const SIMULATED_ONLY: [&str; 2] = ["server", "effect"];
 
+/// A step identifier starts with a letter: stored progress of v1 named steps by their position, a number.
+static STEP_ID_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[a-z][a-z0-9-]{0,39}$").unwrap());
 static FILE_NAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9._-][A-Za-z0-9._/-]*$").unwrap());
 
 /// Declaration of a check in `_checks.yml`.
@@ -83,6 +86,9 @@ pub struct Lab {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Step {
+    /// What progress refers to: the `id` the author gave, or else a digest of the step's text. Reordering
+    /// the steps of a lab keeps what learners validated; rewording a step without an `id` makes it a new one.
+    pub id: String,
     pub text: String,
     pub hint: String,
     pub checks: Vec<Check>,
@@ -210,7 +216,18 @@ fn parse_step(step: &Yaml, index: usize, place: &str, lab: &LabContext, ctx: &Re
         }
     }
     refuse_simulated_keys(step, &label, ctx)?;
+    let id = match get(step, "id") {
+        None | Some(Yaml::Null) => format!("s{}", fingerprint(&text(&step["text"]))),
+        Some(Yaml::String(id)) if STEP_ID_RE.is_match(id) => id.clone(),
+        Some(other) => {
+            return ctx.fail(format!(
+                "{label}: `id` must start with a lower-case letter and hold at most 40 lower-case letters, digits and hyphens (got `{}`)",
+                text(other)
+            ))
+        }
+    };
     Ok(Step {
+        id,
         text: md_inline(&text(&step["text"])),
         hint: get(step, "hint").filter(|v| !is_falsy(v)).map(|v| md_inline(&text(v))).unwrap_or_default(),
         checks: normalize_checks(&step["checks"], lab, &label, ctx)?,
@@ -268,7 +285,16 @@ pub fn parse_lab(body: &str, start_line: usize, lab: &mut LabContext, ctx: &Rend
     };
     let mut parsed_steps = Vec::with_capacity(steps.len());
     for (i, step) in steps.iter().enumerate() {
-        parsed_steps.push(parse_step(step, i + 1, &place, lab, ctx)?);
+        let parsed = parse_step(step, i + 1, &place, lab, ctx)?;
+        if let Some(twin) = parsed_steps.iter().position(|earlier: &Step| earlier.id == parsed.id) {
+            return ctx.fail(format!(
+                "{place}, step {}: same identifier as step {} (`{}`): two steps with the same text need an `id` each",
+                i + 1,
+                twin + 1,
+                parsed.id
+            ));
+        }
+        parsed_steps.push(parsed);
     }
     Ok(Lab {
         environment,
@@ -317,6 +343,32 @@ mod tests {
         assert_eq!(lab.steps[0].checks, vec![Check { name: "command-succeeds".into(), args: vec![Json::from("test -d .git")] }]);
         assert_eq!(lab.steps[0].solution, vec![Json::from("git init")]);
         assert_eq!((lab.files, lab.commands), (serde_json::json!({}), serde_json::json!([])));
+    }
+
+    #[test]
+    fn a_step_is_identified_by_its_text_unless_it_names_itself() {
+        let lab = parse(STEP, "environnement").unwrap();
+        let derived = lab.steps[0].id.clone();
+        assert!(derived.starts_with('s') && derived.len() == 11, "{derived}");
+        // Another hint, other checks, another position: the same step.
+        let moved = format!(
+            "steps:\n  - text: avant\n    checks: [{{command-succeeds: 'true'}}]\n    solution: ['true']\n{}",
+            STEP.trim_start_matches("steps:\n")
+        );
+        assert_eq!(parse(&moved, "environnement").unwrap().steps[1].id, derived);
+        // Reworded: another step, unless the author pinned its identifier.
+        assert_ne!(parse(&STEP.replace("Lance", "Tape"), "environnement").unwrap().steps[0].id, derived);
+        let pinned = STEP.replace("    solution", "    id: init-repo\n    solution");
+        assert_eq!(parse(&pinned.replace("Lance", "Tape"), "environnement").unwrap().steps[0].id, "init-repo");
+        let err = parse(&STEP.replace("    solution", "    id: 0\n    solution"), "environnement").unwrap_err();
+        assert!(err.message.contains("`id` must start with a lower-case letter"), "{err}");
+    }
+
+    #[test]
+    fn two_steps_cannot_share_an_identifier() {
+        let twice = format!("{STEP}{}", STEP.trim_start_matches("steps:\n"));
+        let err = parse(&twice, "environnement").unwrap_err();
+        assert!(err.message.contains("step 2: same identifier as step 1"), "{err}");
     }
 
     #[test]

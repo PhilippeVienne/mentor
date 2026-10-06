@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use mentor_db::import_v1::{import, Dump};
+use mentor_db::import_v1::{import, Dump, Names};
 use mentor_db::platform;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
@@ -61,8 +61,22 @@ enum Command {
 
 type Failure = Box<dyn std::error::Error>;
 
+/// Identifiers of the lab steps of every lesson, in order: v1 stored the positions of validated steps.
+fn step_ids(catalogue: &Path) -> Result<BTreeMap<String, Vec<String>>, Failure> {
+    let catalogue = mentor_content::load_catalogue(catalogue)?;
+    let mut ids = BTreeMap::new();
+    for course in &catalogue.courses {
+        for lesson in &course.lessons {
+            if let Some(lab) = &lesson.lab {
+                ids.insert(format!("{}/{}", course.slug, lesson.slug), lab.steps.iter().map(|step| step.id.clone()).collect());
+            }
+        }
+    }
+    Ok(ids)
+}
+
 /// Maps v1 exam question identifiers to v2 ones. Both catalogues hold the same questions in the same order;
-/// only their identifiers differ, because they are digests of differently rendered HTML.
+/// only their identifiers differ: v1 digested the rendered HTML of a question, v2 its source text.
 fn question_ids(v1_catalogue: &Path, catalogue: &Path) -> Result<BTreeMap<String, String>, Failure> {
     let v1: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(v1_catalogue)?)?;
     let v2 = mentor_content::load_catalogue(catalogue)?;
@@ -155,11 +169,14 @@ async fn run(cli: Cli) -> Result<(), Failure> {
         Command::ImportV1 { export, tenant, v1_catalogue, catalogue } => {
             let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
             let dump = Dump::parse(&std::fs::read_to_string(&export)?)?;
-            let ids = match (v1_catalogue, catalogue) {
-                (Some(v1), Some(v2)) => question_ids(&v1, &v2)?,
-                _ => BTreeMap::new(),
-            };
-            let report = import(&owner, id, &dump, &ids).await?;
+            let mut names = Names::default();
+            if let Some(v2) = &catalogue {
+                names.step_ids = step_ids(v2)?;
+                if let Some(v1) = &v1_catalogue {
+                    names.question_ids = question_ids(v1, v2)?;
+                }
+            }
+            let report = import(&owner, id, &dump, &names).await?;
             println!(
                 "imported into {tenant}: {} learners, {} lesson progress rows, {} XP events, {} badges, {} cohorts, {} memberships, {} exam attempts",
                 report.learners, report.progress, report.awards, report.badges, report.cohorts, report.memberships, report.attempts

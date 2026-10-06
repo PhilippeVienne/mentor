@@ -291,7 +291,7 @@ async fn the_rules_decide_what_the_browser_may_report() {
     let cookie = sign_in(&app, "acme.test", "alice").await;
     let post = |json: &'static str| progress(&app, "acme.test", Some(&cookie), json);
     // A step of a real lab can only come from the server.
-    let (status, body) = post(r#"{"course": "git-basics", "lesson": "introduction", "type": "task", "task": 0}"#).await;
+    let (status, body) = post(r#"{"course": "git-basics", "lesson": "introduction", "type": "task", "task": "s0123456789"}"#).await;
     assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
     assert_eq!(post(r#"{"course": "git-basics", "lesson": "introduction", "type": "quiz", "score": 99}"#).await.0, StatusCode::BAD_REQUEST);
     assert_eq!(post(r#"{"course": "git-basics", "lesson": "nope", "type": "quiz", "score": 1}"#).await.0, StatusCode::NOT_FOUND);

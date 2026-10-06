@@ -65,10 +65,15 @@ pub fn rules(course: &Course, lesson: &Lesson) -> LessonRules {
     LessonRules {
         course: course.slug.clone(),
         slug: lesson.slug.clone(),
-        tasks: lesson.lab.as_ref().map_or(0, |lab| lab.steps.len() as u32),
+        steps: lesson.lab.as_ref().map_or_else(Vec::new, |lab| lab.steps.iter().map(|step| step.id.clone()).collect()),
         questions: lesson.quiz.len() as u32,
         lab_available: LABS_AVAILABLE,
     }
+}
+
+/// Positions, in today's lab, of the steps a learner validated: what the page shows and counts.
+pub fn done_positions(rules: &LessonRules, done: &std::collections::BTreeSet<String>) -> Vec<usize> {
+    rules.steps.iter().enumerate().filter(|(_, step)| done.contains(*step)).map(|(position, _)| position).collect()
 }
 
 /// The catalogue as the progress rules see it.

@@ -258,6 +258,9 @@ A `:::lab` block describes the practical exercise of a lesson: the starting stat
 | `checks` | yes | A list of [checks](#checks): the step is validated when **all** of them hold. |
 | `solution` | yes | Actions that carry out the step: a command (text) or `{write: {file: content}}`. Shown by "Voir la solution". |
 | `after` | no | Numbers (from 1) of **earlier** steps to validate before this one. |
+| `id` | no | A name for the step (a lower-case letter, then letters, digits, hyphens; 40 at most), unique in the lab. See below. |
+
+A learner's progress refers to each step by an **identifier**, never by its position: you can reorder the steps of a lab or add one in the middle without touching what learners have validated. Without `id`, the identifier is a digest of `text`: rewording the step then makes it a new step, to be done again by those who had not finished the lesson (a completed lesson stays completed). Give an `id` to a step whose wording you expect to polish. Two steps with the same text need an `id` each.
 
 ### Checks
 
@@ -453,7 +456,7 @@ Que fait `git restore --staged fichier` ?
 
 The compiler checks the four required keys (integers within bounds), a pool **at least as large as `draw`**, questions that are **all different**, one right answer per question, and **no `:::lab`**. It records a warning when the pool is smaller than **twice** `draw` (ideal: **three times**).
 
-Each question gets a **stable identifier**, a digest of its wording: adding, removing or reordering questions is safe; rewording a question creates a new one.
+Each question gets a **stable identifier**, a digest of what you wrote: the question and its answers, in order. Adding, removing or reordering questions is safe, and so is correcting which answer is ticked or rewriting the explanation. Rewording the question, changing an answer or reordering the answers creates a new question; an attempt in progress simply ignores a question that left the pool.
 
 ### Writing a good pool
 

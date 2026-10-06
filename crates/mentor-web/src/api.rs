@@ -17,7 +17,7 @@ use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::learning::{exam_pool, exam_settings, rules, OsRandom, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
+use crate::learning::{done_positions, exam_pool, exam_settings, rules, OsRandom, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
 use crate::site::{now, same_origin, Site};
 use crate::AppState;
 
@@ -27,7 +27,8 @@ pub struct ProgressRequest {
     lesson: String,
     #[serde(rename = "type")]
     kind: String,
-    task: Option<u32>,
+    /// Identifier of a lab step. The browser can name one but never validate it: only the server does.
+    task: Option<String>,
     score: Option<u32>,
 }
 
@@ -62,6 +63,7 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
     let Some(lesson) = course.lessons.iter().find(|lesson| lesson.slug == request.lesson) else {
         return refuse(StatusCode::NOT_FOUND, "Leçon inconnue.");
     };
+    let lesson_rules = rules(course, lesson);
     let event = match (request.kind.as_str(), request.task, request.score) {
         ("task", Some(task), _) => Event::Task(task),
         ("quiz", _, Some(score)) => Event::Quiz(score),
@@ -79,7 +81,7 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
         let level_before = viewer.level.level;
 
         // The browser reports this event: steps of a real lab are refused here, by the rules.
-        let recorded = match tx.record_event(learner, &rules(course, lesson), event, Source::Browser).await {
+        let recorded = match tx.record_event(learner, &lesson_rules, event, Source::Browser).await {
             Ok(recorded) => recorded,
             Err(Error::Refused(reason)) => {
                 let (status, message) = match reason {
@@ -123,7 +125,7 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
             "course_completed": course_completed,
             "new_badges": new_badges,
             "progress": {
-                "tasks_done": recorded.progress.tasks_done,
+                "tasks_done": done_positions(&lesson_rules, &recorded.progress.tasks_done),
                 "quiz_best": recorded.progress.quiz_best,
                 "completed": recorded.progress.completed,
             },

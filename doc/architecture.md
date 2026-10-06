@@ -167,8 +167,9 @@ renamed the format to English, the v1 export is first rewritten with the name ta
 
 Two consequences to handle before phase 4:
 
-1. **Exam question identifiers change.** An identifier is the SHA-1 of the question's HTML, and v2 escapes quotes
-   differently. Stored exam attempts must be remapped during data migration (or identifiers recomputed from text).
+1. **Identifiers no longer depend on rendering or position.** v1 identified an exam question by the SHA-1 of
+   its HTML and a lab step by its position. v2 digests the source text of a question, and names a step by its
+   `id` or a digest of its text; `mentor import-v1` translates both when it is given the two catalogues.
 2. **Simulated labs are gone** (decision of 5 October 2026, §10): the two courses that used them
    (`docker-hello`, `docker-advanced`) are rewritten as real labs and excluded from the lab comparison with v1.
 3. **Not ported yet**: validation of the `devcontainer.json` specification (it belongs with the execution plane,

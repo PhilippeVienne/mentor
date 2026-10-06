@@ -209,7 +209,7 @@ impl TenantTx {
         for lesson in lessons {
             let mut progress = self.lesson_progress(learner, lesson).await?;
             if progress.validate_by_exam(lesson) {
-                let tasks: Vec<i32> = progress.tasks_done.iter().map(|&index| index as i32).collect();
+                let tasks: Vec<&str> = progress.tasks_done.iter().map(String::as_str).collect();
                 sqlx::query(
                     "UPDATE lesson_progress SET tasks_done = $1, quiz_best = $2, completed_at = to_timestamp($3), validated_by_exam = true \
                      WHERE learner_id = $4 AND course = $5 AND lesson = $6",

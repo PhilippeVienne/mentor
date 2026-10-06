@@ -33,6 +33,10 @@ pub enum Segment {
 /// Single-choice question of a lesson quiz or an exam pool.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Quiz {
+    /// The question and its answers as the author wrote them, in order: what identifies an exam question.
+    /// Which answer is ticked is not part of it, so correcting the key does not make another question.
+    #[serde(skip)]
+    pub source: String,
     pub question: String,
     pub options: Vec<QuizOption>,
     pub explanation: String,
@@ -156,7 +160,10 @@ fn parse_quiz(body: &str, start_line: usize, ctx: &Render) -> Result<Quiz> {
     if options.iter().filter(|(correct, _)| *correct).count() != 1 {
         return ctx.fail(format!("{place}: exactly one answer must be ticked `[x]`"));
     }
+    let source =
+        std::iter::once(question.join("\n")).chain(options.iter().map(|(_, text)| format!("- {text}"))).collect::<Vec<_>>().join("\n");
     Ok(Quiz {
+        source,
         question: md_inline(&question.join("\n")),
         options: options.into_iter().map(|(correct, text)| QuizOption { html: md_inline(&text), correct }).collect(),
         explanation: if explanation.is_empty() { String::new() } else { md_inline(&explanation.join("\n")) },
@@ -195,6 +202,22 @@ mod tests {
 
     fn ctx() -> Render<'static> {
         Render::new(Path::new("lecon.md"), "demo")
+    }
+
+    #[test]
+    fn a_question_is_identified_by_what_the_author_wrote() {
+        use crate::identity::fingerprint;
+        let id = |body: &str| fingerprint(&parse_quiz(body, 1, &ctx()).unwrap().source);
+        let question = "Que fait `git init` ?\n\n- [ ] Il clone\n- [x] Il crée un dépôt\n\n> Explication.";
+        // Correcting the key, the explanation or the layout: the same question.
+        assert_eq!(id(question), id(&question.replace("- [ ] Il clone\n- [x]", "- [x] Il clone\n- [ ]")));
+        assert_eq!(id(question), id(&question.replace("> Explication.", "> Une autre explication.")));
+        assert_eq!(id(question), id(&question.replace("Que fait", "Que   fait")));
+        // Another wording, other answers, or the answers in another order (stored attempts refer to answers by
+        // position): another question.
+        assert_ne!(id(question), id(&question.replace("Que fait", "À quoi sert")));
+        assert_ne!(id(question), id(&question.replace("Il clone", "Il copie")));
+        assert_ne!(id(question), id("Que fait `git init` ?\n\n- [x] Il crée un dépôt\n- [ ] Il clone"));
     }
 
     #[test]

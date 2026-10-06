@@ -15,8 +15,9 @@ use crate::gamification::{XP_COURSE, XP_EXAM, XP_LESSON, XP_QUIZ, XP_TASK};
 pub struct LessonRules {
     pub course: String,
     pub slug: String,
-    /// Number of lab steps.
-    pub tasks: u32,
+    /// Identifiers of the lab steps, in order. Progress refers to steps by identifier, never by position:
+    /// a lab can be reordered or extended without relabelling what learners did.
+    pub steps: Vec<String>,
     /// Number of quiz questions.
     pub questions: u32,
     /// The lab can actually be done on this platform. When it cannot (no execution plane is connected), it
@@ -32,15 +33,15 @@ impl LessonRules {
 
     /// Whether the lab must be finished before the quiz.
     pub fn lab_required(&self) -> bool {
-        self.tasks > 0 && self.lab_available
+        !self.steps.is_empty() && self.lab_available
     }
 }
 
 /// A learner's state on one lesson.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct LessonProgress {
-    /// Zero-based indices of validated lab steps.
-    pub tasks_done: BTreeSet<u32>,
+    /// Identifiers of the validated lab steps. It may hold steps that the lab no longer has.
+    pub tasks_done: BTreeSet<String>,
     /// Best number of correct quiz answers so far.
     pub quiz_best: u32,
     pub completed: bool,
@@ -50,7 +51,8 @@ pub struct LessonProgress {
 
 impl LessonProgress {
     pub fn lab_done(&self, lesson: &LessonRules) -> bool {
-        !lesson.lab_required() || self.tasks_done.len() as u32 >= lesson.tasks
+        // Every step the lab has today, not a count: a step added since must be done, a removed one is ignored.
+        !lesson.lab_required() || lesson.steps.iter().all(|step| self.tasks_done.contains(step))
     }
 
     /// Marks the lesson as completed through the course exam. Returns `false` when it was already completed:
@@ -59,7 +61,7 @@ impl LessonProgress {
         if self.completed {
             return false;
         }
-        self.tasks_done = (0..lesson.tasks).collect();
+        self.tasks_done.extend(lesson.steps.iter().cloned());
         self.quiz_best = lesson.questions;
         self.completed = true;
         self.validated_by_exam = true;
@@ -73,10 +75,10 @@ impl LessonProgress {
 }
 
 /// Something a learner did in a lesson.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
-    /// A lab step was validated (zero-based index).
-    Task(u32),
+    /// A lab step was validated, named by its identifier.
+    Task(String),
     /// A quiz was submitted with this number of correct answers.
     Quiz(u32),
 }
@@ -127,7 +129,7 @@ pub enum RecordError {
     CourseLocked,
     /// Lab steps are validated by the server inside the environment: the browser cannot report one.
     ServerVerifiedLab,
-    /// The step index is out of range.
+    /// The lab has no step with this identifier.
     InvalidTask,
     /// The lab must be finished before the quiz.
     LabNotDone,
@@ -152,12 +154,12 @@ pub fn record(lesson: &LessonRules, progress: &mut LessonProgress, event: Event,
     let mut awards = Vec::new();
     match event {
         Event::Task(_) if source != Source::Server => return Err(RecordError::ServerVerifiedLab),
-        Event::Task(index) => {
-            if index >= lesson.tasks {
+        Event::Task(step) => {
+            if !lesson.steps.contains(&step) {
                 return Err(RecordError::InvalidTask);
             }
-            if progress.tasks_done.insert(index) {
-                awards.push(Award { kind: AwardKind::Task, key: format!("{reference}/t{index}"), xp: XP_TASK });
+            if progress.tasks_done.insert(step.clone()) {
+                awards.push(Award { kind: AwardKind::Task, key: format!("{reference}/t-{step}"), xp: XP_TASK });
             }
         }
         Event::Quiz(score) => {
@@ -230,7 +232,13 @@ mod tests {
     use super::*;
 
     fn lesson(tasks: u32, questions: u32) -> LessonRules {
-        LessonRules { course: "git".into(), slug: "intro".into(), tasks, questions, lab_available: true }
+        LessonRules {
+            course: "git".into(),
+            slug: "intro".into(),
+            steps: (0..tasks).map(|i| format!("s{i}")).collect(),
+            questions,
+            lab_available: true,
+        }
     }
 
     fn xp(recorded: &Recorded) -> u32 {
@@ -240,22 +248,25 @@ mod tests {
     #[test]
     fn a_step_is_awarded_once() {
         let (lesson, mut progress) = (lesson(2, 3), LessonProgress::default());
-        let first = record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
-        assert_eq!(first.awards, vec![Award { kind: AwardKind::Task, key: "git/intro/t0".into(), xp: XP_TASK }]);
-        let again = record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
+        let first = record(&lesson, &mut progress, Event::Task("s0".into()), Source::Server).unwrap();
+        assert_eq!(first.awards, vec![Award { kind: AwardKind::Task, key: "git/intro/t-s0".into(), xp: XP_TASK }]);
+        let again = record(&lesson, &mut progress, Event::Task("s0".into()), Source::Server).unwrap();
         assert!(again.awards.is_empty() && !again.lesson_completed);
     }
 
     #[test]
     fn step_out_of_range_is_refused() {
-        assert_eq!(record(&lesson(2, 0), &mut LessonProgress::default(), Event::Task(2), Source::Server), Err(RecordError::InvalidTask));
+        assert_eq!(
+            record(&lesson(2, 0), &mut LessonProgress::default(), Event::Task("s2".into()), Source::Server),
+            Err(RecordError::InvalidTask)
+        );
     }
 
     #[test]
     fn quiz_waits_for_the_lab() {
         let (lesson, mut progress) = (lesson(1, 3), LessonProgress::default());
         assert_eq!(record(&lesson, &mut progress, Event::Quiz(3), Source::Browser), Err(RecordError::LabNotDone));
-        record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap();
+        record(&lesson, &mut progress, Event::Task("s0".into()), Source::Server).unwrap();
         assert!(record(&lesson, &mut progress, Event::Quiz(3), Source::Browser).unwrap().lesson_completed);
     }
 
@@ -287,11 +298,28 @@ mod tests {
     }
 
     #[test]
+    fn progress_follows_steps_by_identifier_when_the_lab_changes() {
+        let (before, mut progress) = (lesson(2, 0), LessonProgress::default());
+        record(&before, &mut progress, Event::Task("s1".into()), Source::Server).unwrap();
+        // The lab is reordered and gains a step: what was validated stays validated, under the same name.
+        let after = LessonRules { steps: vec!["s1".into(), "new".into(), "s0".into()], ..before };
+        assert!(!progress.lab_done(&after));
+        let again = record(&after, &mut progress, Event::Task("s1".into()), Source::Server).unwrap();
+        assert!(again.awards.is_empty());
+        record(&after, &mut progress, Event::Task("s0".into()), Source::Server).unwrap();
+        assert!(!progress.completed, "the new step is still to do");
+        assert!(record(&after, &mut progress, Event::Task("new".into()), Source::Server).unwrap().lesson_completed);
+        // A step removed afterwards is simply no longer asked for.
+        let shorter = LessonRules { steps: vec!["new".into()], ..after };
+        assert!(progress.lab_done(&shorter));
+    }
+
+    #[test]
     fn lab_steps_come_from_the_server_only() {
         let (lesson, mut progress) = (lesson(1, 0), LessonProgress::default());
-        assert_eq!(record(&lesson, &mut progress, Event::Task(0), Source::Browser), Err(RecordError::ServerVerifiedLab));
+        assert_eq!(record(&lesson, &mut progress, Event::Task("s0".into()), Source::Browser), Err(RecordError::ServerVerifiedLab));
         assert!(progress.tasks_done.is_empty());
-        assert!(record(&lesson, &mut progress, Event::Task(0), Source::Server).unwrap().lesson_completed);
+        assert!(record(&lesson, &mut progress, Event::Task("s0".into()), Source::Server).unwrap().lesson_completed);
     }
 
     #[test]

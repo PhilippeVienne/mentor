@@ -27,7 +27,13 @@ const SETTINGS: ExamSettings = ExamSettings { draw: 2, shuffle: true, minutes: 2
 const NOW: i64 = 1_800_000_000;
 
 fn lesson(slug: &str, tasks: u32) -> LessonRules {
-    LessonRules { course: "git".into(), slug: slug.into(), tasks, questions: 0, lab_available: true }
+    LessonRules {
+        course: "git".into(),
+        slug: slug.into(),
+        steps: (0..tasks).map(|i| format!("s{i}")).collect(),
+        questions: 0,
+        lab_available: true,
+    }
 }
 
 fn pool() -> Vec<PoolQuestion> {
@@ -99,7 +105,7 @@ async fn badges_are_granted_once_from_stored_progress() {
 
     let mut tx = TenantTx::begin(&db.app, tenant).await.unwrap();
     assert!(tx.award_badges(alice, &badges, &catalogue, 120).await.unwrap().is_empty());
-    let done = tx.record_event(alice, &lesson("intro", 1), Event::Task(0), Source::Server).await.unwrap();
+    let done = tx.record_event(alice, &lesson("intro", 1), Event::Task("s0".into()), Source::Server).await.unwrap();
     assert!(done.lesson_completed);
     let stats = tx.learner_stats(alice, &catalogue, 120).await.unwrap();
     assert_eq!((stats.tasks, stats.streak, stats.level), (1, 1, 1));
@@ -155,7 +161,7 @@ async fn a_passed_exam_validates_the_course_once() {
     let lessons = [lesson("intro", 1), lesson("branches", 2)];
     let mut tx = TenantTx::begin(&db.app, tenant).await.unwrap();
     // One lesson was already completed by practising: the exam must not overwrite it.
-    tx.record_event(alice, &lessons[0], Event::Task(0), Source::Server).await.unwrap();
+    tx.record_event(alice, &lessons[0], Event::Task("s0".into()), Source::Server).await.unwrap();
     let attempt = attempt_of(start(&mut tx, alice, NOW).await);
     let outcome = tx.submit_exam(alice, "git", attempt.id, &answers(&attempt, true), &pool(), SETTINGS, &lessons, NOW + 60).await.unwrap();
     match outcome {
