@@ -137,14 +137,6 @@ steps:
       - env-file-contains: [types.txt, 'float']
     solution:
       - python3 -c "print(type(3.14))" > types.txt
-
-  - text: 'Lance les tests de la leçon avec `pytest -q` : ils doivent tous passer'
-    hint: 'Si un test échoue, lis son message : il te dit ce qu''il attendait et ce qu''il a reçu.'
-    after: [1, 2, 3]
-    checks:
-      - command-succeeds: 'pytest -q test_premiers_pas.py'
-    solution:
-      - pytest -q
 :::
 
 ## Vérifie tes acquis

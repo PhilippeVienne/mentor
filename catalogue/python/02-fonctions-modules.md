@@ -189,13 +189,6 @@ steps:
         if __name__ == "__main__":
             main()
         EOF
-  - text: 'Lance toute la suite avec `pytest -q` : tout doit être vert'
-    hint: 'Si un test échoue encore, lis le premier message d''erreur : il indique la fonction et la valeur attendue.'
-    after: [2, 3]
-    checks:
-      - command-succeeds: 'pytest -q test_mathutils.py'
-    solution:
-      - pytest -q
 :::
 
 ## Vérifie tes acquis

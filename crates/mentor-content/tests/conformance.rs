@@ -47,6 +47,10 @@ const REWRITTEN_SINCE_V1: [&str; 2] = ["docker-hello", "docker-advanced"];
 /// the comparison, which still covers every course of the v1 export.
 const ADDED_SINCE_V1: [&str; 3] = ["aws-cloud-practitioner", "aws-solutions-architect-associate", "aws-solutions-architect-professional"];
 
+/// Labs whose last step was removed since v1, as (course, lesson position): "run the whole test suite" held
+/// as soon as the steps before it were done, so it earned XP without checking anything.
+const CLOSING_STEP_REMOVED: [(&str, usize); 5] = [("python", 0), ("python", 1), ("python", 2), ("python", 5), ("django-rest", 6)];
+
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
@@ -209,6 +213,15 @@ fn drop_rewritten(course: &mut Value) {
     each(&mut course["lessons"], |lesson| remove(lesson, &["lab", "environment", "body_html"]));
 }
 
+/// Removes the line break that ends a solution: a command, or the content of each file of a `write` action.
+fn trim_final_line_break(action: &mut Value) {
+    match action {
+        Value::String(text) => *text = text.trim_end_matches('\n').to_string(),
+        Value::Object(_) => each(&mut action["write"], trim_final_line_break),
+        _ => {}
+    }
+}
+
 fn read_json(relative: &str) -> Value {
     serde_json::from_str(&std::fs::read_to_string(root().join(relative)).unwrap()).unwrap()
 }
@@ -230,6 +243,18 @@ fn report() -> (Vec<String>, Vec<String>, usize) {
         if simulated {
             drop_rewritten(x);
             drop_rewritten(y);
+        }
+        for (_, lesson) in CLOSING_STEP_REMOVED.iter().filter(|(course, _)| *course == slug) {
+            let steps = x["lessons"][*lesson]["lab"]["steps"].as_array_mut().expect("the lesson has a lab in v1");
+            let closing = steps.pop().expect("the lab has steps in v1");
+            assert!(closing["text"].as_str().is_some_and(|text| text.contains("pytest -q")), "{slug} lesson {lesson}: {closing}");
+            // The step before it is now the last thing of the lab block: a block scalar that ends the block
+            // loses its final line break, which changes nothing to what the solution does.
+            for course in [&mut *x, &mut *y] {
+                if let Some(last) = course["lessons"][*lesson]["lab"]["steps"].as_array_mut().and_then(|steps| steps.last_mut()) {
+                    each(&mut last["solution"], trim_final_line_break);
+                }
+            }
         }
         // Lab steps have an identifier in v2 only: v1 referred to them by position.
         each(&mut y["lessons"], |lesson| {

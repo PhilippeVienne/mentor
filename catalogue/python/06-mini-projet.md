@@ -214,14 +214,6 @@ steps:
     solution:
       - python3 -m todo terminer 1
       - python3 -m todo lister
-
-  - text: 'Lance toute la suite avec `pytest -q` : **tout doit être vert** !'
-    hint: 'Si un test échoue, lis le message : il dit ce qui était attendu. Corrige le module concerné et relance `pytest -q`.'
-    after: [3]
-    checks:
-      - command-succeeds: 'pytest -q'
-    solution:
-      - pytest -q
 :::
 
 ## Et maintenant ?

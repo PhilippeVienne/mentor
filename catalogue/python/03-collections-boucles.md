@@ -233,13 +233,6 @@ steps:
             """Retourne un dictionnaire où les valeurs deviennent les clés (et inversement)."""
             return {valeur: cle for cle, valeur in dictionnaire.items()}
         EOF
-  - text: 'Lance `pytest -q` : les cinq tests doivent être verts'
-    hint: 'Si un test reste rouge, relance seulement celui-là avec `pytest -q -k nom_du_test` pour le déboguer.'
-    after: [2, 3, 4]
-    checks:
-      - command-succeeds: 'pytest -q test_collections_exo.py'
-    solution:
-      - pytest -q
 :::
 
 ## Vérifie tes acquis

@@ -427,13 +427,6 @@ steps:
                     self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {jeton}")
                     reponse = self.client.get("/v1/evenements/")
                     self.assertEqual(reponse.status_code, 401)
-  - text: 'Lance toute la suite avec `pytest -q` : les cinq tests sont verts'
-    hint: 'Si un test échoue encore, lis le premier message d''erreur : il indique la ligne et les valeurs comparées.'
-    after: [1, 2, 3, 4, 5]
-    checks:
-      - command-succeeds: '/opt/outils/verifier-mutation suite'
-    solution:
-      - pytest -q
 :::
 
 ## Vérifie tes acquis
