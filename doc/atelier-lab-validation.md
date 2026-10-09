@@ -328,3 +328,93 @@ entirely (volumes), lab 1 steps 1 and 2 (an image is built), lab 3 step 1, lab 4
 Unchanged from the first run, and not environment matters: the image is rebuilt for every Workshop, the git
 source is cloned into `/workspaces/` (here it held only environments), cutting the network costs a suspend and
 resume (37 s to 82 s to suspend, 16 s to 18 s to resume, four at once).
+
+## 12. Third run: disk sizing in a guest (9 October 2026)
+
+Atelier at `e80d58d` (branch `feat/m14-1-disque-de-session`, local: tasks 14.1 "session disk" and 14.2
+"build-time checks" of its spec 19), Mentor at `f3df7ce`. Same machine and method as §2. The controller and
+the API server were built from a fresh copy of that branch with the two patches of §2.1; the in-cluster
+images `atelier-vm-supervisor:dev` and `atelier-image-builder:dev` were rebuilt from the branch and loaded
+into the kind cluster (the previous ones are kept on the host as `atelier-vm-supervisor:first-trial-aec2855`
+and `atelier-image-builder:first-trial-5ea5d3f`). Guests are `git-basics` (1 CPU, 512 MiB) unless said
+otherwise. Logs: `$V/run3/`.
+
+### 12.1 Verdicts
+
+| # | Point | Verdict | Evidence |
+| --- | --- | --- | --- |
+| 1 | Without `resources.disk`, nothing changes | **Holds** | No `ATELIER_VM_DISK_MIB` on the supervisor; `df -m /` → 1412 MiB, 352 MiB free, as in §4 |
+| 2 | `disk: 4Gi` gives a 4 GiB disk | **Works** | Supervisor: `disque racine de la microVM agrandi from_mib=1471 to_mib=4096`; `df -h /` → `4.0G  971M  2.8G`; `/sys/block/vda/size` = 8388608 sectors. `dd` wrote 1 GiB (past the old 352 MiB), then 1.7 GiB more and stopped with the disk at 3776 of 3997 MiB (the 5 % ext4 keeps for root) |
+| 2 | Cost of the resize | **Not measurable from outside** | Image ready → `Running`: 15.6 s without, 15.9 s with 4 GiB, 15.8 s and 15.9 s with 6 GiB (15.5 s to 16.6 s before). Inside the supervisor, restore took 2.5 s without and 5.2 s with a 4 GiB resize: about 3 s, hidden by the controller's probing |
+| 3 | The cluster cap | **Works** | Controller started with `ATELIER_VM_MAX_DISK_MIB=3072`, `disk: 8Gi` → supervisor gets `3072`, log `to_mib=3072`, `df -h /` → `3.0G` |
+| 4 | Smaller than the image | **Works** | `disk: 64Mi` → warning `taille de disque demandee inferieure a celle de l'image … requested_mib=64 image_mib=1471`; the VM boots, `df` as in point 1 |
+| 5 | Suspend and resume with a sized disk | **Resumes, still 4 GiB, but the disk content is lost** (below) | Resume in 16.2 s, the resize runs again, `df` → 3997 MiB, writes succeed |
+| 6 | The Docker courses with `disk: 6Gi` | **The disk failures are gone; port 8080 remains** (§12.3) | 5.9 GiB disks, 4.2 and 4.0 GiB free at start |
+| 7 | Build-time checks (14.2) in the cluster | **Works, but the message stays in the job's logs** (§12.4) | `git-basics` of `e0e78d0` → Workshop `Failed` instead of `Provisioning` for ever |
+
+### 12.2 A suspended Workshop loses everything written to its disk (existing defect, not caused by 14.1)
+
+On resume the supervisor copies the root file system **again from the image cache** and loads the memory
+snapshot on top of it: only memory is saved by a suspend. Observed identically on a Workshop without
+`resources.disk` and on the 4 GiB one:
+
+1. Before the suspend: a 200 MiB file of random bytes, a small file and a directory written under the home
+   (on the root disk), then `sync`. Read through the page cache and with `O_DIRECT`, the big file has the same
+   SHA-256: the data is on the device.
+2. After suspend and resume: `ls` and `cat` still show everything, and `sha256sum` still matches, **from the
+   guest's memory**. Read from the device (`dd iflag=direct`), the file's hash is that of 200 MiB of zeros
+   (`72abf2ca…`): the blocks are no longer on the disk. The file system is mounted read-write and accepts new
+   writes; the only sign is `systemd-journald: … Journal file corrupted, rotating`.
+3. After memory pressure evicted the page cache (a process allocating 400 MiB): the big file reads as zeros,
+   the two small files no longer show their content, `ls dir-before` fails with `Bad message`, and the kernel logs
+   `EXT4-fs error (device vda): htree_dirblock_to_tree: … Directory block failed checksum`. The file system
+   stays mounted read-write.
+
+So the findings of §4 and of the first trial ("state survives a suspend") hold for memory, tmpfs and
+processes only. A learner's work on disk silently disappears at the first suspend, and what comes back later
+is a corrupted file system. It also undermines the "suspend and resume" workaround used in §4 and §11 to cut
+the network: it is only safe on a Workshop nothing was written to, and Docker's own state under
+`/var/lib/docker` is written at boot. Where it would be fixed in Atelier: the snapshot taken by the supervisor
+(`snapshot_and_publish` in `crates/vm-supervisor/src/main.rs`) has to include the VM's root file system, and
+`restore_persisted` (`crates/firecracker/src/vm.rs`) has to start from that copy rather than from the image
+cache (the resize must then be skipped, or only grow).
+
+### 12.3 The Docker courses on a 6 GiB disk
+
+Mentor `f3df7ce` environments, unmodified, 2 CPU, 2 GiB, `disk: 6Gi`; both reach `Running` (152 s and 160 s,
+built together). Debian's registry no longer starts (`docker-registry.service` → `/dev/null`, port 5000 does
+not answer): **the port 5000 conflict of §11.3 is gone**. Because of §12.2 the network was **not** cut for
+this replay: the build allow-list, which includes Docker Hub, was still in place.
+
+| Course | Steps passed | Before (§11) | What still fails | Cause |
+| --- | --- | --- | --- | --- |
+| `docker-hello` | 12 of 19 | 8 of 19 | Lab 2 step 2, and steps 3, 4, 5 which wait for it; lab 3 setup command, step 2, and steps 3 and 6 which wait for it | Port 8080 taken by Atelier's `code-server` |
+| `docker-advanced` | 23 of 27 | 10 of 26 | Lab 3 step 3, and steps 4 and 5 which wait for it; lab 4 step 5 (`curl localhost:8080` gets `code-server`'s login redirect, not nginx) | Port 8080 again |
+
+Labs 1 and 4 of `docker-hello` and labs 1, 2 and 5 of `docker-advanced` pass entirely (image builds,
+`postgres`, a multi-stage build, the team registry on port 5000). No step failed for lack of space: 3.4 GiB
+were still free after the five labs of `docker-advanced`. Every remaining failure is port 8080.
+
+### 12.4 Build-time checks (task 14.2)
+
+`catalogue/git-basics/environnement` of Mentor `e0e78d0` (systemd without `/sbin/init`, no `curl`), which
+stayed in `Provisioning` in §1:
+
+- the build job now ends in error, with both causes named in the `image-builder` container's log: "systemd
+  est installe mais `/sbin/init` n'existe pas … Installer le paquet qui fournit `/sbin/init` (`systemd-sysv`
+  sur Debian et Ubuntu), ou retirer systemd de l'image" and "`curl` est absent de l'image …";
+- the Workshop reaches **`phase: Failed`**, 3 min 17 s after its creation: the job ran the whole build three
+  times (`backoffLimit: 2`) before giving up, although the failure is deterministic;
+- **the message surfaces nowhere else**: `status.conditions` is empty, the pod's termination message is
+  empty, the job only says `BackoffLimitExceeded`, and `GET /v1/workshops/<name>/events` lists pod events. A
+  user of the API sees `Failed` without a reason.
+
+### 12.5 What this asks of Atelier
+
+1. **Suspend loses the disk** (§12.2): the serious one, and older than this change.
+2. Task 14.2: put the refusal message in the Workshop's status (write it to the container's termination log
+   and copy it into `status.conditions`), and do not retry a build refused by these checks.
+3. Task 14.1: nothing to correct in what was observed. Two things to know: ext4 reserves 5 % for root, so a
+   learner gets about 3.7 GiB of a 4 GiB disk (2.8 GiB free on this image); and the resize runs again at every
+   resume (about 3 s), which the fix of point 1 will have to revisit.
+4. Port 8080 (gap 8 of §8) is now the only thing that keeps the two Docker courses from passing.
