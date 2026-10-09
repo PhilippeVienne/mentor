@@ -29,9 +29,10 @@ the course format are in English.
   isolated by PostgreSQL row-level security.
 - **Labs proven by replay**: every lab of the catalogue is replayed in its environment, without network, by
   [`tools/replay_labs.py`](tools/replay_labs.py): each check must fail before the solution and hold after it.
-- **Course packages**: a course, or a set of courses, as a directory (meant to be a Git repository) with a
-  `mentor.yml` manifest, which can be validated and replayed on its own. Each organisation has its own
-  catalogue, made of the packages installed for it; none is offered by default.
+- **Course packages**: a course, or a set of courses, as a Git repository with a `mentor.yml` manifest, which
+  can be validated and replayed on its own. Each organisation has its own catalogue, made of the packages
+  installed for it, from a directory or straight from a repository at a pinned commit; none is offered by
+  default. An update says what it changes for learners before it is applied, and can be rolled back.
 
 ## What does not work yet
 
@@ -41,8 +42,8 @@ the course format are in English.
   lesson is its text and its quiz. See [doc/atelier-lab-validation.md](doc/atelier-lab-validation.md).
 - **Real sign-in.** There is no OIDC yet, only a password-less development sign-in (`--dev-login`) that must
   never be enabled on a reachable deployment.
-- Installing a package straight from a Git URL (it is installed from a directory for now), the management
-  area for tutors, the help pages, and the catalogue linter of v1.
+- Private package repositories, a page to manage packages, the management area for tutors, the help pages,
+  and the catalogue linter of v1.
 
 ## Quick start
 

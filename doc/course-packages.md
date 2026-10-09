@@ -190,13 +190,14 @@ mentor package-remove  <name> --tenant acme
 The threat model already calls tenant authors untrusted (architecture §3). A package adds the repository
 itself as an attack surface, at three moments.
 
-### 6.1 Fetching (designed, not implemented)
+### 6.1 Fetching
 
 **Git operation: the system `git` binary, run as a subprocess of the fetch job.** Not `git2` (libgit2, a C
 library, in the address space of the server) and not `gix` (a large dependency tree for one operation). A
 subprocess can be confined by the operating system and killed on a time limit; the binary is the reference
-implementation and receives security fixes through the distribution. The options named below are from
-Git's documentation and must be verified when this is written.
+implementation and receives security fixes through the distribution. This is implemented in
+`crates/mentor-cli/src/fetch.rs`, with tests that fetch from repositories built on disk and one manual run
+against a public repository; what differs from the table is listed under it.
 
 | Risk | Rule |
 | --- | --- |
@@ -208,6 +209,20 @@ Git's documentation and must be verified when this is written.
 | Submodules, LFS, filters | Never fetched (`--no-recurse-submodules`); a tree holding a submodule entry, a `.gitmodules` or a `filter=` attribute is refused |
 | Symbolic links, special files, traversal | The tree is listed (`git ls-tree -r -l`) and checked by the rules of §6.2 **before any file is written**. Files are then written one by one from their blobs (`git cat-file --batch`) under names the platform has just validated, with fixed permissions. Git never writes into a working tree, so no path, link or mode chosen by the author reaches the file system |
 | Moving refs | The ref is resolved once; the commit fetched is checked to be the commit resolved |
+
+**As implemented** (9 October 2026): the fetch runs in the `mentor` command, never in `mentor-web`. Applied
+as written: `https://` only, no credentials in the URL, public addresses only, no redirect, no system or user
+configuration, no prompt, no hook, one commit without history, tags or submodules, the reference resolved
+once and the fetched commit compared with it, the tree listed and checked before anything is written, files
+written from their blobs without any checkout. Not as written:
+
+- **The host is checked by the code only.** Its addresses are resolved and must all be public, but Git resolves
+  the name again: this does not replace a network policy around the process, which does not exist yet.
+- **No size-limited scratch volume and no file-size limit on the process.** What a repository sends is bounded
+  by a time limit (three minutes per Git command) and measured after the fetch, not capped while it arrives.
+- **`.gitmodules` and `filter=` attributes** are refused by the tree verification that follows (§6.2), not by
+  the fetch itself; a submodule entry and a symbolic link are refused by the fetch.
+- **Private repositories** are not supported.
 
 ### 6.2 The files of a package (implemented: `verify_tree`)
 
@@ -323,7 +338,7 @@ a preview of the rendered lessons without a database, and a `package-init` that 
 | **A. Format** | `mentor.yml`, strict validation, tree checks, `load_package`, `mentor package-check`, the built-in catalogue as a package, the replay tool reading a manifest | **Done** (this increment) |
 | **B. One loader** | `mentor-web` and `import-v1` load `catalogue/` through `load_package`; `catalogue.yml` and `_checks.yml` removed; `/static/catalogue/` restricted to images; `features` cross-checked with `devcontainer.json` | Next; no owner decision needed |
 | **C. Per-tenant catalogues** | Install, replace, list and remove from a **local directory** (`mentor package-install ./dir --tenant acme`), one catalogue per tenant in `mentor-web`, nothing offered by default | **Done**, in a simpler form than designed in §5: see below |
-| **D. Fetch** | The fetch job (§6.1), install from a public HTTPS URL, the update diff and its rules | Needs §11, points 3 and 4 |
+| **D. Fetch** | Install from a public HTTPS repository at a pinned commit (§6.1), the update report, confirmation of removals and rollback | **Done**, with the differences listed in §6.1 and above |
 | **E. Environments** | Package sources handed to the execution plane, builds before publication | Blocked on Atelier (§8) |
 | **F. Later** | Private repositories, `depends`, a management page for packages, sharing compiled packages | — |
 

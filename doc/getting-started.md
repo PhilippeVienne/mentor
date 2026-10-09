@@ -93,18 +93,29 @@ docker exec mentor-pg psql -U postgres -c \
 
 - **Labs.** Lessons show their lab as "to come": environments run as microVMs on a separate execution plane
   that the web server is not connected to yet. See [atelier-lab-validation.md](atelier-lab-validation.md).
-- **Installing from a Git URL.** A package is installed from a directory: clone the repository yourself.
+- **Private repositories.** A package is fetched from a public `https://` repository, or installed from a
+  directory you cloned yourself.
 
 ## Course packages
 
 ```shell
 mentor package-check ./my-courses                    # validate and compile, without a database
 mentor package-install ./my-courses --tenant acme    # install, or replace the installed package of that name
+mentor package-install https://github.com/acme/courses --ref v1.2.0 --tenant acme   # from a repository
+mentor package-install https://github.com/acme/all --ref main --path courses/git --tenant acme
 mentor package-install ./my-courses --tenant acme --dry-run     # only say what it would change for learners
 mentor package-rollback my-courses --tenant acme     # bring back the version it had before the last update
 mentor package-list --tenant acme
 mentor package-remove my-courses --tenant acme       # learners' progress on its courses is kept
 ```
+
+From a repository, `--ref` is a tag, a branch or a commit identifier (the default branch without it) and
+`--path` the folder of the package when it is not at the root. The reference is resolved **once**, to a
+commit, which is what gets installed and recorded: nothing follows a branch afterwards, an update is always a
+command you run. Only public `https://` repositories are accepted, the host must have public addresses, and
+the repository is never checked out: its files are validated, then written one by one
+([course-packages.md §6.1](course-packages.md#61-fetching)). It needs `git` on the machine that runs the
+command.
 
 Replacing an installed package is an update that learners live through. The command first says what changes
 for them: courses and lessons added or removed, lab steps and quizzes that changed, how many learners did

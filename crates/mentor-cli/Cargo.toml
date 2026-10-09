@@ -15,4 +15,5 @@ mentor-content = { path = "../mentor-content" }
 mentor-db = { path = "../mentor-db" }
 serde_json = { workspace = true }
 sqlx = { workspace = true }
+tempfile = "3"
 tokio = { workspace = true }

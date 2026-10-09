@@ -3,6 +3,8 @@
 //! Commands that touch the database connect with the role that owns it (see `mentor-db`), never with the
 //! application role. `package-check` needs no database: it is the command an author runs on a course package.
 
+mod fetch;
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -52,11 +54,18 @@ enum Command {
         #[arg(long, requires = "v1_catalogue")]
         catalogue: Option<PathBuf>,
     },
-    /// Installs a course package for a tenant from a directory, or replaces the installed package of the same
-    /// name. The package is validated and compiled first; the tenant's catalogue changes all at once.
+    /// Installs a course package for a tenant, or replaces the installed package of the same name. The source
+    /// is a directory, or the `https://` address of a Git repository, fetched at one commit. The package is
+    /// validated and compiled first; the tenant's catalogue changes all at once.
     PackageInstall {
-        /// Directory of the package (the one holding `mentor.yml`).
-        directory: PathBuf,
+        /// Directory of the package (the one holding `mentor.yml`), or `https://` address of a Git repository.
+        source: String,
+        /// For a repository: the tag, branch or commit to install. It is resolved once, to a commit.
+        #[arg(long = "ref", value_name = "REF")]
+        reference: Option<String>,
+        /// For a repository: the folder of the package in it, when it is not at the root.
+        #[arg(long)]
+        path: Option<String>,
         /// Slug of the tenant that gets the package.
         #[arg(long)]
         tenant: String,
@@ -282,11 +291,46 @@ async fn run(cli: Cli) -> Result<(), Failure> {
                 eprintln!("warning: {warning}");
             }
         }
-        Command::PackageInstall { directory, tenant, dry_run, confirm_removals } => {
+        Command::PackageInstall { source, reference, path, tenant, dry_run, confirm_removals } => {
             let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
+            // From a repository: one commit, fetched into plain files that Git never checked out (see `fetch`).
+            // The fetched files live until the end of this command.
+            let (directory, origin, _fetched) = if source.contains("://") {
+                let from = fetch::Source {
+                    url: source.clone(),
+                    reference: reference.unwrap_or_else(|| "HEAD".into()),
+                    path: path.unwrap_or_default(),
+                };
+                let wanted = from.clone();
+                let fetched = tokio::task::spawn_blocking(move || {
+                    fetch::fetch(&wanted, &mentor_content::Limits::default(), fetch::Transport::PublicHttps)
+                })
+                .await
+                .map_err(|err| format!("fetching was interrupted: {err}"))??;
+                println!("fetched {} at commit {}", from.url, fetched.commit);
+                let folder = if from.path.is_empty() { String::new() } else { format!("#{}", from.path.trim_matches('/')) };
+                (fetched.directory.clone(), format!("{}@{}{folder}", from.url, fetched.commit), Some(fetched))
+            } else {
+                if reference.is_some() || path.is_some() {
+                    return Err("--ref and --path are for a repository address; a directory is installed as it is".into());
+                }
+                let directory = PathBuf::from(&source);
+                let origin = directory.canonicalize().unwrap_or_else(|_| directory.clone()).display().to_string();
+                (directory, origin, None)
+            };
             // Validated and compiled before anything is written: a package that does not compile changes nothing.
-            let package = mentor_content::load_package(&directory)?;
-            let images = mentor_content::package_images(&directory, &package)?;
+            // A message about fetched files names them in the repository, not in the scratch directory.
+            let in_repository = |err: mentor_content::ContentError| -> Failure {
+                let message = err.to_string();
+                if _fetched.is_some() {
+                    let scratch = directory.display().to_string();
+                    message.replace(&format!("{scratch}/"), "").replace(&scratch, "the repository (is --path missing?)").into()
+                } else {
+                    message.into()
+                }
+            };
+            let package = mentor_content::load_package(&directory).map_err(in_repository)?;
+            let images = mentor_content::package_images(&directory, &package).map_err(in_repository)?;
             let (name, version) = (&package.manifest.name, &package.manifest.version);
             let impact = packages::preview(&owner, id, &package).await?;
             match &impact {
@@ -301,8 +345,7 @@ async fn run(cli: Cli) -> Result<(), Failure> {
                 return Ok(());
             }
             let removals = if confirm_removals { Removals::Confirmed } else { Removals::Refuse };
-            let source = directory.canonicalize().unwrap_or(directory).display().to_string();
-            let outcome = match packages::install(&owner, id, &package, &images, &source, removals).await {
+            let outcome = match packages::install(&owner, id, &package, &images, &origin, removals).await {
                 Err(mentor_db::Error::RemovalsNotConfirmed(_)) => {
                     return Err("this version removes courses or lessons (see above): nothing was written. \
                                 Run again with --confirm-removals to install it; learners keep their progress on what is removed"
