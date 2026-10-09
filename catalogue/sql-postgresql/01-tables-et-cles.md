@@ -19,12 +19,12 @@ Une application web (le site d'une association, une boutique en ligne) doit **se
 Ce logiciel s'appelle un **SGBD** (système de gestion de base de données). **PostgreSQL** est l'un des plus répandus, et c'est celui des projets de l'équipe. Il fonctionne en mode **client-serveur** :
 
 - le **serveur** est le programme PostgreSQL, qui garde les données et attend qu'on lui parle ;
-- un **client** est un programme qui lui envoie des demandes et affiche les réponses. Dans ce parcours, ton client est **`psql`**, un outil que l'on tape dans le terminal. Une application (Django, par exemple) est aussi un client.
+- un **client** est un programme qui lui envoie des demandes et affiche les réponses. Dans ce cours, ton client est **`psql`**, un outil que l'on tape dans le terminal. Une application (Django, par exemple) est aussi un client.
 
 Pour parler au serveur, on utilise **SQL** (*Structured Query Language*, « langage de requêtes structuré »). Une **requête** est une demande écrite en SQL : « donne-moi les adhérent·e·s de la Robotique », « ajoute cette personne », « supprime cette ligne ». Une requête se termine toujours par un **point-virgule** `;`, qui dit au serveur « j'ai fini, exécute ».
 
 :::info Comment exécuter une requête dans les labos
-Chaque labo de ce parcours te prête un vrai terminal Linux, avec **un serveur PostgreSQL déjà démarré** et une base vide ou remplie qui s'appelle `asso`. Trois façons d'y envoyer du SQL :
+Chaque labo de ce cours te prête un vrai terminal Linux, avec **un serveur PostgreSQL déjà démarré** et une base vide ou remplie qui s'appelle `asso`. Trois façons d'y envoyer du SQL :
 
 - `psql` seul ouvre une **session interactive** : l'invite `asso=#` apparaît, tu tapes une requête terminée par `;`, tu lis la réponse. `\q` quitte `psql` ; `\d` liste les tables ; `\d adherents` décrit une table.
 - `psql -c "SELECT 1;"` exécute **une** requête (`-c` comme *command*) puis rend la main : pratique pour un one-liner et pour les labos.
@@ -34,7 +34,7 @@ Les étapes du labo sont vérifiées par le serveur du portail, qui interroge ta
 :::
 
 :::info Vocabulaire à connaître
-- **Schéma** : le plan de la base, c'est-à-dire la liste de ses tables, de leurs colonnes et de leurs règles. Dans ce parcours, « le schéma » désigne ce plan (PostgreSQL emploie aussi ce mot pour un « dossier » qui regroupe des tables, mais on n'en a pas besoin ici).
+- **Schéma** : le plan de la base, c'est-à-dire la liste de ses tables, de leurs colonnes et de leurs règles. Dans ce cours, « le schéma » désigne ce plan (PostgreSQL emploie aussi ce mot pour un « dossier » qui regroupe des tables, mais on n'en a pas besoin ici).
 - **Type** : la nature de ce que contient une colonne (nombre entier, texte, date…). PostgreSQL refuse un texte dans une colonne de nombres.
 - **`timestamptz`** : un type « horodatage avec fuseau horaire » (*timestamp with time zone*), c'est-à-dire un instant précis : date, heure et décalage (`2026-11-12 20:00+01` se lit « le 12 novembre 2026 à 20 h, heure d'Europe de l'Ouest en hiver »). PostgreSQL le convertit et le stocke sans ambiguïté.
 - **`now()`** : une fonction que PostgreSQL remplace par l'instant présent. `CURRENT_DATE` fait de même pour la seule date du jour.
@@ -42,7 +42,7 @@ Les étapes du labo sont vérifiées par le serveur du portail, qui interroge ta
 - **`NULL`** : « pas de valeur » (inconnue ou absente). Ce n'est ni zéro ni une chaîne vide.
 :::
 
-On travaille, dans tout le parcours, sur un **schéma fictif** : des associations, leurs adhérent·e·s, leurs événements et les inscriptions. Il ne vient d'aucun projet réel de l'équipe, mais il ressemble à ce que tu y croiseras. Dans cette leçon, **tu le construis toi-même** dans le labo.
+On travaille, dans tout le cours, sur un **schéma fictif** : des associations, leurs adhérent·e·s, leurs événements et les inscriptions. Il ne vient d'aucun projet réel de l'équipe, mais il ressemble à ce que tu y croiseras. Dans cette leçon, **tu le construis toi-même** dans le labo.
 
 ## Une table, des lignes, des colonnes
 

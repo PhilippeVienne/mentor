@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Liste les buckets accessibles pour tester le point d'accès et les clés (lit URL, ACCESSKEY et SECRETKEY).
 
-Version SIMPLIFIÉE écrite pour le parcours de formation, dans l'esprit de test_connection_s3.py de backups3.
+Version SIMPLIFIÉE écrite pour la formation, dans l'esprit de test_connection_s3.py de backups3.
 """
 import os
 

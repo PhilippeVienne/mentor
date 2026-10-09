@@ -68,7 +68,7 @@ containers:
           name: vitrine-secret
 ```
 
-`envFrom` signifie « prends toutes les clés de cet objet » ; `configMapRef` et `secretRef` désignent l'objet par son nom. Chaque clé devient une **variable d'environnement** du conteneur (une valeur que le programme lit au démarrage, comme `SITE_URL`). Pour n'en prendre qu'une, on utilise `secretKeyRef` (c'est ce que fait le **CronJob** de sauvegarde vu dans le parcours *Sauvegardes* : un CronJob est un objet Kubernetes qui lance une tâche à heures régulières, comme la sauvegarde de la nuit) :
+`envFrom` signifie « prends toutes les clés de cet objet » ; `configMapRef` et `secretRef` désignent l'objet par son nom. Chaque clé devient une **variable d'environnement** du conteneur (une valeur que le programme lit au démarrage, comme `SITE_URL`). Pour n'en prendre qu'une, on utilise `secretKeyRef` (c'est ce que fait le **CronJob** de sauvegarde vu dans le cours *Sauvegardes* : un CronJob est un objet Kubernetes qui lance une tâche à heures régulières, comme la sauvegarde de la nuit) :
 
 ```yaml
 env:

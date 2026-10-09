@@ -1,5 +1,5 @@
 #!/bin/sh
-# Script `terraform` du parcours : il configure le client puis lance le vrai binaire.
+# Script `terraform` du cours : il configure le client puis lance le vrai binaire.
 # TF_CLI_CONFIG_FILE : lit la configuration du client (miroir local des fournisseurs, sans réseau).
 # CHECKPOINT_DISABLE : empêche Terraform de chercher les nouvelles versions sur Internet.
 TF_CLI_CONFIG_FILE=/opt/terraform/terraformrc

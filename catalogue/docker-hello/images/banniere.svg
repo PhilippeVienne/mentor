@@ -22,7 +22,7 @@
 <rect x="949" y="180" width="52" height="36" rx="4" fill="#2496ED" opacity=".95"/><line x1="959" y1="186" x2="959" y2="210" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/><line x1="975" y1="186" x2="975" y2="210" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/><line x1="991" y1="186" x2="991" y2="210" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/>
 <path d="M0 372 C150 350 300 394 450 372 S750 350 900 372 S1100 392 1200 368 V400 H0Z" fill="#2496ED" opacity=".12"/>
 <rect x="60" y="86" width="8" height="64" rx="4" fill="#6366F1"/>
-<text x="90" y="118" font-size="20" fill="#94a3b8" font-weight="600" letter-spacing="3">PARCOURS · MENTOR</text>
+<text x="90" y="118" font-size="20" fill="#94a3b8" font-weight="600" letter-spacing="3">COURS · MENTOR</text>
 <text x="60" y="206" font-size="64" fill="#e2e8f0" font-weight="800">Docker hello world</text>
 <text x="62" y="252" font-size="24" fill="#94a3b8">Images, conteneurs, ports et logs</text>
 <rect x="62" y="290" width="140" height="6" rx="3" fill="#2496ED"/>

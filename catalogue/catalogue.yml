@@ -1,4 +1,4 @@
-# Catalogue des formations du portail : ordre d'affichage des parcours.
+# Catalogue des formations du portail : ordre d'affichage des cours.
 # Chaque entrée est le nom d'un dossier de ce répertoire (voir README.md pour la méthodologie d'écriture).
 courses:
   - git-basics
@@ -7,7 +7,7 @@ courses:
   - python
   - django
   - oidc-keycloak
-  # Parcours techniques complémentaires (ceux sans leçon sont en publie: false)
+  # Cours techniques complémentaires (ceux sans leçon sont en publie: false)
   - ci-gitlab
   - linux-shell
   - sql-postgresql
@@ -21,7 +21,7 @@ courses:
   - terraform
   - sauvegardes-s3
   - go
-  # Certifications AWS, sur un émulateur local (MiniStack) : chaque parcours requiert le précédent
+  # Certifications AWS, sur un émulateur local (MiniStack) : chaque cours requiert le précédent
   - aws-cloud-practitioner
   - aws-solutions-architect-associate
   - aws-solutions-architect-professional

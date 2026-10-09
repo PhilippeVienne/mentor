@@ -9,11 +9,11 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Python est le langage des applications web de l'équipe (Vitrine, l'API d'adhésion…), des scripts d'administration et de la plupart des outils de données. Ce parcours t'apprend les bases **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec Python 3.13 et `pytest`, et c'est le serveur qui vérifie ton travail en lançant les tests.
+Python est le langage des applications web de l'équipe (Vitrine, l'API d'adhésion…), des scripts d'administration et de la plupart des outils de données. Ce cours t'apprend les bases **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec Python 3.13 et `pytest`, et c'est le serveur qui vérifie ton travail en lançant les tests.
 
-## À qui s'adresse ce parcours ?
+## À qui s'adresse ce cours ?
 
-À toute personne qui n'a jamais programmé en Python (ou presque). Une aisance avec un terminal aide, mais n'est pas obligatoire : le parcours **Git basics** et le premier labo de ce parcours te donnent les réflexes.
+À toute personne qui n'a jamais programmé en Python (ou presque). Une aisance avec un terminal aide, mais n'est pas obligatoire : le cours **Git basics** et le premier labo de ce cours te donnent les réflexes.
 
 ## Ce que tu sauras faire à la fin
 
@@ -37,7 +37,7 @@ Python est le langage des applications web de l'équipe (Vitrine, l'API d'adhés
 **Durée totale : environ 3 h** (labos et quiz compris).
 
 :::info Des labos dans un vrai conteneur
-Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et sans accès à Internet, effacé à l'arrêt. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le parcours avec l'examen** si tu maîtrises déjà le sujet.
+Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et sans accès à Internet, effacé à l'arrêt. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le cours avec l'examen** si tu maîtrises déjà le sujet.
 :::
 
-La suite naturelle est le parcours **Django**, qui s'appuie sur tout ce que tu auras vu ici.
+La suite naturelle est le cours **Django**, qui s'appuie sur tout ce que tu auras vu ici.

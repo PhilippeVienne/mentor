@@ -119,7 +119,7 @@ include:
 Le job `helm` de Vitrine, par exemple, hérite ainsi de règles communes avec `extends`.
 
 :::tip Vérifier avant de pousser
-Dans le dépôt, l'éditeur de pipeline de GitLab (menu *Build*) valide le YAML et affiche le pipeline qui résulterait de ta modification. Utilise-le plutôt que d'enchaîner les commits « fix ci ». Dans ce parcours, `verifier-ci` te donne un avant-goût de ce contrôle, hors ligne.
+Dans le dépôt, l'éditeur de pipeline de GitLab (menu *Build*) valide le YAML et affiche le pipeline qui résulterait de ta modification. Utilise-le plutôt que d'enchaîner les commits « fix ci ». Dans ce cours, `verifier-ci` te donne un avant-goût de ce contrôle, hors ligne.
 :::
 
 ## Entraîne-toi

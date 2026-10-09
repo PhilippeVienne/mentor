@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Linux et shell » : un vrai Debian avec les outils des leçons
+# Environnement réel du cours « Linux et shell » : un vrai Debian avec les outils des leçons
 # (coreutils, grep, find, less, nano, client SSH, ps/kill) et des fichiers d'entraînement dans /opt/exercices.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite ;

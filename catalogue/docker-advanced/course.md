@@ -9,9 +9,9 @@ color: "#1D63ED"
 banner: images/banniere.svg
 ---
 
-Tu sais lancer des conteneurs : place à la **construction d'applications complètes**. Ce parcours reprend les pratiques réellement utilisées sur l'infra de l'équipe : images construites par la CI GitLab, publiées sur `registry.gitlab.example.org`, déployées avec un `compose-infra.yaml`.
+Tu sais lancer des conteneurs : place à la **construction d'applications complètes**. Ce cours reprend les pratiques réellement utilisées sur l'infra de l'équipe : images construites par la CI GitLab, publiées sur `registry.gitlab.example.org`, déployées avec un `compose-infra.yaml`.
 
-## À qui s'adresse ce parcours ?
+## À qui s'adresse ce cours ?
 
 À celles et ceux qui ont terminé **Docker hello world** (prérequis) et veulent passer de l'utilisation à la création : packager leur propre application, la faire dialoguer avec une base et préparer sa mise en production.
 

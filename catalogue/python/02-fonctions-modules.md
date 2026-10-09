@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
 ## Tester avec pytest
 
-Un **test** est une fonction dont le nom commence par `test_` et qui contient des `assert`. `pytest` les trouve, les lance et te dit lesquels échouent. Écrire d'abord le test, puis le code qui le fait passer, c'est le **TDD** : les exercices de ce parcours fonctionnent comme ça.
+Un **test** est une fonction dont le nom commence par `test_` et qui contient des `assert`. `pytest` les trouve, les lance et te dit lesquels échouent. Écrire d'abord le test, puis le code qui le fait passer, c'est le **TDD** : les exercices de ce cours fonctionnent comme ça.
 
 ```shell run
 pytest -q

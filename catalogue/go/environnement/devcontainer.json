@@ -1,4 +1,4 @@
-// Environnement réel du parcours Go (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours Go (voir catalogue/README.md §15 et doc/environnements.md).
 // Go 1.25 sur Debian, modules des leçons préinstallés ; chaque labo copie son exercice dans /workspace.
 {
     "name": "Go 1.25 de l'équipe",

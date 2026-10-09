@@ -9,11 +9,11 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-[MiniShop](https://gitlab.example.org/equipe/minishop) et le frontend d'[Adhésion](https://gitlab.example.org/equipe/adhesion/frontend) sont écrits en TypeScript. Ce parcours prépare à React (une bibliothèque pour construire des interfaces web), Next.js (un framework web construit sur React) et Angular (un framework web de Google) : tous trois s'écrivent volontiers en TypeScript.
+[MiniShop](https://gitlab.example.org/equipe/minishop) et le frontend d'[Adhésion](https://gitlab.example.org/equipe/adhesion/frontend) sont écrits en TypeScript. Ce cours prépare à React (une bibliothèque pour construire des interfaces web), Next.js (un framework web construit sur React) et Angular (un framework web de Google) : tous trois s'écrivent volontiers en TypeScript.
 
 ## À qui s'adresse-t-il ?
 
-À celles et ceux qui connaissent les bases de JavaScript (parcours *HTML, CSS et JavaScript*). Aucune connaissance de TypeScript n'est nécessaire : chaque notion est expliquée au fur et à mesure.
+À celles et ceux qui connaissent les bases de JavaScript (cours *HTML, CSS et JavaScript*). Aucune connaissance de TypeScript n'est nécessaire : chaque notion est expliquée au fur et à mesure.
 
 ## Plan
 
@@ -35,4 +35,4 @@ Chaque leçon se termine par un labo dans un **vrai terminal Linux** : le porta
 - Configurer un projet : `tsconfig.json`, ESLint et Prettier
 - Configurer un projet : `tsconfig.json`, ESLint et Prettier
 
-**Prérequis :** parcours *HTML, CSS et JavaScript*. **Durée estimée :** environ 3 h 30, labos compris.
+**Prérequis :** cours *HTML, CSS et JavaScript*. **Durée estimée :** environ 3 h 30, labos compris.

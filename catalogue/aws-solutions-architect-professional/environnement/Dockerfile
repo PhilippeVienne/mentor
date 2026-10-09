@@ -1,4 +1,4 @@
-# Environnement réel des parcours AWS : l'AWS CLI officielle et MiniStack, un émulateur LOCAL et libre d'AWS
+# Environnement réel des cours AWS : l'AWS CLI officielle et MiniStack, un émulateur LOCAL et libre d'AWS
 # (https://github.com/ministackorg/ministack, licence MIT, pur Python), qui répond sur http://127.0.0.1:4566.
 #   - aucun compte AWS, aucun accès à Internet, rien de facturé : tout ce que crée l'apprenant·e vit dans la mémoire
 #     de l'émulateur et disparaît à l'arrêt de l'environnement ;

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""verifier-go : vérifications « à l'épreuve des contournements » des labos du parcours Go.
+"""verifier-go : vérifications « à l'épreuve des contournements » des labos du cours Go.
 
 Les vérifications du portail s'exécutent dans le conteneur de l'apprenant·e, qui peut modifier ses fichiers (y
 compris les tests). Cet outil, installé par l'image (/usr/local/bin, non modifiable), ne fait donc pas confiance au

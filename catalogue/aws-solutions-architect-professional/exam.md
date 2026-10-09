@@ -6,9 +6,9 @@ minutes: 45
 shuffle: true
 ---
 
-Cet examen valide le parcours : organisation multi-comptes, nouvelles solutions, amélioration de l'existant, migration et modernisation. Quinze questions sont tirées au sort dans une réserve de quarante-cinq, réparties comme les quatre domaines du guide de l'examen SAP-C02. Ce sont des scénarios : les quatre réponses sont plausibles, une seule respecte **toutes** les contraintes de l'énoncé.
+Cet examen valide le cours : organisation multi-comptes, nouvelles solutions, amélioration de l'existant, migration et modernisation. Quinze questions sont tirées au sort dans une réserve de quarante-cinq, réparties comme les quatre domaines du guide de l'examen SAP-C02. Ce sont des scénarios : les quatre réponses sont plausibles, une seule respecte **toutes** les contraintes de l'énoncé.
 
-Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce parcours, et n'ont toutes qu'une bonne réponse, alors que l'examen réel comporte aussi des questions à réponses multiples, plus longues, dans une autre langue que le français. Réussir ici montre que tu maîtrises le contenu du parcours ; AWS décrit le public de la certification comme ayant au moins deux ans de pratique, que cet examen ne mesure pas.
+Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce cours, et n'ont toutes qu'une bonne réponse, alors que l'examen réel comporte aussi des questions à réponses multiples, plus longues, dans une autre langue que le français. Réussir ici montre que tu maîtrises le contenu du cours ; AWS décrit le public de la certification comme ayant au moins deux ans de pratique, que cet examen ne mesure pas.
 
 :::quiz
 Un groupe de soixante comptes AWS veut empêcher toute création de ressources hors de deux régions européennes, y compris par les administrateurs locaux, et sans maintenance à chaque nouveau service lancé par AWS. Les services globaux comme IAM doivent continuer de fonctionner. Quelle solution retenir ?

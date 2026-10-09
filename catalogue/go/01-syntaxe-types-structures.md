@@ -36,7 +36,7 @@ Go a été créé pour écrire des **services** : des programmes qui tournent e
 - il produit **un seul fichier exécutable**, facile à mettre dans une image Docker (une « boîte » qui contient un programme et tout ce qu'il lui faut, on y revient dans la dernière leçon) ;
 - il sait faire **plusieurs choses à la fois** sans effort (on y revient dans les leçons 3 et 4).
 
-Trois projets de l'équipe l'utilisent : `adhesion/mgmt` (le service qui gère le mode maintenance), `event-planner-api` et `billetterie`. Leurs fichiers `go.mod` annoncent des versions de Go très différentes : **1.16** pour `mgmt`, **1.14** pour `billetterie`, **1.23** pour `event-planner-api`. Ce sont des versions sorties entre 2020 et 2024. L'équipe de Go ne maintient que les deux versions les plus récentes ([politique de support](https://go.dev/doc/devel/release#policy)) : les trois sont donc anciennes aujourd'hui. On signalera les différences qui comptent au fil du parcours.
+Trois projets de l'équipe l'utilisent : `adhesion/mgmt` (le service qui gère le mode maintenance), `event-planner-api` et `billetterie`. Leurs fichiers `go.mod` annoncent des versions de Go très différentes : **1.16** pour `mgmt`, **1.14** pour `billetterie`, **1.23** pour `event-planner-api`. Ce sont des versions sorties entre 2020 et 2024. L'équipe de Go ne maintient que les deux versions les plus récentes ([politique de support](https://go.dev/doc/devel/release#policy)) : les trois sont donc anciennes aujourd'hui. On signalera les différences qui comptent au fil du cours.
 
 ## Le terminal et les premières commandes
 
@@ -62,7 +62,7 @@ go mod init ludotheque
 
 ## Un premier programme, ligne à ligne
 
-Imaginons une petite **ludothèque** (un prêt de jeux de société) : ce domaine fictif nous servira dans tout le parcours. Crée un fichier `main.go` avec ce contenu :
+Imaginons une petite **ludothèque** (un prêt de jeux de société) : ce domaine fictif nous servira dans tout le cours. Crée un fichier `main.go` avec ce contenu :
 
 ```go
 package main

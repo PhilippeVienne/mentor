@@ -1,4 +1,4 @@
-// Environnement réel du parcours « Linux et shell » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « Linux et shell » (voir catalogue/README.md §15 et doc/environnements.md).
 // Debian avec les outils des leçons ; les fichiers d'entraînement sont copiés dans /workspace par chaque labo.
 {
     "name": "Linux et shell de l'équipe",

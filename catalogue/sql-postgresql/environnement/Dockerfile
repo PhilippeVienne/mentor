@@ -1,4 +1,4 @@
-# Environnement réel du parcours SQL et PostgreSQL : serveur PostgreSQL 15 (paquet Debian) lancé SANS root par
+# Environnement réel du cours SQL et PostgreSQL : serveur PostgreSQL 15 (paquet Debian) lancé SANS root par
 # l'apprenant·e, client psql, pg_dump et pg_restore.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé ;

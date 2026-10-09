@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Cursus{% endblock %}
-{% block description %}Les cursus de {{ brand.name }} : des parcours enchaînés dans l'ordre, d'un point de départ à un objectif.{% endblock %}
+{% block title %}Parcours de formation{% endblock %}
+{% block description %}Les parcours de formation de {{ brand.name }} : des cours enchaînés dans l'ordre, d'un point de départ à un objectif.{% endblock %}
 {% block head %}<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
 
 {% block content %}
 <section class="page-head">
     <div class="container">
-        <p class="eyebrow">Cursus</p>
-        <h1>Les cursus</h1>
-        <p class="lead">Un cursus enchaîne plusieurs parcours du catalogue dans l'ordre, d'un point de départ à un objectif. Choisis le tien et suis sa carte.</p>
+        <p class="eyebrow">Parcours de formation</p>
+        <h1>Les parcours de formation</h1>
+        <p class="lead">Un parcours de formation enchaîne plusieurs cours du catalogue dans l'ordre, d'un point de départ à un objectif. Choisis le tien et suis sa carte.</p>
     </div>
 </section>
 
 <div class="container paths">
     {% if cards.is_empty() %}
     <div class="cat-empty">
-        <strong>Aucun cursus pour le moment.</strong>
-        Tous les parcours restent accessibles depuis le <a href="/catalogue/">catalogue</a>.
+        <strong>Aucun parcours de formation pour le moment.</strong>
+        Tous les cours restent accessibles depuis le <a href="/catalogue/">catalogue</a>.
     </div>
     {% else %}
-    <h2 class="sr-only">Liste des cursus</h2>
+    <h2 class="sr-only">Liste des parcours de formation</h2>
     <div class="grid grid--paths">
         {% for card in cards %}{% include "_path_card.html" %}{% endfor %}
     </div>

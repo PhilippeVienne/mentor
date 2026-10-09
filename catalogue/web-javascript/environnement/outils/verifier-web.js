@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /*
- * verifier-web : vérifications « pristines » des labos du parcours HTML, CSS et JavaScript.
+ * verifier-web : vérifications « pristines » des labos du cours HTML, CSS et JavaScript.
  *
  * Usage : verifier-web <leçon> <contrôle>     (lancé depuis /workspace ; ex. « verifier-web 04 clic »)
  *

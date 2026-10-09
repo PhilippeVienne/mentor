@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Tous les frontends de l'équipe reposent sur les mêmes bases : HTML, CSS et JavaScript. Mieux vaut les maîtriser avant de choisir un framework. Ce parcours t'apprend ces bases **en pratiquant** : chaque labo te prête un petit environnement Linux avec Node.js, sans navigateur ni accès à Internet, et c'est le serveur qui vérifie le **résultat** de ton travail (la page obtenue, ce que ton script affiche) en lançant `verifier-page`, l'outil du labo qui joue le rôle du navigateur.
+Tous les frontends de l'équipe reposent sur les mêmes bases : HTML, CSS et JavaScript. Mieux vaut les maîtriser avant de choisir un framework. Ce cours t'apprend ces bases **en pratiquant** : chaque labo te prête un petit environnement Linux avec Node.js, sans navigateur ni accès à Internet, et c'est le serveur qui vérifie le **résultat** de ton travail (la page obtenue, ce que ton script affiche) en lançant `verifier-page`, l'outil du labo qui joue le rôle du navigateur.
 
 ## À qui s'adresse-t-il ?
 

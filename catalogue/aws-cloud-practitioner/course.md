@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-**Amazon Web Services (AWS)** loue à la demande des serveurs, du stockage, des bases de données et des dizaines d'autres services. Ce parcours t'en donne une vue d'ensemble solide : à quoi sert chaque grande famille de services, qui est responsable de quoi en matière de sécurité, et comment la facture se construit. Il suit le programme officiel de la certification **AWS Certified Cloud Practitioner (CLF-C02)**.
+**Amazon Web Services (AWS)** loue à la demande des serveurs, du stockage, des bases de données et des dizaines d'autres services. Ce cours t'en donne une vue d'ensemble solide : à quoi sert chaque grande famille de services, qui est responsable de quoi en matière de sécurité, et comment la facture se construit. Il suit le programme officiel de la certification **AWS Certified Cloud Practitioner (CLF-C02)**.
 
 **Chaque leçon a un labo réel.** Tu reçois un environnement Linux jetable avec la vraie commande `aws` (l'AWS CLI officielle) et le serveur vérifie l'état de ce que tu as créé.
 
@@ -25,7 +25,7 @@ Les **commandes**, les **noms de services** et les **documents** (politiques IAM
 
 ## À qui s'adresse-t-il ?
 
-À toute personne qui découvre AWS : développeur·se, administrateur·rice, chef·fe de projet, ou curieux·se. Il faut savoir taper une commande dans un terminal (parcours *Linux et shell* conseillé si ce n'est pas le cas). Aucune connaissance du cloud n'est requise : chaque terme est défini quand il apparaît.
+À toute personne qui découvre AWS : développeur·se, administrateur·rice, chef·fe de projet, ou curieux·se. Il faut savoir taper une commande dans un terminal (cours *Linux et shell* conseillé si ce n'est pas le cas). Aucune connaissance du cloud n'est requise : chaque terme est défini quand il apparaît.
 
 ## La certification visée
 
@@ -42,7 +42,7 @@ Ce qui suit vient du guide d'examen officiel et de la page de la certification, 
 | Passage | Centre Pearson VUE ou examen surveillé en ligne ; proposé en français |
 | Validité | 3 ans |
 
-Le guide d'examen répartit les questions notées en quatre domaines. Le parcours les couvre tous :
+Le guide d'examen répartit les questions notées en quatre domaines. Le cours les couvre tous :
 
 | Domaine officiel | Poids | Leçons |
 | --- | :---: | --- |
@@ -51,8 +51,8 @@ Le guide d'examen répartit les questions notées en quatre domaines. Le parcour
 | 3. *Cloud Technology and Services* (technologies et services) | 34 % | 1, 2, 6, 7, 8, 9, 10 |
 | 4. *Billing, Pricing, and Support* (facturation, tarifs et support) | 12 % | 12 |
 
-:::info Ce que ce parcours ne promet pas
-Il te **prépare** à l'examen ; il ne garantit pas de le réussir. L'examen porte sur le vrai AWS : complète le parcours par la lecture du [guide d'examen officiel](https://docs.aws.amazon.com/aws-certification/latest/cloud-practitioner-02/cloud-practitioner-02.html), de la documentation des services cités et, si tu le peux, par un peu de pratique sur un vrai compte. L'examen de validation du portail est écrit pour ce parcours : ce ne sont pas des questions de l'examen officiel, et il ne contient que des questions à choix unique.
+:::info Ce que ce cours ne promet pas
+Il te **prépare** à l'examen ; il ne garantit pas de le réussir. L'examen porte sur le vrai AWS : complète le cours par la lecture du [guide d'examen officiel](https://docs.aws.amazon.com/aws-certification/latest/cloud-practitioner-02/cloud-practitioner-02.html), de la documentation des services cités et, si tu le peux, par un peu de pratique sur un vrai compte. L'examen de validation du portail est écrit pour ce cours : ce ne sont pas des questions de l'examen officiel, et il ne contient que des questions à choix unique.
 :::
 
 ## Plan
@@ -72,4 +72,4 @@ Il te **prépare** à l'examen ; il ne garantit pas de le réussir. L'examen por
 | 11 | Bien architecturer et migrer | 30 min | Une infrastructure décrite en code |
 | 12 | Coûts, facturation et support | 30 min | Étiquettes de coûts et budget |
 
-**Prérequis :** aucun parcours. **Durée estimée :** environ 5 h 30, puis l'examen de validation (30 minutes).
+**Prérequis :** aucun cours. **Durée estimée :** environ 5 h 30, puis l'examen de validation (30 minutes).

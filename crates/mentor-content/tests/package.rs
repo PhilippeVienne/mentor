@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use mentor_content::{load_catalogue, load_manifest, load_package, load_package_with, Feature, Limits, Manifest};
 
 const MANIFEST: &str = "format: 1\nname: demo-pack\nversion: 1.2.0\ntitle: \"Démo\"\nlicense: CC-BY-SA-4.0\ncourses: [demo]\n";
-const COURSE: &str = "---\ntitle: \"Démo\"\nicon: \"🧪\"\nsummary: \"Un parcours.\"\nenvironment: env\n---\nPrésentation.\n";
+const COURSE: &str = "---\ntitle: \"Démo\"\nicon: \"🧪\"\nsummary: \"Un cours.\"\nenvironment: env\n---\nPrésentation.\n";
 const LESSON: &str = "---\nid: intro\ntitle: \"Intro\"\nsummary: \"Une leçon.\"\nminutes: 5\n---\nTexte.\n\n:::lab\nsteps:\n  - text: \"Crée `a.txt`\"\n    checks:\n      - env-file-exists: a.txt\n    solution:\n      - touch a.txt\n:::\n";
 
 /// A fresh package directory holding one course with one lab, under Cargo's directory for test files.

@@ -42,4 +42,4 @@ Chaque leçon se termine par un labo dans un **vrai terminal Linux** prêté par
 
 - [infra-dev](https://gitlab.example.org/equipe/dev/infra-dev) : cluster de test local
 
-**Prérequis :** parcours *Docker avancé*. **Durée estimée :** environ 4 h 40 (6 leçons, labos compris).
+**Prérequis :** cours *Docker avancé*. **Durée estimée :** environ 4 h 40 (6 leçons, labos compris).

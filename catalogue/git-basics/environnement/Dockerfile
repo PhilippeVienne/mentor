@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Git basics » : un vrai Debian avec Git, nano et tmux, et un « GitLab » local.
+# Environnement réel du cours « Git basics » : un vrai Debian avec Git, nano et tmux, et un « GitLab » local.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

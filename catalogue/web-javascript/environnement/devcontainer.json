@@ -1,4 +1,4 @@
-// Environnement réel du parcours « HTML, CSS et JavaScript » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « HTML, CSS et JavaScript » (voir catalogue/README.md §15 et doc/environnements.md).
 // Node.js 24 sur Debian, jsdom préinstallé (pas de navigateur dans le conteneur), nano et un serveur SSH pour VS Code.
 {
     "name": "HTML, CSS et JavaScript de l'équipe",

@@ -35,7 +35,7 @@ impl Default for Brand {
             hero_title: "Apprends les outils du métier,".into(),
             hero_accent: "en pratiquant".into(),
             hero_text:
-                "Des parcours courts avec un vrai terminal dans le navigateur, des quiz, de l'XP, des niveaux et des badges à débloquer."
+                "Des cours courts avec un vrai terminal dans le navigateur, des quiz, de l'XP, des niveaux et des badges à débloquer."
                     .into(),
             organisation: String::new(),
             contact_email: String::new(),

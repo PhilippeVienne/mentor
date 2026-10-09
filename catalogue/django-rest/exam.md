@@ -6,7 +6,7 @@ minutes: 10
 shuffle: true
 ---
 
-Cet examen valide les bases de Django REST framework : API et HTTP, sérialiseurs, viewsets et routeurs, authentification par jeton et permissions, filtres et pagination, documentation, tests. Les exemples reprennent le domaine fictif du parcours (`Asso`, `Evenement`, `Inscription`).
+Cet examen valide les bases de Django REST framework : API et HTTP, sérialiseurs, viewsets et routeurs, authentification par jeton et permissions, filtres et pagination, documentation, tests. Les exemples reprennent le domaine fictif du cours (`Asso`, `Evenement`, `Inscription`).
 
 :::quiz
 Quelle est la différence entre une réponse `401` et une réponse `403` ?

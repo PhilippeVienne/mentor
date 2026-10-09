@@ -9,9 +9,9 @@ color: "#F05033"
 banner: images/banniere.svg
 ---
 
-Git est l'outil de versionnage utilisé par **tous** les projets de l'équipe. Dans ce parcours, tu apprends en tapant de vraies commandes dans un vrai terminal Linux avec le vrai Git. Chaque leçon démarre un environnement rien que pour toi, effacé à l'arrêt : tu peux tout casser sans risque.
+Git est l'outil de versionnage utilisé par **tous** les projets de l'équipe. Dans ce cours, tu apprends en tapant de vraies commandes dans un vrai terminal Linux avec le vrai Git. Chaque leçon démarre un environnement rien que pour toi, effacé à l'arrêt : tu peux tout casser sans risque.
 
-## À qui s'adresse ce parcours ?
+## À qui s'adresse ce cours ?
 
 À toute personne qui n'a jamais utilisé Git, ou qui l'utilise en copiant des commandes sans trop savoir pourquoi. **Aucun prérequis** : si tu sais ouvrir un terminal, c'est parti.
 

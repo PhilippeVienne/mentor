@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-[MiniShop](https://gitlab.example.org/equipe/minishop) et la nouvelle [adhésion publique](https://gitlab.example.org/equipe/adhesion/adhesion-front-public-next) utilisent Next.js. Ce parcours couvre ce qu'il faut pour y contribuer, **en pratiquant** : chaque leçon se termine par un labo dans un vrai environnement Linux que le serveur te prête (Node.js, React, Next.js, TypeScript et Tailwind CSS préinstallés). Il n'y a ni navigateur ni accès à Internet dans cet environnement : ce sont des **tests** (de petits programmes qui affichent ton composant dans une page fictive et contrôlent le résultat), le compilateur TypeScript et, à la leçon 4, le build de Next.js qui vérifient ton travail.
+[MiniShop](https://gitlab.example.org/equipe/minishop) et la nouvelle [adhésion publique](https://gitlab.example.org/equipe/adhesion/adhesion-front-public-next) utilisent Next.js. Ce cours couvre ce qu'il faut pour y contribuer, **en pratiquant** : chaque leçon se termine par un labo dans un vrai environnement Linux que le serveur te prête (Node.js, React, Next.js, TypeScript et Tailwind CSS préinstallés). Il n'y a ni navigateur ni accès à Internet dans cet environnement : ce sont des **tests** (de petits programmes qui affichent ton composant dans une page fictive et contrôlent le résultat), le compilateur TypeScript et, à la leçon 4, le build de Next.js qui vérifient ton travail.
 
 ## À qui s'adresse-t-il ?
 
@@ -33,4 +33,4 @@ Aux développeur·se·s qui connaissent TypeScript. Tu n'as jamais utilisé Reac
 - Comprendre comment un frontend se branche sur l'authentification de l'équipe
 - Écrire et lancer des tests de composants avec Vitest
 
-**Prérequis :** parcours *TypeScript*. **Durée estimée :** environ 4 h 35, labos compris.
+**Prérequis :** cours *TypeScript*. **Durée estimée :** environ 4 h 35, labos compris.

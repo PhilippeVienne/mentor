@@ -9,11 +9,11 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Les données des associations doivent survivre à une panne. L'équipe utilise des images dédiées : [`backups3`](https://gitlab.example.org/equipe/dev/backups3), [`docker-postgres-backup`](https://gitlab.example.org/equipe/dev/docker-postgres-backup) ou [`backup-files-swift`](https://gitlab.example.org/equipe/dev/backup-files-swift). Ce parcours t'apprend à comprendre ces outils **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux jetable avec un serveur de stockage objet MinIO, une base PostgreSQL et les outils de sauvegarde (`mc`, `aws`, `pg_dump`, `pg_restore`, des versions simplifiées de `backup.py` et `restore.py`), tous démarrés pour toi. C'est le serveur du portail qui vérifie le résultat de chaque étape.
+Les données des associations doivent survivre à une panne. L'équipe utilise des images dédiées : [`backups3`](https://gitlab.example.org/equipe/dev/backups3), [`docker-postgres-backup`](https://gitlab.example.org/equipe/dev/docker-postgres-backup) ou [`backup-files-swift`](https://gitlab.example.org/equipe/dev/backup-files-swift). Ce cours t'apprend à comprendre ces outils **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux jetable avec un serveur de stockage objet MinIO, une base PostgreSQL et les outils de sauvegarde (`mc`, `aws`, `pg_dump`, `pg_restore`, des versions simplifiées de `backup.py` et `restore.py`), tous démarrés pour toi. C'est le serveur du portail qui vérifie le résultat de chaque étape.
 
 ## À qui s'adresse-t-il ?
 
-Aux membres de l'équipe Infra, et à toute personne qui doit sauvegarder ou restaurer un service de l'équipe. Aucune connaissance préalable des bases de données ni de Kubernetes n'est nécessaire : le parcours *Docker avancé* (conteneurs, images, volumes Docker) suffit, et les notions manquantes sont expliquées au fil des leçons.
+Aux membres de l'équipe Infra, et à toute personne qui doit sauvegarder ou restaurer un service de l'équipe. Aucune connaissance préalable des bases de données ni de Kubernetes n'est nécessaire : le cours *Docker avancé* (conteneurs, images, volumes Docker) suffit, et les notions manquantes sont expliquées au fil des leçons.
 
 :::info Deux notions que *Docker avancé* ne couvre pas
 - **SQL et les bases de données** : une base de données range des informations dans des tables (des tableaux de lignes et de colonnes) ; SQL est le langage pour lui parler. Seules quelques commandes `pg_dump` et `psql` t'en serviront ici (leçons 3 et 6).
@@ -46,6 +46,6 @@ Le conteneur du labo n'a ni Docker ni Kubernetes, et aucun accès à Internet. L
 - [backup-files-swift](https://gitlab.example.org/equipe/dev/backup-files-swift) : sauvegarde de fichiers vers Swift
 - [cluster-configuration](https://gitlab.example.org/equipe/dev/cluster-configuration) : déploiement de MinIO et des buckets
 
-**Prérequis :** parcours *Docker avancé*. **Durée estimée :** environ 3 h 15 (labos et quiz compris).
+**Prérequis :** cours *Docker avancé*. **Durée estimée :** environ 3 h 15 (labos et quiz compris).
 
-Si ton portail ne propose pas encore les environnements réels, tu peux quand même suivre les leçons, et **valider tout le parcours avec l'examen** si tu maîtrises déjà le sujet.
+Si ton portail ne propose pas encore les environnements réels, tu peux quand même suivre les leçons, et **valider tout le cours avec l'examen** si tu maîtrises déjà le sujet.

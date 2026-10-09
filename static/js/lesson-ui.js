@@ -114,7 +114,7 @@
             (res.new_badges || []).forEach((b) => toast('badge', `${b.emoji} Badge débloqué : ${b.name}`, b.description));
             if (res.lesson_completed) {
                 const { nextUrl } = this.data.lesson;
-                toast('done', res.course_completed ? 'Parcours terminé, bravo !' : 'Leçon terminée !', '', nextUrl ? { href: nextUrl, label: 'Continuer →' } : null);
+                toast('done', res.course_completed ? 'Cours terminé, bravo !' : 'Leçon terminée !', '', nextUrl ? { href: nextUrl, label: 'Continuer →' } : null);
             }
         }
     }

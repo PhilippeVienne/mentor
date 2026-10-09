@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Maintenir du code hérité » : Python 3.10 avec QUATRE versions de Django
+# Environnement réel du cours « Maintenir du code hérité » : Python 3.10 avec QUATRE versions de Django
 # installées côte à côte, chacune dans son environnement virtuel (3.1, 3.2 LTS, 4.2 LTS, 5.2 LTS).
 # Python 3.10 est la seule version qui les accepte toutes : Django 3.1 va jusqu'à 3.9 (3.10 fonctionne en pratique),
 # 3.2 jusqu'à 3.10, 4.2 jusqu'à 3.12 et 5.2 demande au moins 3.10.
@@ -7,7 +7,7 @@
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;
 #   - la DERNIÈRE instruction USER est un utilisateur non-root d'uid 1000.
 # Le réseau n'est disponible QU'AU BUILD : tout est installé ici. Il n'y a ni Node.js ni npm : la partie React/Vite
-# du parcours se travaille sur des fichiers fournis (package.json, vite.config.js…), sans lancer de build.
+# du cours se travaille sur des fichiers fournis (package.json, vite.config.js…), sans lancer de build.
 FROM python:3.10.22-slim-bookworm
 
 RUN apt-get update \

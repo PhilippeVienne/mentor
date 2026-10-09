@@ -6,9 +6,9 @@ minutes: 40
 shuffle: true
 ---
 
-Cet examen valide le parcours : architectures sûres, résilientes, performantes et économes. Vingt questions sont tirées au sort dans une réserve de soixante, réparties comme les quatre domaines du guide de l'examen SAA-C03. Ce sont des scénarios : plusieurs réponses peuvent fonctionner, une seule répond le mieux à la contrainte de l'énoncé.
+Cet examen valide le cours : architectures sûres, résilientes, performantes et économes. Vingt questions sont tirées au sort dans une réserve de soixante, réparties comme les quatre domaines du guide de l'examen SAA-C03. Ce sont des scénarios : plusieurs réponses peuvent fonctionner, une seule répond le mieux à la contrainte de l'énoncé.
 
-Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce parcours, et n'ont toutes qu'une bonne réponse alors que l'examen réel comporte aussi des questions à réponses multiples. Réussir ici montre que tu maîtrises le contenu du parcours ; AWS décrit le public de la certification comme ayant au moins un an de pratique, que cet examen ne mesure pas.
+Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce cours, et n'ont toutes qu'une bonne réponse alors que l'examen réel comporte aussi des questions à réponses multiples. Réussir ici montre que tu maîtrises le contenu du cours ; AWS décrit le public de la certification comme ayant au moins un an de pratique, que cet examen ne mesure pas.
 
 :::quiz
 Une entreprise possède un compte de développement et un compte de production. Les développeur·se·s doivent pouvoir consulter, sans les modifier, les journaux du compte de production, avec leurs identités du compte de développement. Quelle conception retenir ?

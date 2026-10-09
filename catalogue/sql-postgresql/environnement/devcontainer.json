@@ -1,4 +1,4 @@
-// Environnement réel du parcours SQL et PostgreSQL (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours SQL et PostgreSQL (voir catalogue/README.md §15 et doc/environnements.md).
 // PostgreSQL 15 sur Debian, lancé sans root par la commande de démarrage de chaque labo.
 {
     "name": "PostgreSQL 15 de l'équipe",

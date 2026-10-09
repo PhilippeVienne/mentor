@@ -1,4 +1,4 @@
-// Environnement réel du parcours CI/CD avec GitLab (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours CI/CD avec GitLab (voir catalogue/README.md §15 et doc/environnements.md).
 // Python 3.13 sur Debian, avec verifier-ci, verifier-renovate et yamllint. Il n'y a pas de réseau à l'exécution
 // et pas de runner GitLab : les outils contrôlent la structure des fichiers, ils n'exécutent aucun job.
 {

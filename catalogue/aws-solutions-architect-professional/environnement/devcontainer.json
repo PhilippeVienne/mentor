@@ -1,4 +1,4 @@
-// Environnement réel des parcours AWS (voir catalogue/README.md, « Environments »).
+// Environnement réel des cours AWS (voir catalogue/README.md, « Environments »).
 // L'AWS CLI et MiniStack, un émulateur local d'AWS : ni compte AWS, ni Internet, ni Docker dans l'environnement.
 {
     "name": "Labo AWS local (MiniStack)",

@@ -1,4 +1,4 @@
-# Environnement réel du parcours « API REST avec Django REST framework » : Python 3.13, Django, DRF, django-filter,
+# Environnement réel du cours « API REST avec Django REST framework » : Python 3.13, Django, DRF, django-filter,
 # pytest-django, PyJWT et cryptography, et un serveur SSH pour VS Code (Remote-SSH).
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé (version de Python + distribution) ;

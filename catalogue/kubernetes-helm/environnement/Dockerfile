@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Kubernetes et Helm » : helm, kubectl (client seul), kubeconform avec les schémas
+# Environnement réel du cours « Kubernetes et Helm » : helm, kubectl (client seul), kubeconform avec les schémas
 # Kubernetes embarqués, yamllint, nano et un serveur SSH pour VS Code. IL N'Y A PAS DE CLUSTER dans ce conteneur.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé ;

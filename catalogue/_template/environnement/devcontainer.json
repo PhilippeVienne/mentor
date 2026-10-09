@@ -1,4 +1,4 @@
-// Environnement du parcours modèle (voir catalogue/README.md, « Environments »).
+// Environnement du cours modèle (voir catalogue/README.md, « Environments »).
 // Format : spécification Dev Containers (JSON avec commentaires) ; seul un sous-ensemble sûr est accepté.
 {
     "name": "Debian avec Git",

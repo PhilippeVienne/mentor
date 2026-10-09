@@ -10,7 +10,7 @@ objectives:
   - Lancer des tests avec `pytest`
 ---
 
-Presque tous les projets de l'équipe ont du Python quelque part : le portail des associations (Vitrine), l'API d'adhésion, les scripts de sauvegarde… Python est un langage **lisible** : on peut presque le lire comme de l'anglais. Dans ce parcours, tu l'apprends dans un **vrai terminal Linux** (un conteneur rien que pour toi), pas dans une simulation.
+Presque tous les projets de l'équipe ont du Python quelque part : le portail des associations (Vitrine), l'API d'adhésion, les scripts de sauvegarde… Python est un langage **lisible** : on peut presque le lire comme de l'anglais. Dans ce cours, tu l'apprends dans un **vrai terminal Linux** (un conteneur rien que pour toi), pas dans une simulation.
 
 :::info Un vrai environnement
 Clique sur **Démarrer l'environnement** dans le panneau « Labo ». Le serveur te prête un conteneur avec Python 3.13 et `pytest`, sans droits administrateur et **sans accès à Internet**. À l'arrêt, ton dossier de travail est **effacé** : tout ce que tu écris ici est un brouillon d'entraînement.

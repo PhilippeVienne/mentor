@@ -1,4 +1,4 @@
-// Environnement réel du parcours « Docker advanced » (voir catalogue/README.md §15).
+// Environnement réel du cours « Docker advanced » (voir catalogue/README.md §15).
 // Un vrai moteur Docker : la plateforme le démarre dans la microVM de l'apprenant·e (dockerInDocker).
 {
     "name": "Docker de l'équipe (avancé)",

@@ -6,7 +6,7 @@ minutes: 20
 shuffle: true
 ---
 
-Cet examen s'adresse aux personnes qui **savent déjà programmer en Python** et veulent valider tout le parcours sans refaire les labos : variables et types, fonctions et modules, listes, dictionnaires et boucles, fichiers et exceptions, environnements virtuels, et la construction d'un petit projet testé.
+Cet examen s'adresse aux personnes qui **savent déjà programmer en Python** et veulent valider tout le cours sans refaire les labos : variables et types, fonctions et modules, listes, dictionnaires et boucles, fichiers et exceptions, environnements virtuels, et la construction d'un petit projet testé.
 
 **Les règles :**
 
@@ -16,7 +16,7 @@ Cet examen s'adresse aux personnes qui **savent déjà programmer en Python** et
 - Après un échec, un court délai est imposé avant de réessayer ; les questions changent d'une tentative à l'autre.
 - La correction détaillée, avec les explications, s'affiche une fois l'examen envoyé.
 
-Réussir l'examen **valide le parcours** (et te donne l'XP et les badges correspondants) ; les leçons restent disponibles si tu veux t'entraîner.
+Réussir l'examen **valide le cours** (et te donne l'XP et les badges correspondants) ; les leçons restent disponibles si tu veux t'entraîner.
 
 :::quiz
 Quel est le type du résultat de `3 / 2` en Python 3 ?

@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% block title %}{{ path.title }} · Cursus{% endblock %}
+{% block title %}{{ path.title }} · Parcours de formation{% endblock %}
 {% block description %}{{ path.summary }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
 
 {% block content %}
 <section class="course-head path-head"{% if !path.accent.is_empty() %} style="--accent: {{ path.accent }}"{% endif %}>
     <div class="container">
-        <nav aria-label="Fil d'Ariane" class="breadcrumb"><a href="/paths/">Cursus</a> <span aria-hidden="true">/</span> <span>{{ path.title }}</span></nav>
+        <nav aria-label="Fil d'Ariane" class="breadcrumb"><a href="/paths/">Parcours de formation</a> <span aria-hidden="true">/</span> <span>{{ path.title }}</span></nav>
         <p class="course-head__icon" aria-hidden="true">{{ path.icon }}</p>
         <h1>{{ path.title }}</h1>
         <p class="lead">{{ path.summary }}</p>
         <ul class="meta meta--lg">
-            <li>{{ card.courses }} parcours{% if card.optional > 0 %} (dont {{ card.optional }} en option){% endif %}</li>
+            <li>{{ card.courses }} cours{% if card.optional > 0 %} (dont {{ card.optional }} en option){% endif %}</li>
             {% if card.stages > 0 %}<li>{{ card.stages }} étape{% if card.stages > 1 %}s{% endif %}</li>{% endif %}
             <li>{{ card.duration }}</li>
         </ul>
         {% if let Some(advancement) = card.advancement %}
-        <div class="progress progress--lg progress--on-dark path-head__progress" role="progressbar" aria-valuenow="{{ advancement.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le cursus">
+        <div class="progress progress--lg progress--on-dark path-head__progress" role="progressbar" aria-valuenow="{{ advancement.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le parcours de formation">
             <span style="width: {{ advancement.percent }}%"></span>
         </div>
-        <p class="progress__label">{{ advancement.done }} / {{ advancement.required }} parcours · {{ advancement.percent }} %{% if advancement.completed %} · ✓ Cursus terminé{% endif %}</p>
+        <p class="progress__label">{{ advancement.done }} / {{ advancement.required }} cours · {{ advancement.percent }} %{% if advancement.completed %} · ✓ Parcours de formation terminé{% endif %}</p>
         {% endif %}
     </div>
 </section>
@@ -29,7 +29,7 @@
     {% if let Some(next) = next %}
     <section class="resume-card" aria-labelledby="next-title">
         <div>
-            <p class="eyebrow" id="next-title">{% if next.started %}Reprendre là où tu t'étais arrêté·e{% else if advancement.completed %}Pour aller plus loin{% else %}Prochaine étape du cursus{% endif %}</p>
+            <p class="eyebrow" id="next-title">{% if next.started %}Reprendre là où tu t'étais arrêté·e{% else if advancement.completed %}Pour aller plus loin{% else %}Prochaine étape du parcours de formation{% endif %}</p>
             <h2>{{ next.lesson.title }}</h2>
             <p class="muted">{{ next.course.icon }} {{ next.course.title }} · ≈ {{ next.lesson.minutes }} min</p>
         </div>
@@ -38,18 +38,18 @@
     {% else if advancement.completed %}
     <section class="resume-card" aria-labelledby="next-title">
         <div>
-            <p class="eyebrow" id="next-title">Cursus terminé</p>
+            <p class="eyebrow" id="next-title">Parcours de formation terminé</p>
             <h2>Bravo, tu es allé·e au bout 🎉</h2>
-            <p class="muted">Tous les parcours de ce cursus sont terminés.</p>
+            <p class="muted">Tous les cours de ce parcours de formation sont terminés.</p>
         </div>
-        <a class="btn btn--ghost btn--lg" href="/paths/">Voir les autres cursus →</a>
+        <a class="btn btn--ghost btn--lg" href="/paths/">Voir les autres parcours de formation →</a>
     </section>
     {% else %}
     <section class="resume-card" aria-labelledby="next-title">
         <div>
             <p class="eyebrow" id="next-title">La suite arrive</p>
             <h2>Tu as terminé tout ce qui est disponible</h2>
-            <p class="muted">Les parcours restants de ce cursus ne sont pas encore publiés.</p>
+            <p class="muted">Les cours restants de ce parcours de formation ne sont pas encore publiés.</p>
         </div>
         <a class="btn btn--ghost btn--lg" href="/catalogue/">Voir le catalogue →</a>
     </section>
@@ -59,15 +59,15 @@
         <div>
             <p class="eyebrow" id="next-title">Par où commencer</p>
             <h2>{{ first.icon }} {{ first.title }}</h2>
-            <p class="muted">{% if dev_login %}Connecte-toi pour suivre ta progression sur la carte.{% else %}Le premier parcours de ce cursus.{% endif %}</p>
+            <p class="muted">{% if dev_login %}Connecte-toi pour suivre ta progression sur la carte.{% else %}Le premier cours de ce parcours de formation.{% endif %}</p>
         </div>
-        <a class="btn btn--primary btn--lg" href="/courses/{{ first.slug }}/">Voir ce parcours →</a>
+        <a class="btn btn--primary btn--lg" href="/courses/{{ first.slug }}/">Voir ce cours →</a>
     </section>
     {% endif %}
 
     <section aria-labelledby="map-title">
-        <h2 id="map-title" class="section-title">La carte du cursus</h2>
-        <p class="path-legend">Une flèche part d'un parcours et pointe vers celui qu'il débloque.{% if card.advancement.is_some() %}
+        <h2 id="map-title" class="section-title">La carte du parcours de formation</h2>
+        <p class="path-legend">Une flèche part d'un cours et pointe vers celui qu'il débloque.{% if card.advancement.is_some() %}
             <span class="path-legend__item"><svg viewBox="0 0 28 8" width="28" height="8" aria-hidden="true" focusable="false"><path class="path-link path-link--done" d="M1 4 H27"/></svg> prérequis terminé</span>
             <span class="path-legend__item"><svg viewBox="0 0 28 8" width="28" height="8" aria-hidden="true" focusable="false"><path class="path-link path-link--todo" d="M1 4 H27"/></svg> prérequis à terminer</span>{% endif %}
         </p>
@@ -98,7 +98,7 @@
                                             {% if node.optional %}<span class="path-tag">En option</span>{% endif %}
                                         </p>
                                         {% if !node.note.is_empty() %}<p class="path-node__note" title="{{ node.note }}">{{ node.note }}</p>{% endif %}
-                                        {% if !node.prerequisites.is_empty() %}<p class="sr-only">Prérequis dans ce cursus : {{ node.prerequisites|join(", ") }}.</p>{% endif %}
+                                        {% if !node.prerequisites.is_empty() %}<p class="sr-only">Prérequis dans ce parcours de formation : {{ node.prerequisites|join(", ") }}.</p>{% endif %}
                                     </div>
                                     {% if let Some(percent) = node.percent %}
                                     <div class="progress path-node__bar" role="progressbar" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans {{ node.course.title }}">

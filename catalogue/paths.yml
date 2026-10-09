@@ -1,5 +1,5 @@
 # Training paths: ordered selections of the courses of this catalogue (format: README.md, "Training paths").
-# The interface calls a path « cursus » and a course « parcours ».
+# The interface calls a path « parcours de formation » and a course « cours ».
 # A path lists every prerequisite of its courses, before them: it can be followed from start to end.
 paths:
   - id: socle-commun

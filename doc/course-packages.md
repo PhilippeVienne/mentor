@@ -347,7 +347,7 @@ What this increment added:
 
 | # | Question | Default taken here (reversible) | Recommendation |
 | --- | --- | --- | --- |
-| 1 | Do tenants get the built-in courses? (architecture §10, open point 2) | Nothing changes: every tenant sees them | Make them an ordinary package installed by default for a new tenant, which the tenant administrator can remove. Eventually move them to their own repository |
+| 1 | Do tenants get the built-in courses? | **Decided (9 October 2026): never by default.** A tenant sees only the packages installed for it; the built-in courses are a package that is offered, not installed. Until per-tenant installation exists (phase C), every tenant still sees them | Build phase C, then stop loading `catalogue/` for every tenant |
 | 2 | Is a one-lab package shown as a course? | Yes: it is a course of one lesson | Keep it so until a real stand-alone lab exists to look at; a `kind` in `course.md` can change the presentation later without changing the format |
 | 3 | Who may install a package: the platform operator only, or tenant administrators? | Not implemented | Operator only (CLI) through phase D; tenant administrators once builds have per-tenant quotas |
 | 4 | When a lab changes under learners who are half-way through it | **Settled**: steps are followed by identifier, so the steps still present keep their state | Nothing more to decide, unless a reworded step should always keep its state (give it an `id`) |

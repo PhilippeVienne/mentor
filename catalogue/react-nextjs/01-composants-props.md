@@ -46,7 +46,7 @@ function GoodieCard({ nom, prixCents, stock }: Readonly<Omit<Goodie, "id">>) {
 }
 ```
 
-- `type Goodie = …` : un type TypeScript (tu l'as vu dans le parcours TypeScript) qui décrit la forme d'un goodie. Le prix est en **centimes** pour éviter les erreurs d'arrondi des nombres à virgule.
+- `type Goodie = …` : un type TypeScript (tu l'as vu dans le cours TypeScript) qui décrit la forme d'un goodie. Le prix est en **centimes** pour éviter les erreurs d'arrondi des nombres à virgule.
 - `formatEur` : une fonction ordinaire. `Intl.NumberFormat` est fournie par le navigateur et sait écrire `12,50 €` à la française. MiniShop a la même fonction dans `src/lib/cart-utils.ts`.
 - `function GoodieCard(…)` : le composant. La majuscule est **obligatoire** : c'est comme ça que React distingue `<GoodieCard />` d'une balise HTML comme `<article>`.
 - `{ nom, prixCents, stock }` : ce sont les **props** (*properties*), les « paramètres » du composant. React les transmet sous forme d'un seul objet, et on les **déstructure** tout de suite : on extrait chaque champ de l'objet dans une variable du même nom.

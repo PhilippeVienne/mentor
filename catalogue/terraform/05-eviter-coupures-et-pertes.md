@@ -98,7 +98,7 @@ La procédure de restauration (rejouer depuis MinIO) est donnée en lien dans `k
 3. Je cherche `destroy`, `replace`, `forces replacement` et le total « to destroy ».
 4. Pour chaque ressource concernée, j'ouvre le `.tf` et lis les `provisioner`.
 5. Si un volume, une base ou un secret est touché : j'**arrête** et je demande une relecture à une autre personne.
-6. Je vérifie qu'une sauvegarde récente existe (parcours *Sauvegardes et stockage objet*).
+6. Je vérifie qu'une sauvegarde récente existe (cours *Sauvegardes et stockage objet*).
 7. `terraform apply plan.tfplan`, puis je contrôle l'état du service.
 
 :::tip Deux paires d'yeux

@@ -8,15 +8,15 @@ color: "#0C4B33"
 banner: images/banniere.svg
 ---
 
-Django est le framework web de presque toutes les applications de l'équipe, comme [Vitrine](https://gitlab.example.org/equipe/vitrine) (le portail des associations) ou l'API d'[Adhésion](https://gitlab.example.org/equipe/adhesion/api). Ce parcours te guide de `django-admin startproject` jusqu'à une petite application déployable.
+Django est le framework web de presque toutes les applications de l'équipe, comme [Vitrine](https://gitlab.example.org/equipe/vitrine) (le portail des associations) ou l'API d'[Adhésion](https://gitlab.example.org/equipe/adhesion/api). Ce cours te guide de `django-admin startproject` jusqu'à une petite application déployable.
 
-:::info Parcours en préparation
-Ce parcours n'est pas encore publié. Il sera débloqué une fois le parcours *Python* terminé.
+:::info Cours en préparation
+Ce cours n'est pas encore publié. Il sera débloqué une fois le cours *Python* terminé.
 :::
 
 ## À qui s'adresse-t-il ?
 
-À celles et ceux qui connaissent les bases de Python et veulent contribuer au code d'un projet de l'équipe. Le parcours utilise la même organisation que les dépôts réels (variables d'environnement, PostgreSQL, tests `pytest`, formatage `black`).
+À celles et ceux qui connaissent les bases de Python et veulent contribuer au code d'un projet de l'équipe. Le cours utilise la même organisation que les dépôts réels (variables d'environnement, PostgreSQL, tests `pytest`, formatage `black`).
 
 ## Plan prévisionnel
 
@@ -35,4 +35,4 @@ Ce parcours n'est pas encore publié. Il sera débloqué une fois le parcours *P
 - Naviguer dans le code de Vitrine pour trouver où faire une modification
 - Écrire des tests et respecter les conventions de l'équipe
 
-**Prérequis :** parcours *Python*. **Durée estimée :** environ 4 h.
+**Prérequis :** cours *Python*. **Durée estimée :** environ 4 h.

@@ -1,4 +1,4 @@
-// Environnement réel du parcours « Sauvegardes et stockage objet » (voir catalogue/README.md §15 et
+// Environnement réel du cours « Sauvegardes et stockage objet » (voir catalogue/README.md §15 et
 // doc/environnements.md). MinIO, mc, AWS CLI, boto3 et PostgreSQL sur Debian ; tout est lancé sans root par les
 // commandes de démarrage de chaque labo.
 {

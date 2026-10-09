@@ -476,10 +476,10 @@ async fn an_exam_is_drawn_once_graded_on_the_server_and_validates_the_course() {
     assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", &answers).await.0, StatusCode::CONFLICT);
     assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/start", "{}").await.0, StatusCode::CONFLICT);
     let exam_page = page(&app, &cookie, "/courses/git-basics/exam/").await;
-    assert!(exam_page.contains("Parcours déjà validé") && exam_page.contains("par examen") && !exam_page.contains("exam-data"));
+    assert!(exam_page.contains("Cours déjà validé") && exam_page.contains("par examen") && !exam_page.contains("exam-data"));
     let course = page(&app, &cookie, "/courses/git-basics/").await;
     assert!(
-        course.contains("✓ Parcours validé par examen") && course.contains("Validée par examen") && course.contains("7 / 7 leçons · 100 %")
+        course.contains("✓ Cours validé par examen") && course.contains("Validée par examen") && course.contains("7 / 7 leçons · 100 %")
     );
     assert!(page(&app, &cookie, "/dashboard/").await.contains("Niv. 2 · 100 XP"));
 }
@@ -519,8 +519,8 @@ async fn exams_are_refused_to_visitors_other_sites_and_locked_courses() {
     // `docker-advanced` requires `docker-hello`.
     assert_eq!(post_json(&app, Some(&cookie), "/api/exam/docker-advanced/start", "{}").await.0, StatusCode::FORBIDDEN);
     let locked = page(&app, &cookie, "/courses/docker-advanced/exam/").await;
-    assert!(locked.contains("Parcours verrouillé") && !locked.contains("exam-data"));
-    assert!(page(&app, &cookie, "/courses/docker-advanced/").await.contains("Il se débloque avec ce parcours"));
+    assert!(locked.contains("Cours verrouillé") && !locked.contains("exam-data"));
+    assert!(page(&app, &cookie, "/courses/docker-advanced/").await.contains("Il se débloque avec ce cours"));
     assert_eq!(post_json(&app, Some(&cookie), "/api/exam/git-basics/submit", r#"{"attempt": "not-an-id"}"#).await.0, StatusCode::NOT_FOUND);
 
     let visitor = call(&app, Call { host: "acme.test", path: "/courses/git-basics/exam/", cookie: None, body: None, origin: None }).await;
@@ -556,16 +556,16 @@ async fn a_visitor_sees_the_paths_and_their_map_without_progress() {
     let Some(app) = app().await else { return };
     let (status, list) = get(&app, "acme.test", "/paths/").await;
     assert_eq!(status, StatusCode::OK);
-    assert!(list.contains("<h1>Les cursus</h1>") && list.contains(r#"href="/paths/" aria-current="page""#));
+    assert!(list.contains("<h1>Les parcours de formation</h1>") && list.contains(r#"href="/paths/" aria-current="page""#));
     for path in ["socle-commun", "developpement-frontend", "backend-python", "devops-infrastructure"] {
         assert!(list.contains(&format!(r#"data-path="{path}""#)) && list.contains(&format!(r#"href="/paths/{path}/""#)), "{path}");
     }
-    assert!(list.contains("8 parcours") && list.contains("3 étapes") && list.contains("7 parcours (dont 1 en option)"));
+    assert!(list.contains("8 cours") && list.contains("3 étapes") && list.contains("7 cours (dont 1 en option)"));
     // The strip of a card is decoration; the same courses are named in text.
     assert!(list.contains("ordre : Linux et shell, Git basics, Docker hello world, SQL et PostgreSQL.</p>"));
     assert!(!list.contains("progressbar") && list.contains("Acme Academy") && list.contains("--primary: #112233"));
     // Every page links to the paths.
-    assert!(get(&app, "acme.test", "/catalogue/").await.1.contains(r#"<a href="/paths/">Cursus</a>"#));
+    assert!(get(&app, "acme.test", "/catalogue/").await.1.contains(r#"<a href="/paths/">Parcours de formation</a>"#));
 
     let (status, map) = get(&app, "acme.test", "/paths/devops-infrastructure/").await;
     assert_eq!(status, StatusCode::OK);
@@ -583,11 +583,11 @@ async fn a_visitor_sees_the_paths_and_their_map_without_progress() {
     assert_eq!(map.matches(r#"<path class="path-link" d="M"#).count(), 10);
     assert_eq!(map.matches(r#"<polygon class="path-arrow" points=""#).count(), 5);
     assert!(map.contains(r#"viewBox="0 0 3000 "#) && map.contains(r#"preserveAspectRatio="none""#) && map.contains("--pm-columns: 3;"));
-    assert!(map.contains("Prérequis dans ce cursus : Docker advanced."));
+    assert!(map.contains("Prérequis dans ce parcours de formation : Docker advanced."));
     // No state, no progress, nothing to resume: only where to start.
     assert_eq!(node_state(&map, "docker-advanced"), "plain");
     assert!(!map.contains("progressbar") && !map.contains("Verrouillé") && !map.contains("path-link--") && !map.contains("À suivre"));
-    assert!(map.contains("Par où commencer") && map.contains(r#"href="/courses/linux-shell/">Voir ce parcours"#));
+    assert!(map.contains("Par où commencer") && map.contains(r#"href="/courses/linux-shell/">Voir ce cours"#));
 
     // A course that is not published yet is announced, without a link.
     let backend = get(&app, "acme.test", "/paths/backend-python/").await.1;
@@ -599,8 +599,11 @@ async fn a_visitor_sees_the_paths_and_their_map_without_progress() {
 
     // A course page names the paths it belongs to.
     let course = get(&app, "acme.test", "/courses/docker-advanced/").await.1;
-    assert!(course.contains("Fait partie du cursus") && course.contains(r#"href="/paths/devops-infrastructure/#course-docker-advanced""#));
-    assert!(get(&app, "acme.test", "/courses/git-basics/").await.1.contains("Fait partie des cursus"));
+    assert!(
+        course.contains("Fait partie du parcours de formation")
+            && course.contains(r#"href="/paths/devops-infrastructure/#course-docker-advanced""#)
+    );
+    assert!(get(&app, "acme.test", "/courses/git-basics/").await.1.contains("Fait partie des parcours de formation"));
     assert!(!get(&app, "acme.test", "/courses/go/").await.1.contains("Fait partie d"));
 
     let (status, body) = get(&app, "acme.test", "/paths/nope/").await;
@@ -616,7 +619,7 @@ async fn the_map_of_a_path_follows_what_the_learner_did() {
     let path = "/paths/devops-infrastructure/";
 
     let map = page(&app, &cookie, path).await;
-    assert!(map.contains("0 / 8 parcours · 0 %") && map.contains(r#"aria-label="Progression dans le cursus""#));
+    assert!(map.contains("0 / 8 cours · 0 %") && map.contains(r#"aria-label="Progression dans le parcours de formation""#));
     assert_eq!((node_state(&map, "linux-shell"), node_state(&map, "git-basics")), ("available".into(), "available".into()));
     // A course whose prerequisite is not completed is locked, and says what to complete.
     assert_eq!((node_state(&map, "docker-advanced"), node_state(&map, "terraform")), ("locked".into(), "locked".into()));
@@ -624,7 +627,8 @@ async fn the_map_of_a_path_follows_what_the_learner_did() {
     assert_eq!((links(&map, "done"), links(&map, "todo")), (0, 10));
     // The first course of the path is the next thing to do, and is marked on the map.
     assert!(
-        map.contains("Prochaine étape du cursus") && map.contains(r#"href="/courses/linux-shell/naviguer-fichiers/">Commencer"#),
+        map.contains("Prochaine étape du parcours de formation")
+            && map.contains(r#"href="/courses/linux-shell/naviguer-fichiers/">Commencer"#),
         "next step"
     );
     assert_eq!(map.matches("À suivre").count(), 1);
@@ -635,7 +639,7 @@ async fn the_map_of_a_path_follows_what_the_learner_did() {
     assert_eq!(progress(&app, "acme.test", Some(&cookie), QUIZ).await.0, StatusCode::OK);
     let map = page(&app, &cookie, path).await;
     assert_eq!(node_state(&map, "git-basics"), "started");
-    assert!(map.contains("En cours · 14 %") && map.contains("0 / 8 parcours · 2 %"));
+    assert!(map.contains("En cours · 14 %") && map.contains("0 / 8 cours · 2 %"));
     assert_eq!(node_state(&map, "ci-gitlab"), "locked");
 
     // A completed course opens what it leads to; the link between them is drawn as done.
@@ -643,23 +647,23 @@ async fn the_map_of_a_path_follows_what_the_learner_did() {
     let map = page(&app, &cookie, path).await;
     assert_eq!((node_state(&map, "docker-hello"), node_state(&map, "docker-advanced")), ("done".into(), "available".into()));
     assert_eq!(node_state(&map, "kubernetes-helm"), "locked");
-    assert!(map.contains("✓ Terminé") && map.contains("1 / 8 parcours · 14 %"));
+    assert!(map.contains("✓ Terminé") && map.contains("1 / 8 cours · 14 %"));
     assert_eq!((links(&map, "done"), links(&map, "todo")), (2, 8));
 
     // The dashboard and the list show the same advancement; paths the learner is in come first.
     let dashboard = page(&app, &cookie, "/dashboard/").await;
-    assert!(dashboard.contains("Voir tous les cursus") && dashboard.contains("1 / 8 parcours · 14 %"));
-    assert!(dashboard.contains(r#"aria-label="Progression dans le cursus DevOps et infrastructure""#));
+    assert!(dashboard.contains("Voir tous les parcours de formation") && dashboard.contains("1 / 8 cours · 14 %"));
+    assert!(dashboard.contains(r#"aria-label="Progression dans le parcours de formation DevOps et infrastructure""#));
     assert!(dashboard.find(r#"data-path="socle-commun""#).unwrap() < dashboard.find(r#"data-path="devops-infrastructure""#).unwrap());
     let list = page(&app, &cookie, "/paths/").await;
-    assert!(list.contains("path-strip__dot--done") && list.contains("path-strip__dot--locked") && list.contains("1 / 4 parcours"));
+    assert!(list.contains("path-strip__dot--done") && list.contains("path-strip__dot--locked") && list.contains("1 / 4 cours"));
 
     // A whole path: its three other courses have no prerequisite.
     for course in ["linux-shell", "git-basics", "sql-postgresql"] {
         complete(&app, &cookie, course).await;
     }
     let done = page(&app, &cookie, "/paths/socle-commun/").await;
-    assert!(done.contains("4 / 4 parcours · 100 % · ✓ Cursus terminé") && done.contains("Bravo, tu es allé·e au bout"));
+    assert!(done.contains("4 / 4 cours · 100 % · ✓ Parcours de formation terminé") && done.contains("Bravo, tu es allé·e au bout"));
     assert!(!done.contains("À suivre"));
     assert!(page(&app, &cookie, "/paths/").await.contains(r#"class="path-card is-done""#));
     // Completing a path stores nothing: no badge is named after it.
@@ -682,11 +686,11 @@ async fn a_path_shows_only_the_progress_made_on_its_own_tenant() {
         (node_state(&elsewhere.body, "docker-hello"), node_state(&elsewhere.body, "docker-advanced")),
         ("available".into(), "locked".into())
     );
-    assert!(elsewhere.body.contains("0 / 8 parcours · 0 %"));
+    assert!(elsewhere.body.contains("0 / 8 cours · 0 %"));
     assert_eq!((links(&elsewhere.body, "done"), links(&elsewhere.body, "todo")), (0, 10));
     assert!(elsewhere.body.contains("<strong>Plain</strong>") && !elsewhere.body.contains("Acme"));
     let list = call(&app, Call { host: "plain.test", path: "/paths/", cookie: Some(&plain), body: None, origin: None }).await;
-    assert!(list.body.contains("0 / 8 parcours · 0 %") && !list.body.contains("path-strip__dot--done"));
+    assert!(list.body.contains("0 / 8 cours · 0 %") && !list.body.contains("path-strip__dot--done"));
 
     // A session of one tenant is nobody on the other: the path is shown as to a visitor.
     let crossed = call(&app, Call { host: "plain.test", path, cookie: Some(&acme), body: None, origin: None }).await;
@@ -701,12 +705,12 @@ async fn a_catalogue_without_paths_shows_none() {
     let cookie = sign_in(&app, "acme.test", "alice").await;
     for path in ["/", "/catalogue/", "/courses/git-basics/"] {
         let body = get(&app, "acme.test", path).await.1;
-        assert!(!body.contains("/paths/") && !body.contains("Cursus") && !body.contains("cursus"), "{path}");
+        assert!(!body.contains("/paths/") && !body.contains("Parcours de formation") && !body.contains("parcours de formation"), "{path}");
     }
     assert!(!page(&app, &cookie, "/dashboard/").await.contains("ursus"));
     let (status, list) = get(&app, "acme.test", "/paths/").await;
     assert_eq!(status, StatusCode::OK);
-    assert!(list.contains("Aucun cursus pour le moment"));
+    assert!(list.contains("Aucun parcours de formation pour le moment"));
     assert_eq!(get(&app, "acme.test", "/paths/devops-infrastructure/").await.0, StatusCode::NOT_FOUND);
 }
 

@@ -74,7 +74,7 @@ func Initialise(cle []byte) error {
 `[]byte` est une suite d'octets : c'est la forme que la bibliothèque attend pour une clé. Le programme principal lit la clé dans une **variable d'environnement** (une valeur fournie au programme par le système au moment où on le lance) : `Initialise([]byte(os.Getenv("JWT_SECRET")))`. Si elle est vide, `Initialise` renvoie une erreur (leçon 2) et le programme **refuse de démarrer**.
 
 :::danger Jamais de secret par défaut
-Dans `event-planner-api`, `JwtMiddleware` et `CreateTokens` utilisent `utils.GetEnv("JWT_SECRET", "secret123456")` : si la variable est absente, le serveur signe avec un secret connu de tous (il est écrit dans le code). Notre exemple fait le choix inverse : pas de secret, pas de démarrage. Dans ce parcours, les clés des exercices sont factices et ne servent qu'aux tests.
+Dans `event-planner-api`, `JwtMiddleware` et `CreateTokens` utilisent `utils.GetEnv("JWT_SECRET", "secret123456")` : si la variable est absente, le serveur signe avec un secret connu de tous (il est écrit dans le code). Notre exemple fait le choix inverse : pas de secret, pas de démarrage. Dans ce cours, les clés des exercices sont factices et ne servent qu'aux tests.
 :::
 
 ## Vérifier un jeton

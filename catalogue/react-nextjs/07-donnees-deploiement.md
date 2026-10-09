@@ -130,7 +130,7 @@ La clé `goodies:bde` suit l'esprit de celles de MiniShop (par exemple `shop:<id
 
 ## Livrer l'application
 
-Pour faire tourner l'application à l'identique partout, on la met dans une **image Docker** : un paquet qui contient le programme et tout ce dont il a besoin (le parcours *Docker* détaille la notion). Une image se décrit dans un fichier texte, le `Dockerfile`, qui liste des instructions. Le `Dockerfile` de MiniShop procède en plusieurs étapes (*multi-stage* : une base commune, puis les trois ci-dessous) :
+Pour faire tourner l'application à l'identique partout, on la met dans une **image Docker** : un paquet qui contient le programme et tout ce dont il a besoin (le cours *Docker* détaille la notion). Une image se décrit dans un fichier texte, le `Dockerfile`, qui liste des instructions. Le `Dockerfile` de MiniShop procède en plusieurs étapes (*multi-stage* : une base commune, puis les trois ci-dessous) :
 
 | Étape | Rôle |
 | --- | --- |

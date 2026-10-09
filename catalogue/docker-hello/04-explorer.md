@@ -32,7 +32,7 @@ docker run -d --name db -e POSTGRES_PASSWORD=secret postgres
 ```
 
 :::info Dans l'environnement de dev Mentor
-Le `docker-compose.yml` de Vitrine configure lui aussi ses conteneurs par variables : l'application reçoit par exemple `DATABASE_URL`, construite à partir de `DB_USER`, `DB_PWD` et `DB_NAME`. Tu retrouveras ça dans le parcours *Docker advanced*.
+Le `docker-compose.yml` de Vitrine configure lui aussi ses conteneurs par variables : l'application reçoit par exemple `DATABASE_URL`, construite à partir de `DB_USER`, `DB_PWD` et `DB_NAME`. Tu retrouveras ça dans le cours *Docker advanced*.
 :::
 
 ## Quand un conteneur s'arrête tout seul

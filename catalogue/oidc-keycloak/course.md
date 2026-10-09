@@ -8,10 +8,10 @@ color: "#4D8FCC"
 banner: images/banniere.svg
 ---
 
-Pour se connecter aux applications des associations, les étudiant·e·s utilisent un compte unique : le **SSO de l'équipe**, propulsé par [Keycloak](https://www.keycloak.org/) et accessible sur `sso.example.org`. Ce parcours explique comment ça marche et comment brancher une application Django dessus avec **OpenID Connect (OIDC)**. Ce portail de formation utilise lui-même ce mécanisme.
+Pour se connecter aux applications des associations, les étudiant·e·s utilisent un compte unique : le **SSO de l'équipe**, propulsé par [Keycloak](https://www.keycloak.org/) et accessible sur `sso.example.org`. Ce cours explique comment ça marche et comment brancher une application Django dessus avec **OpenID Connect (OIDC)**. Ce portail de formation utilise lui-même ce mécanisme.
 
-:::info Parcours en préparation
-Ce parcours n'est pas encore publié. Il sera débloqué une fois le parcours *Django* terminé.
+:::info Cours en préparation
+Ce cours n'est pas encore publié. Il sera débloqué une fois le cours *Django* terminé.
 :::
 
 ## À qui s'adresse-t-il ?
@@ -34,4 +34,4 @@ Aux développeur·se·s qui connaissent Django et doivent protéger une applicat
 - [`mozilla-django-oidc`](https://github.com/mozilla/mozilla-django-oidc) : client OIDC utilisé par l'API d'Adhésion
 - [`keycloak-theme`](https://gitlab.example.org/equipe/utils/keycloak-theme) : thème du SSO de l'équipe
 
-**Prérequis :** parcours *Django*. **Durée estimée :** environ 3 h.
+**Prérequis :** cours *Django*. **Durée estimée :** environ 3 h.

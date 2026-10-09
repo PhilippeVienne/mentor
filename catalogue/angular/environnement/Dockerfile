@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Angular » : Angular 20 (core, compiler-cli, forms, router, Material, CDK), TypeScript,
+# Environnement réel du cours « Angular » : Angular 20 (core, compiler-cli, forms, router, Material, CDK), TypeScript,
 # keycloak-angular / keycloak-js, Vitest + jsdom. Node.js 24 (LTS) sur Debian, nano et un serveur SSH pour VS Code.
 # Pas de navigateur dans le conteneur : `ngc` (le compilateur d'Angular, mode strict) vérifie les gabarits et la commande
 # `tester` joue les tests *.spec.ts avec Vitest dans jsdom (voir outils/tester).

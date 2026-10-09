@@ -67,7 +67,8 @@ course.
 
 ## Training paths
 
-A training path (« cursus » in the interface) chains courses towards a goal, in stages.
+A training path (« parcours de formation » in the interface, where a course is a « cours ») chains courses
+towards a goal, in stages.
 
 ![Training paths](screenshots/paths.png)
 

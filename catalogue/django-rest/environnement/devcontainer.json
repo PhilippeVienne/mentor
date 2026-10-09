@@ -1,4 +1,4 @@
-// Environnement réel du parcours « API REST avec Django REST framework » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « API REST avec Django REST framework » (voir catalogue/README.md §15 et doc/environnements.md).
 // Python 3.13 sur Debian, Django + DRF + pytest-django préinstallés ; chaque labo copie son projet dans /workspace.
 {
     "name": "Django REST framework de l'équipe",
@@ -31,7 +31,7 @@
             "vscodeWeb": true
         },
         "vscode": {
-            // Versions ÉPINGLÉES (installées au build depuis Open VSX), dépendances d'abord, comme le parcours Python.
+            // Versions ÉPINGLÉES (installées au build depuis Open VSX), dépendances d'abord, comme le cours Python.
             "extensions": ["ms-python.debugpy@2026.6.0", "ms-python.vscode-python-envs@1.38.0", "ms-python.python@2026.4.0"],
             "settings": {
                 "python.testing.pytestEnabled": true,

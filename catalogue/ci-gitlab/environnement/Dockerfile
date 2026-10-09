@@ -1,4 +1,4 @@
-# Environnement réel du parcours « CI/CD avec GitLab » : Python 3.13 et deux petits outils maison, hors ligne,
+# Environnement réel du cours « CI/CD avec GitLab » : Python 3.13 et deux petits outils maison, hors ligne,
 # `verifier-ci` (structure d'un .gitlab-ci.yml) et `verifier-renovate` (structure d'un renovate.json), plus yamllint.
 # Il n'y a PAS de runner GitLab dans le conteneur (il faudrait un serveur GitLab et un démon Docker) : ces outils
 # contrôlent la structure des fichiers, ils n'exécutent aucun job.

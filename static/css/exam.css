@@ -1,4 +1,4 @@
-/* Examen de validation d'un parcours + encart d'invitation sur la page du parcours.
+/* Examen de validation d'un cours + encart d'invitation sur la page du cours.
    Réutilise les classes de portail.css et les styles de quiz de lab.css (.quiz__question, .quiz__option…). */
 .exam {
     --lab-primary: var(--primary, #4f46e5);
@@ -98,7 +98,7 @@
 .exam__missed { margin: 12px 0 0; color: var(--lab-warn); font-weight: 600; }
 .exam__why { margin: 14px 0 0; color: var(--muted); }
 
-/* Encart d'invitation sur la page du parcours */
+/* Encart d'invitation sur la page du cours */
 .exam-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 0 0 32px; padding: 26px 28px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 14px; }
 .exam-cta h2 { margin: 0; font-size: 1.25rem; }
 .exam-cta p { margin: 0; color: var(--muted); max-width: 52rem; }

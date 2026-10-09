@@ -18,7 +18,7 @@ Un site web classique renvoie une nouvelle page **HTML** (le langage qui décrit
 
 Écrire ce code à la main devient vite un enchevêtrement. **Angular** est un *framework* (une boîte à outils avec des règles d'organisation, développée par Google) qui impose une structure commune : des composants pour l'affichage, des services pour la logique, un routeur pour les adresses. Résultat : quand tu arrives sur un projet, tu sais où chercher.
 
-Tu auras besoin de la **CLI Angular**, la commande `ng` : par exemple `ng serve` lance l'application en local et `ng generate component nom` crée les fichiers d'un composant. Et tu écris en **TypeScript**, vu dans le parcours précédent.
+Tu auras besoin de la **CLI Angular**, la commande `ng` : par exemple `ng serve` lance l'application en local et `ng generate component nom` crée les fichiers d'un composant. Et tu écris en **TypeScript**, vu dans le cours précédent.
 
 Image mentale pour la suite : un composant, c'est une **brique Lego**. Une page est un assemblage de briques ; chaque brique sait afficher sa partie et réagir à ses propres clics.
 

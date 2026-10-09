@@ -1,4 +1,4 @@
-// Environnement « Docker » du parcours modèle (voir catalogue/README.md, « Environments »).
+// Environnement « Docker » du cours modèle (voir catalogue/README.md, « Environments »).
 // Un vrai moteur Docker : la plateforme le démarre dans la microVM de l'apprenant·e (dockerInDocker).
 // Pour l'utiliser : `environment: environnement-docker` dans course.md, une leçon ou un bloc :::lab.
 {

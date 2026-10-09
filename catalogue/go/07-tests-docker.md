@@ -16,7 +16,7 @@ Tu as écrit un serveur qui marche « sur ta machine ». Deux questions rest
 
 Un **test automatique** est un petit programme qui appelle ton code avec des cas connus et vérifie le résultat. Tu le relances à chaque changement : s'il devient rouge, tu sais tout de suite que tu as cassé quelque chose, avant que quelqu'un d'autre ne le découvre. Go fournit tout ce qu'il faut dans la bibliothèque standard, sans outil à installer.
 
-Une **image Docker** est cette boîte : elle contient ton programme et tout ce qu'il lui faut pour tourner. Dans l'équipe, c'est ce que l'équipe Infra déploie. La **CI** (*intégration continue*) est un robot qui, à chaque modification du code, lance les tests et construit l'image ; le parcours *CI/CD avec GitLab* explique comment ce pipeline est construit.
+Une **image Docker** est cette boîte : elle contient ton programme et tout ce qu'il lui faut pour tourner. Dans l'équipe, c'est ce que l'équipe Infra déploie. La **CI** (*intégration continue*) est un robot qui, à chaque modification du code, lance les tests et construit l'image ; le cours *CI/CD avec GitLab* explique comment ce pipeline est construit.
 
 ## Écrire un test
 

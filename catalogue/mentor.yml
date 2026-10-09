@@ -3,8 +3,8 @@
 format: 1
 name: mentor-courses
 version: 1.0.0
-title: "Mentor : parcours de l'équipe"
-summary: "Les 19 parcours repris de la v1 : Git, Docker, Python, web, bases de données, infrastructure."
+title: "Mentor : les cours de l'équipe"
+summary: "Git, Docker, Python, web, bases de données, infrastructure et certifications AWS."
 # The licence of this repository (LICENSE). Whether course content gets a licence of its own is an open decision.
 license: AGPL-3.0-or-later
 courses:

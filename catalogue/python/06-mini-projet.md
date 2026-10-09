@@ -218,7 +218,7 @@ steps:
 
 ## Et maintenant ?
 
-Bravo : tu sais écrire, organiser, tester et lancer un programme Python. La suite logique est le parcours **Django**, le framework web des applications de l'équipe : tu y retrouveras les modules, les tests, les environnements virtuels et les `requirements.txt` de ce parcours.
+Bravo : tu sais écrire, organiser, tester et lancer un programme Python. La suite logique est le cours **Django**, le framework web des applications de l'équipe : tu y retrouveras les modules, les tests, les environnements virtuels et les `requirements.txt` de ce cours.
 
 ## Vérifie tes acquis
 

@@ -1,4 +1,4 @@
-# Environnement réel du parcours Python : Python 3.13, pytest, nano et un serveur SSH pour VS Code (Remote-SSH).
+# Environnement réel du cours Python : Python 3.13, pytest, nano et un serveur SSH pour VS Code (Remote-SSH).
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé (version de Python + distribution) ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

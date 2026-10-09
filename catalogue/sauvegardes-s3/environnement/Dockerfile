@@ -1,8 +1,8 @@
-# Environnement réel du parcours « Sauvegardes et stockage objet » :
+# Environnement réel du cours « Sauvegardes et stockage objet » :
 #   - un serveur MinIO (S3) lancé SANS root sur localhost, avec des identifiants FACTICES de labo, et son client mc ;
 #   - python3 + boto3, l'AWS CLI, PostgreSQL 17 (paquet Debian) lancé sans root, pg_dump et pg_restore ;
 #   - des versions simplifiées de backup.py, restore.py et test_connection_s3.py, dans l'esprit du dépôt
-#     equipe/dev/backups3 (écrites pour ce parcours, sans aucun secret).
+#     equipe/dev/backups3 (écrites pour ce cours, sans aucun secret).
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

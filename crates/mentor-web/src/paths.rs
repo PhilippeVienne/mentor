@@ -1,6 +1,6 @@
 //! Training paths: the list of paths and the map of one path.
 //!
-//! The interface calls a path « cursus »: « parcours » already names a course there. Nothing is stored about
+//! The interface calls a path « parcours de formation »: « cours » already names a course there. Nothing is stored about
 //! paths: where a learner stands in one is computed from the courses they completed.
 
 use askama::Template;

@@ -15,7 +15,7 @@ Ton modèle `Evenement` est un objet Python, rangé dans la base de données. Or
 
 ## Le domaine d'exemple
 
-Dans tout le parcours, on utilise un domaine fictif : des associations (`Asso`) organisent des événements (`Evenement`), auxquels on s'inscrit (`Inscription`). Ce sont des modèles Django ordinaires, comme tu les as vus dans le parcours *Django*.
+Dans tout le cours, on utilise un domaine fictif : des associations (`Asso`) organisent des événements (`Evenement`), auxquels on s'inscrit (`Inscription`). Ce sont des modèles Django ordinaires, comme tu les as vus dans le cours *Django*.
 
 ```python
 # agenda/models.py
@@ -44,7 +44,7 @@ class Inscription(models.Model):
 - `Inscription` relie une adresse email à un événement.
 - `on_delete=models.CASCADE` signifie que, si l'association est supprimée, ses événements le sont aussi.
 
-Pour utiliser DRF, il faut aussi l'installer (`pip install djangorestframework`) et ajouter `"rest_framework"` à `INSTALLED_APPS` (la liste des applications du projet) dans `settings.py`. Dans les labos de ce parcours, tout est déjà installé et réglé.
+Pour utiliser DRF, il faut aussi l'installer (`pip install djangorestframework`) et ajouter `"rest_framework"` à `INSTALLED_APPS` (la liste des applications du projet) dans `settings.py`. Dans les labos de ce cours, tout est déjà installé et réglé.
 
 ## Le sérialiseur dans les deux sens
 

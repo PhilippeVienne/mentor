@@ -1,7 +1,7 @@
 {
   "name": "mentor-angular-outils",
   "private": true,
-  "description": "Outils Angular 20 du parcours Angular de l'équipe (installés au build de l'image, versions épinglées).",
+  "description": "Outils Angular 20 du cours Angular de l'équipe (installés au build de l'image, versions épinglées).",
   "dependencies": {
     "@angular/animations": "20.3.33",
     "@angular/cdk": "20.2.14",

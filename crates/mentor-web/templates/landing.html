@@ -16,7 +16,7 @@
     </div>
     <div class="container">
         <dl class="hero-stats" aria-label="Le portail en chiffres">
-            <div><dt>Parcours</dt><dd>{{ stats.courses }}</dd></div>
+            <div><dt>Cours</dt><dd>{{ stats.courses }}</dd></div>
             <div><dt>Leçons</dt><dd>{{ stats.lessons }}</dd></div>
             <div><dt>Heures de pratique</dt><dd>≈ {{ stats.hours }}</dd></div>
             <div><dt>Examens de validation</dt><dd>{{ stats.exams }}</dd></div>
@@ -32,7 +32,7 @@
         <div class="grid grid--courses">
             {% for card in cards %}{% include "_course_card.html" %}{% endfor %}
         </div>
-        <p class="section__more"><a class="btn btn--ghost" href="/catalogue/">Voir les {{ stats.courses }} parcours →</a></p>
+        <p class="section__more"><a class="btn btn--ghost" href="/catalogue/">Voir les {{ stats.courses }} cours →</a></p>
     </div>
 </section>
 {% endblock %}

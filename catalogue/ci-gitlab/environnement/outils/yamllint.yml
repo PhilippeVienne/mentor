@@ -1,4 +1,4 @@
-# Réglages de yamllint pour le parcours CI/CD : on contrôle la forme du YAML (indentation, espaces, clés en double),
+# Réglages de yamllint pour le cours CI/CD : on contrôle la forme du YAML (indentation, espaces, clés en double),
 # pas la longueur des lignes ni la présence de « --- » en tête, que les fichiers .gitlab-ci.yml n'utilisent pas.
 extends: default
 rules:

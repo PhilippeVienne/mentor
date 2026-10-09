@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-PostgreSQL est la base de données de la plupart des projets (Django, [MiniShop](https://gitlab.example.org/equipe/minishop), Planning). Ce parcours apprend à l'interroger et à faire évoluer son schéma **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec un serveur PostgreSQL 15 déjà démarré, et c'est le serveur du portail qui vérifie l'état de ta base.
+PostgreSQL est la base de données de la plupart des projets (Django, [MiniShop](https://gitlab.example.org/equipe/minishop), Planning). Ce cours apprend à l'interroger et à faire évoluer son schéma **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec un serveur PostgreSQL 15 déjà démarré, et c'est le serveur du portail qui vérifie l'état de ta base.
 
 ## À qui s'adresse-t-il ?
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vérifications des labos du parcours « Maintenir du code hérité » (lecture seule, dans /opt/outils).
+"""Vérifications des labos du cours « Maintenir du code hérité » (lecture seule, dans /opt/outils).
 
 Pourquoi un outil ? Une vérification qui se contente de chercher un mot dans TON fichier se contente d'un commentaire
 ou d'un test vide. Ces contrôles regardent ce que ton travail FAIT :

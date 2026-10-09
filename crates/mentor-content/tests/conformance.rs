@@ -9,6 +9,10 @@
 //! dropped from the v1 side before comparing, and the two courses that were simulated in v1 and are rewritten
 //! as real labs here are compared on everything but their labs and lesson texts (see [`REWRITTEN_SINCE_V1`]).
 //!
+//! v1 called a course « parcours ». v2 keeps that word for a training path and calls a course « cours »: the
+//! word was replaced throughout the lessons, except where it means something else (a table scan, a customer
+//! journey, the verb). Both sides are compared with « parcours » read as « cours ».
+//!
 //! - **HTML**: markup differs (another Markdown engine, no server-side highlighting), so the **text** of each
 //!   fragment is compared, with tags and whitespace removed.
 
@@ -222,6 +226,18 @@ fn trim_final_line_break(action: &mut Value) {
     }
 }
 
+/// Reads « parcours » as « cours » in every text of a tree (see the module documentation).
+fn read_parcours_as_cours(value: &mut Value) {
+    match value {
+        Value::String(text) => {
+            *text = text.replace("PARCOURS", "COURS").replace("Parcours", "Cours").replace("parcours", "cours");
+        }
+        Value::Array(items) => items.iter_mut().for_each(read_parcours_as_cours),
+        Value::Object(map) => map.values_mut().for_each(read_parcours_as_cours),
+        _ => {}
+    }
+}
+
 fn read_json(relative: &str) -> Value {
     serde_json::from_str(&std::fs::read_to_string(root().join(relative)).unwrap()).unwrap()
 }
@@ -268,6 +284,8 @@ fn report() -> (Vec<String>, Vec<String>, usize) {
                 exam["warnings"] = Value::from(exam["warnings"].as_array().map_or(0, Vec::len));
             }
         }
+        read_parcours_as_cours(x);
+        read_parcours_as_cours(y);
         compare(x["slug"].as_str().unwrap(), "", x, y, &mut structure, &mut html);
     }
     (structure, html, a.len())

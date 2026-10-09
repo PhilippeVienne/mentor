@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Examen de validation · {{ course.title }}{% endblock %}
-{% block description %}Valide le parcours {{ course.title }} en réussissant l'examen, sans passer par les labos.{% endblock %}
+{% block description %}Valide le cours {{ course.title }} en réussissant l'examen, sans passer par les labos.{% endblock %}
 {% block body_class %}page-exam{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="/static/css/lab.css">
@@ -10,7 +10,7 @@
 {% block content %}
 <div class="container exam">
     <nav aria-label="Fil d'Ariane" class="breadcrumb">
-        <a href="/dashboard/">Mes parcours</a> <span aria-hidden="true">/</span>
+        <a href="/dashboard/">Mes cours</a> <span aria-hidden="true">/</span>
         <a href="/courses/{{ course.slug }}/">{{ course.title }}</a> <span aria-hidden="true">/</span>
         <span>Examen de validation</span>
     </nav>
@@ -22,15 +22,15 @@
 
     {% if info.validated %}
     <aside class="callout callout--info exam__notice">
-        <p class="callout__title">✓ Parcours déjà validé</p>
+        <p class="callout__title">✓ Cours déjà validé</p>
         <p>Tu as déjà validé « {{ course.title }} »{% if info.validated_by_exam %} par examen{% endif %}. Rien d'autre à faire ici.</p>
-        <p><a class="btn btn--primary" href="/courses/{{ course.slug }}/">Retour au parcours</a></p>
+        <p><a class="btn btn--primary" href="/courses/{{ course.slug }}/">Retour au cours</a></p>
     </aside>
     {% else if info.locked %}
     <aside class="callout callout--warning exam__notice">
-        <p class="callout__title">🔒 Parcours verrouillé</p>
-        <p>L'examen se débloque avec le parcours : termine d'abord les parcours prérequis.</p>
-        <p><a class="btn btn--ghost" href="/courses/{{ course.slug }}/">Retour au parcours</a></p>
+        <p class="callout__title">🔒 Cours verrouillé</p>
+        <p>L'examen se débloque avec le cours : termine d'abord les cours prérequis.</p>
+        <p><a class="btn btn--ghost" href="/courses/{{ course.slug }}/">Retour au cours</a></p>
     </aside>
     {% else %}
     <ul class="exam__facts" aria-label="Caractéristiques de l'examen">
@@ -43,7 +43,7 @@
         <article class="prose exam__intro">
             {{ intro_html|safe }}
             <aside class="callout callout--tip">
-                <p class="callout__title">Tu peux aussi suivre le parcours normalement</p>
+                <p class="callout__title">Tu peux aussi suivre le cours normalement</p>
                 <p>L'examen est un raccourci : si tu préfères pratiquer, les leçons restent disponibles. Après un échec, tu pourras retenter après un court délai.</p>
             </aside>
         </article>

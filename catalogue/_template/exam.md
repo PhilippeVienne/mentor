@@ -1,6 +1,6 @@
 ---
 # ── Front matter d'un examen de validation ───────────────────────────────────
-title: "Examen de validation — Parcours modèle"   # obligatoire
+title: "Examen de validation — Cours modèle"   # obligatoire
 draw: 3            # obligatoire : nombre de questions tirées au sort (le pool doit en contenir au moins autant)
 pass_mark: 80      # obligatoire : % de bonnes réponses pour réussir (1 à 100)
 minutes: 5         # obligatoire : minutes (1 à 240), chronométrées par le serveur
@@ -10,7 +10,7 @@ shuffle: true      # facultatif (true par défaut) : mélange les questions ET l
 <!-- Introduction : les règles et le public visé. Markdown + directives comme dans une leçon.
      Pas de bloc :::lab dans un examen. -->
 
-Cet examen s'adresse aux personnes qui connaissent déjà le sujet. Il valide **tout le parcours** sans passer par les labos.
+Cet examen s'adresse aux personnes qui connaissent déjà le sujet. Il valide **tout le cours** sans passer par les labos.
 
 <!-- Le pool : un bloc :::quiz par question (même format que dans les leçons). Idéal : 3 fois le tirage.
      Couvre toutes les leçons, mélange les difficultés, ne recopie pas les quiz de leçon. -->

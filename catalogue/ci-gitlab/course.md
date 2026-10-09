@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Presque tous les dépôts de l'équipe ont un `.gitlab-ci.yml` : construction de l'image Docker, tests, analyses de sécurité, déploiement. Exemple : la CI de l'[API d'Adhésion](https://gitlab.example.org/equipe/adhesion/api). Ce parcours t'apprend à les lire, à les écrire et à les réparer, **en pratiquant dans un vrai terminal Linux** : chaque labo te prête un conteneur jetable, et c'est le serveur qui vérifie ton travail.
+Presque tous les dépôts de l'équipe ont un `.gitlab-ci.yml` : construction de l'image Docker, tests, analyses de sécurité, déploiement. Exemple : la CI de l'[API d'Adhésion](https://gitlab.example.org/equipe/adhesion/api). Ce cours t'apprend à les lire, à les écrire et à les réparer, **en pratiquant dans un vrai terminal Linux** : chaque labo te prête un conteneur jetable, et c'est le serveur qui vérifie ton travail.
 
 :::info Pas de vrai runner GitLab dans les labos
 Un vrai pipeline demande un serveur GitLab et un runner, absents du conteneur (qui n'a d'ailleurs pas de réseau). Les labos utilisent donc `verifier-ci` et `verifier-renovate`, deux petits outils de l'équipe qui lisent tes fichiers et en contrôlent la **structure** comme GitLab le ferait, et qui peuvent simuler les `rules`. Ils n'exécutent aucun job. Ils t'évitent des allers-retours, mais le dernier mot reste à GitLab : valide toujours un vrai pipeline dans l'éditeur de pipeline du projet.
@@ -38,4 +38,4 @@ Un vrai pipeline demande un serveur GitLab et un runner, absents du conteneur (q
 - Ajouter les analyses de sécurité à un nouveau projet
 - Configurer Renovate et diagnostiquer un pipeline en échec à partir de son message
 
-**Prérequis :** parcours *Git*. **Durée estimée :** environ 3 h 50.
+**Prérequis :** cours *Git*. **Durée estimée :** environ 3 h 50.

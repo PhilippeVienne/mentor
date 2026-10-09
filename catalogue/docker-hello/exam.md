@@ -6,13 +6,13 @@ minutes: 15
 shuffle: true
 ---
 
-Cet examen s'adresse aux personnes qui maîtrisent déjà les bases de Docker (images, conteneurs, ports, cycle de vie, logs) et veulent **valider le parcours sans refaire les labos** ni les étapes des leçons. Si tu découvres le sujet, commence plutôt par les leçons : elles t'apportent aussi de l'XP.
+Cet examen s'adresse aux personnes qui maîtrisent déjà les bases de Docker (images, conteneurs, ports, cycle de vie, logs) et veulent **valider le cours sans refaire les labos** ni les étapes des leçons. Si tu découvres le sujet, commence plutôt par les leçons : elles t'apportent aussi de l'XP.
 
 ## Comment ça se passe
 
-- **10 questions** sont tirées au hasard dans un pool de **36 questions** couvrant toutes les leçons du parcours, puis **mélangées** (les réponses aussi).
+- **10 questions** sont tirées au hasard dans un pool de **36 questions** couvrant toutes les leçons du cours, puis **mélangées** (les réponses aussi).
 - Tu as **15 minutes** et une seule tentative en cours à la fois.
-- Il faut **au moins 80 %** de bonnes réponses pour réussir et valider le parcours.
+- Il faut **au moins 80 %** de bonnes réponses pour réussir et valider le cours.
 - En cas d'échec, un court délai t'est demandé avant de pouvoir réessayer : le pool est tiré à nouveau, donc les questions changent.
 - Une fois l'examen rendu, tu obtiens la **correction détaillée** de chaque question, avec l'explication.
 

@@ -1,4 +1,4 @@
-# Environnement réel du parcours Terraform : le binaire officiel `terraform` (version épinglée, somme SHA-256 vérifiée)
+# Environnement réel du cours Terraform : le binaire officiel `terraform` (version épinglée, somme SHA-256 vérifiée)
 # et un MIROIR LOCAL de fournisseurs (local, random, null, time), pour que `terraform init` fonctionne SANS réseau.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite ;

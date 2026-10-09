@@ -13,7 +13,7 @@ objectives:
 
 Un **chart** Helm est un paquet qui installe une application dans Kubernetes ; une **release** est une installation précise de ce chart. Lancer `helm install` à la main fonctionne, mais personne ne sait ensuite quelles options ont été utilisées. En demandant à Terraform d'appeler Helm, ces options sont écrites dans un fichier relu et versionné.
 
-Dans le parcours *Kubernetes et Helm*, tu lançais `helm install` à la main. Dans `cluster-configuration`, **Terraform appelle Helm** : chaque service du cluster est une ressource `helm_release`. Les services concernés sont **HAProxy** (le point d'entrée qui répartit les visites entre les services), cert-manager, MinIO, KubeDB et Keycloak (présentés dans les leçons précédentes). Le résultat est le même, mais reproductible et relisable.
+Dans le cours *Kubernetes et Helm*, tu lançais `helm install` à la main. Dans `cluster-configuration`, **Terraform appelle Helm** : chaque service du cluster est une ressource `helm_release`. Les services concernés sont **HAProxy** (le point d'entrée qui répartit les visites entre les services), cert-manager, MinIO, KubeDB et Keycloak (présentés dans les leçons précédentes). Le résultat est le même, mais reproductible et relisable.
 
 ## Une release, ligne par ligne
 

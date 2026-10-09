@@ -24,7 +24,7 @@ kubectl port-forward service/NOM 8080:80    # ton port 8080 vers le port 80 du s
 kubectl rollout restart deployment/NOM      # relance les pods (après un ConfigMap modifié)
 ```
 
-## Valider sans cluster (atelier du parcours)
+## Valider sans cluster (atelier du cours)
 
 ```bash
 kubectl create deployment NOM --image=IMAGE --dry-run=client -o yaml > deployment.yaml   # fabrique le YAML, n'envoie rien

@@ -13,7 +13,7 @@ Imagine que tu hérites d'une voiture dont le carnet d'entretien s'arrête il y 
 
 ## À quoi ça sert, et pourquoi maintenant ?
 
-Quelques mots de vocabulaire, que tu retrouveras dans tout le parcours :
+Quelques mots de vocabulaire, que tu retrouveras dans tout le cours :
 
 - Une **dépendance** est un morceau de code écrit par d'autres, que ton projet utilise (par exemple Django, qui gère le site web).
 - Un **framework** est une dépendance qui impose la structure de tout le projet. Django et React en sont.

@@ -1,7 +1,7 @@
 ---
 # ── Front matter of a course ─────────────────────────────────────────────────
 # ALWAYS quote text values (a ": " inside unquoted text breaks the YAML).
-title: "Parcours modèle"                     # required: displayed name
+title: "Cours modèle"                     # required: displayed name
 icon: "🧪"                                   # required: an emoji (also the end-of-course badge)
 summary: "Une phrase qui donne envie : ce que l'on apprend, en une ligne."  # required
 environment: environnement                   # folder of the course holding the devcontainer.json the labs run in

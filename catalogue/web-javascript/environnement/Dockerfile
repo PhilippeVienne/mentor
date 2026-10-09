@@ -1,4 +1,4 @@
-# Environnement réel du parcours « HTML, CSS et JavaScript » : Node.js 24 (LTS), jsdom, nano.
+# Environnement réel du cours « HTML, CSS et JavaScript » : Node.js 24 (LTS), jsdom, nano.
 # Pas de navigateur dans le conteneur : jsdom reconstruit le DOM d'une page (HTML + CSS + JavaScript) en mémoire,
 # et l'outil `verifier-page` (dossier outils/) en donne un diagnostic. Les exercices se testent avec `node --test`.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :

@@ -1,4 +1,4 @@
-# Environnement réel du parcours « Docker hello world » : un vrai moteur Docker, sur Debian.
+# Environnement réel du cours « Docker hello world » : un vrai moteur Docker, sur Debian.
 # Règles (voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

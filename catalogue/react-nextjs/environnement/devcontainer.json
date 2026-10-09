@@ -1,4 +1,4 @@
-// Environnement réel du parcours « React et Next.js » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « React et Next.js » (voir catalogue/README.md §15 et doc/environnements.md).
 // Node.js 24 sur Debian, React, Next.js, TypeScript, Vitest, Testing Library, jsdom et Tailwind préinstallés ;
 // chaque labo copie son exercice dans /workspace.
 {

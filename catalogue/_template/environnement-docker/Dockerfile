@@ -1,4 +1,4 @@
-# Environnement « Docker » du parcours modèle : un vrai moteur Docker, sur Debian.
+# Environnement « Docker » du cours modèle : un vrai moteur Docker, sur Debian.
 # Règles (voir catalogue/README.md, « Environments ») :
 #   - image de base avec un tag explicite ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

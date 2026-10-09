@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Télécharge un objet d'un bucket S3, avec extraction facultative.
 
-Version SIMPLIFIÉE écrite pour le parcours de formation, dans l'esprit de restore.py du dépôt
+Version SIMPLIFIÉE écrite pour la formation, dans l'esprit de restore.py du dépôt
 equipe/dev/backups3 (ce n'est pas une copie). Elle lit les variables URL, ACCESSKEY et SECRETKEY.
 
 Usage : restore.py [-v] [-c] [--date "AAAA-MM-JJ HH:MM:SS"] BUCKET OBJET DESTINATION/

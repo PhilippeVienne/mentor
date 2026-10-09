@@ -44,7 +44,7 @@ fn describe_badge(slug: &str, definitions: &[BadgeDef], state: &AppState) -> ser
     let course = slug.strip_prefix(COURSE_BADGE_PREFIX).and_then(|course| state.catalogue.courses.iter().find(|c| c.slug == course));
     match course {
         Some(course) => {
-            json!({ "slug": slug, "name": course.title, "emoji": course.icon, "tier": "gold", "description": format!("Termine le parcours « {} ».", course.title) })
+            json!({ "slug": slug, "name": course.title, "emoji": course.icon, "tier": "gold", "description": format!("Termine le cours « {} ».", course.title) })
         }
         None => json!({ "slug": slug, "name": slug, "emoji": "🏅", "tier": "bronze", "description": "" }),
     }
@@ -76,7 +76,7 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
         let courses_before = completed_courses(&state.view.courses, &lessons_before);
         let shape = state.view.courses.iter().find(|shape| shape.slug == course.slug);
         if !shape.is_some_and(|shape| shape.is_unlocked(&courses_before)) {
-            return Ok(refuse(StatusCode::FORBIDDEN, "Ce parcours n'est pas encore débloqué."));
+            return Ok(refuse(StatusCode::FORBIDDEN, "Ce cours n'est pas encore débloqué."));
         }
         let level_before = viewer.level.level;
 
@@ -85,7 +85,7 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
             Ok(recorded) => recorded,
             Err(Error::Refused(reason)) => {
                 let (status, message) = match reason {
-                    RecordError::CourseLocked => (StatusCode::FORBIDDEN, "Ce parcours n'est pas encore débloqué."),
+                    RecordError::CourseLocked => (StatusCode::FORBIDDEN, "Ce cours n'est pas encore débloqué."),
                     RecordError::ServerVerifiedLab => {
                         (StatusCode::FORBIDDEN, "Les étapes de ce labo sont vérifiées par le serveur dans ton environnement réel.")
                     }
@@ -159,7 +159,7 @@ pub async fn exam_start(site: Site, State(state): State<AppState>, parts: Parts,
     let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
     let learner = viewer.learner.id;
     let Some((course, exam)) = course_with_exam(&state, &slug) else {
-        return refuse(StatusCode::NOT_FOUND, "Ce parcours n'a pas d'examen de validation.");
+        return refuse(StatusCode::NOT_FOUND, "Ce cours n'a pas d'examen de validation.");
     };
     let at = now();
     let outcome: Result<Response, Error> = async {
@@ -167,10 +167,10 @@ pub async fn exam_start(site: Site, State(state): State<AppState>, parts: Parts,
         let courses_done = completed_courses(&state.view.courses, &tx.completed_lessons(learner).await?);
         let shape = state.view.courses.iter().find(|shape| shape.slug == course.slug);
         if !shape.is_some_and(|shape| shape.is_unlocked(&courses_done)) {
-            return Ok(refuse(StatusCode::FORBIDDEN, "Ce parcours n'est pas encore débloqué."));
+            return Ok(refuse(StatusCode::FORBIDDEN, "Ce cours n'est pas encore débloqué."));
         }
         if courses_done.contains(&course.slug) {
-            return Ok(refuse(StatusCode::CONFLICT, "Ce parcours est déjà validé."));
+            return Ok(refuse(StatusCode::CONFLICT, "Ce cours est déjà validé."));
         }
         let started = tx.start_exam(learner, &course.slug, &exam_pool(exam), exam_settings(exam), at, &mut OsRandom).await?;
         // Committed in every case: closing an attempt whose time ran out must stay recorded even when the
@@ -230,7 +230,7 @@ pub async fn exam_submit(
     let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
     let learner = viewer.learner.id;
     let Some((course, exam)) = course_with_exam(&state, &slug) else {
-        return refuse(StatusCode::NOT_FOUND, "Ce parcours n'a pas d'examen de validation.");
+        return refuse(StatusCode::NOT_FOUND, "Ce cours n'a pas d'examen de validation.");
     };
     let Ok(attempt) = Uuid::parse_str(&submission.attempt) else { return refuse(StatusCode::NOT_FOUND, "Tentative inconnue.") };
     let answers: BTreeMap<String, usize> =

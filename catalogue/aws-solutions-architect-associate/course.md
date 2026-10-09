@@ -9,9 +9,9 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Connaître les services ne suffit pas pour concevoir une architecture : il faut savoir **lequel choisir** face à une contrainte, et pourquoi les autres conviennent moins. Ce parcours t'entraîne à ce raisonnement, domaine par domaine, en suivant le programme officiel de la certification **AWS Certified Solutions Architect – Associate (SAA-C03)**.
+Connaître les services ne suffit pas pour concevoir une architecture : il faut savoir **lequel choisir** face à une contrainte, et pourquoi les autres conviennent moins. Ce cours t'entraîne à ce raisonnement, domaine par domaine, en suivant le programme officiel de la certification **AWS Certified Solutions Architect – Associate (SAA-C03)**.
 
-**Chaque leçon a un labo réel**, dans le même environnement que le parcours *Cloud Practitioner* : la vraie commande `aws`, reliée à l'émulateur local **MiniStack**. Tu y construis des morceaux d'architecture (rôles inter-comptes, réseau à deux niveaux, files avec rebut, fonctions sans serveur, réplication entre régions…) et le serveur vérifie leur état.
+**Chaque leçon a un labo réel**, dans le même environnement que le cours *Cloud Practitioner* : la vraie commande `aws`, reliée à l'émulateur local **MiniStack**. Tu y construis des morceaux d'architecture (rôles inter-comptes, réseau à deux niveaux, files avec rebut, fonctions sans serveur, réplication entre régions…) et le serveur vérifie leur état.
 
 :::warning Un émulateur, pas le vrai AWS
 Rien n'est facturé et rien n'est réel : tout vit dans la mémoire de l'émulateur. Ce qui fonctionne **réellement** dans le labo : l'évaluation des politiques IAM (y compris entre deux comptes fictifs et pour les rôles des fonctions Lambda), S3, DynamoDB, SQS, SNS, EventBridge, Kinesis, Lambda en Python, CloudFormation. Ce qui n'est qu'une **fiche descriptive** : les instances EC2, les répartiteurs de charge, les bases RDS, le réseau (aucun paquet ne circule). Ce qui n'existe pas : la console, la facturation, CloudFront en conditions réelles, Direct Connect, Transit Gateway. Chaque leçon précise ces limites.
@@ -19,7 +19,7 @@ Rien n'est facturé et rien n'est réel : tout vit dans la mémoire de l'émulat
 
 ## À qui s'adresse-t-il ?
 
-Aux personnes qui ont terminé le parcours *AWS : les bases du cloud* ou qui en maîtrisent le contenu, et qui veulent passer de « je connais les services » à « je sais concevoir une solution ». Tu dois être à l'aise avec le terminal, le format JSON et les notions de réseau de base (adresse IP, port, DNS).
+Aux personnes qui ont terminé le cours *AWS : les bases du cloud* ou qui en maîtrisent le contenu, et qui veulent passer de « je connais les services » à « je sais concevoir une solution ». Tu dois être à l'aise avec le terminal, le format JSON et les notions de réseau de base (adresse IP, port, DNS).
 
 ## La certification visée
 
@@ -46,8 +46,8 @@ Les quatre domaines du guide d'examen, et les leçons qui les couvrent :
 | 3. *Design High-Performing Architectures* (architectures performantes) | 24 % | 8, 9, 10, 11 |
 | 4. *Design Cost-Optimized Architectures* (architectures économes) | 20 % | 12, et un paragraphe « côté coûts » dans les leçons 8 à 11 |
 
-:::info Ce que ce parcours ne promet pas
-AWS décrit la personne visée par cet examen comme ayant **au moins un an de pratique**. Ce parcours t'apporte la méthode et les connaissances, sur un émulateur ; il ne remplace pas cette pratique et ne garantit pas la réussite. Les questions de l'examen réel sont de longs scénarios où plusieurs réponses fonctionnent et où une seule répond **le mieux** à la contrainte (coût, délai, effort d'exploitation) : entraîne-toi à repérer cette contrainte. L'examen de validation du portail est écrit pour ce parcours, ne reprend aucune question officielle et ne contient que des questions à choix unique. Complète-le par le [guide d'examen](https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html), la documentation et, si possible, de la pratique sur un vrai compte.
+:::info Ce que ce cours ne promet pas
+AWS décrit la personne visée par cet examen comme ayant **au moins un an de pratique**. Ce cours t'apporte la méthode et les connaissances, sur un émulateur ; il ne remplace pas cette pratique et ne garantit pas la réussite. Les questions de l'examen réel sont de longs scénarios où plusieurs réponses fonctionnent et où une seule répond **le mieux** à la contrainte (coût, délai, effort d'exploitation) : entraîne-toi à repérer cette contrainte. L'examen de validation du portail est écrit pour ce cours, ne reprend aucune question officielle et ne contient que des questions à choix unique. Complète-le par le [guide d'examen](https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html), la documentation et, si possible, de la pratique sur un vrai compte.
 :::
 
 ## Plan
@@ -67,4 +67,4 @@ AWS décrit la personne visée par cet examen comme ayant **au moins un an de pr
 | 11 | Ingestion et analyse de données | 30 min | Flux Kinesis et livraison Firehose vers S3 |
 | 12 | Optimiser les coûts | 35 min | Cycle de vie complet, mode de capacité, budget par projet |
 
-**Prérequis :** parcours *AWS : les bases du cloud (Cloud Practitioner)*. **Durée estimée :** environ 6 h 45, puis l'examen de validation (40 minutes).
+**Prérequis :** cours *AWS : les bases du cloud (Cloud Practitioner)*. **Durée estimée :** environ 6 h 45, puis l'examen de validation (40 minutes).

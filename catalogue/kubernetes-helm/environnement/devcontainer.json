@@ -1,4 +1,4 @@
-// Environnement réel du parcours « Kubernetes et Helm » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « Kubernetes et Helm » (voir catalogue/README.md §15 et doc/environnements.md).
 // helm, kubectl (client seul) et kubeconform sur Debian, sans cluster ni réseau ; les fichiers des exercices sont copiés
 // dans /workspace par chaque labo.
 {

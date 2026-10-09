@@ -9,11 +9,11 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-L'équipe  développe des applications qui échangent des données par des **API**. L'[API d'Adhésion](https://gitlab.example.org/equipe/adhesion/api) (adhérent·e·s, cartes, adhésions) et [PlanningAPI](https://gitlab.example.org/equipe/dev/planning/planning-api) (modules, participants, créneaux) sont écrites avec Django REST framework, une bibliothèque Python construite au-dessus de Django. Ce parcours part de zéro côté API (qu'est-ce qu'une API ? un code de statut ? un jeton ?) et t'amène jusqu'à un point d'accès protégé, filtré, documenté et testé, sur un domaine fictif d'associations et d'événements. **Chaque labo te prête un vrai conteneur Linux** avec Django et un projet de départ : tu écris le code, et c'est le serveur qui vérifie le résultat en lançant les tests.
+L'équipe  développe des applications qui échangent des données par des **API**. L'[API d'Adhésion](https://gitlab.example.org/equipe/adhesion/api) (adhérent·e·s, cartes, adhésions) et [PlanningAPI](https://gitlab.example.org/equipe/dev/planning/planning-api) (modules, participants, créneaux) sont écrites avec Django REST framework, une bibliothèque Python construite au-dessus de Django. Ce cours part de zéro côté API (qu'est-ce qu'une API ? un code de statut ? un jeton ?) et t'amène jusqu'à un point d'accès protégé, filtré, documenté et testé, sur un domaine fictif d'associations et d'événements. **Chaque labo te prête un vrai conteneur Linux** avec Django et un projet de départ : tu écris le code, et c'est le serveur qui vérifie le résultat en lançant les tests.
 
 Les deux projets de l'équipe utilisent des versions anciennes (Django 3.1, DRF 3.12 pour Adhésion et 3.11 pour PlanningAPI) ; les labos tournent avec des versions récentes (Django 6.1, DRF 3.18). Les différences utiles sont signalées dans les leçons.
 
-## À qui s'adresse ce parcours ?
+## À qui s'adresse ce cours ?
 
 À toute personne qui connaît les bases de Django (modèles, vues, `settings.py`), même sans avoir jamais construit ni utilisé d'API. Aucune autre connaissance n'est supposée : les mots nouveaux (API, HTTP, JSON, jeton, schéma…) sont définis au fur et à mesure.
 
@@ -40,7 +40,7 @@ Les deux projets de l'équipe utilisent des versions anciennes (Django 3.1, DRF 
 - Écrire des tests d'API
 
 :::info Des labos dans un vrai conteneur
-Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et sans accès à Internet (tout est déjà installé), effacé à l'arrêt. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le parcours avec l'examen** si tu maîtrises déjà le sujet.
+Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et sans accès à Internet (tout est déjà installé), effacé à l'arrêt. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le cours avec l'examen** si tu maîtrises déjà le sujet.
 :::
 
-**Prérequis :** parcours *Django*.
+**Prérequis :** cours *Django*.

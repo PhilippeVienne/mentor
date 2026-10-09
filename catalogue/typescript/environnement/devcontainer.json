@@ -1,4 +1,4 @@
-// Environnement réel du parcours TypeScript (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours TypeScript (voir catalogue/README.md §15 et doc/environnements.md).
 // Node.js 24 sur Debian, TypeScript, tsx, ESLint et Prettier préinstallés ; chaque labo copie son exercice dans /workspace.
 {
     "name": "TypeScript de l'équipe",

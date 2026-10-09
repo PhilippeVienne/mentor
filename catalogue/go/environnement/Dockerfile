@@ -1,4 +1,4 @@
-# Environnement réel du parcours Go : Go 1.25 (chaîne d'outils officielle), nano et un serveur SSH pour VS Code.
+# Environnement réel du cours Go : Go 1.25 (chaîne d'outils officielle), nano et un serveur SSH pour VS Code.
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche (pas d'image « golang »), avec un tag explicite et épinglé ;
 #   - pas de sudo, pas de bit setuid, pas de VOLUME ;

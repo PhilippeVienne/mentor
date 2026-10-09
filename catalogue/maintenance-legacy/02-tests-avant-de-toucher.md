@@ -32,7 +32,7 @@ Conséquence : on ne peut pas se fier à « les tests sont verts » sans sa
 :::info Termes à connaître
 - Un **test unitaire** vérifie une petite pièce de code seule (une méthode).
 - Un **test d'intégration** vérifie que plusieurs pièces fonctionnent ensemble (une URL, la base de données, un service externe comme Keycloak). Une **URL** est l'adresse d'une page ou d'une API, par exemple `/adherents/`.
-- Un test **Selenium** pilote un vrai navigateur comme le ferait une personne : il est utile mais lent et fragile, donc à réserver aux parcours critiques (le paiement, par exemple).
+- Un test **Selenium** pilote un vrai navigateur comme le ferait une personne : il est utile mais lent et fragile, donc à réserver aux cours critiques (le paiement, par exemple).
 - La **couverture** (*coverage*) mesure le pourcentage de lignes exécutées par les tests. L'équipe l'utilise : `coverage report` est dans la CI de PlanningAPI.
 :::
 

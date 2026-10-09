@@ -141,7 +141,7 @@ pub fn default_badges() -> Vec<BadgeDef> {
         (
             "valide-par-examen",
             "Validé·e par examen",
-            "Valide un parcours complet en réussissant son examen.",
+            "Valide un cours complet en réussissant son examen.",
             "🎓",
             Tier::Silver,
             Rule::ExamsPassedAtLeast(1),

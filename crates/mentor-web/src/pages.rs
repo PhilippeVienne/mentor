@@ -291,7 +291,7 @@ struct Step<'a> {
     state: &'static str,
 }
 
-/// « Mes parcours »: level, the lesson to resume, training paths, courses and badges.
+/// « Mes cours »: level, the lesson to resume, training paths, courses and badges.
 #[derive(Template)]
 #[template(path = "dashboard.html")]
 struct DashboardPage<'a> {
@@ -382,7 +382,7 @@ fn badge_items(state: &AppState, progress: &Progress) -> Vec<BadgeItem> {
     let courses = state.catalogue.courses.iter().filter(|course| course.published).map(|course| BadgeItem {
         awarded: awarded(&format!("{COURSE_BADGE_PREFIX}{}", course.slug)),
         name: course.title.clone(),
-        description: format!("Termine le parcours « {} ».", course.title),
+        description: format!("Termine le cours « {} ».", course.title),
         emoji: course.icon.clone(),
         tier: "gold",
     });

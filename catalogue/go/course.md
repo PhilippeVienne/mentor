@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Trois projets de l'équipe sont écrits en Go : [`adhesion/mgmt`](https://gitlab.example.org/equipe/adhesion/mgmt) (mode maintenance et WebSocket), [`event-planner-api`](https://gitlab.example.org/equipe/dev/event-planner/event-planner-api) et [`billetterie`](https://gitlab.example.org/equipe/dev/billetterie). Ce parcours t'apprend à les lire, avec un domaine fictif (une ludothèque) pour les exemples, **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec Go 1.25 déjà installé, et c'est le serveur qui vérifie ton travail en lançant les tests.
+Trois projets de l'équipe sont écrits en Go : [`adhesion/mgmt`](https://gitlab.example.org/equipe/adhesion/mgmt) (mode maintenance et WebSocket), [`event-planner-api`](https://gitlab.example.org/equipe/dev/event-planner/event-planner-api) et [`billetterie`](https://gitlab.example.org/equipe/dev/billetterie). Ce cours t'apprend à les lire, avec un domaine fictif (une ludothèque) pour les exemples, **en pratiquant dans un vrai environnement** : chaque labo te prête un conteneur Linux avec Go 1.25 déjà installé, et c'est le serveur qui vérifie ton travail en lançant les tests.
 
 ## À qui s'adresse-t-il ?
 
@@ -30,11 +30,11 @@ Trois projets de l'équipe sont écrits en Go : [`adhesion/mgmt`](https://gitla
 **Durée totale : environ 5 h 25** (labos et quiz compris).
 
 :::info Des versions anciennes
-Les projets n'utilisent pas la même version de Go : 1.16 pour `mgmt`, 1.14 pour `billetterie`, 1.23 pour `event-planner-api`. Le parcours signale ce qui change d'une version à l'autre.
+Les projets n'utilisent pas la même version de Go : 1.16 pour `mgmt`, 1.14 pour `billetterie`, 1.23 pour `event-planner-api`. Le cours signale ce qui change d'une version à l'autre.
 :::
 
 :::info Des labos dans un vrai conteneur
-Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et **sans accès à Internet**, effacé à l'arrêt. Les bibliothèques dont les exercices ont besoin sont déjà installées. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le parcours avec l'examen** si tu maîtrises déjà le sujet.
+Ces labos utilisent un **environnement réel** : un conteneur Linux jetable, sans droits administrateur et **sans accès à Internet**, effacé à l'arrêt. Les bibliothèques dont les exercices ont besoin sont déjà installées. Si ton portail ne les propose pas encore, tu peux quand même suivre les leçons, et **valider tout le cours avec l'examen** si tu maîtrises déjà le sujet.
 :::
 
 ## Ce que tu sauras faire

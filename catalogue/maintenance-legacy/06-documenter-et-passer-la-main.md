@@ -9,7 +9,7 @@ objectives:
   - Vérifier automatiquement que l'environnement correspond à ce qui est attendu
 ---
 
-Dans un an, tu auras quitté l'équipe, ou simplement oublié ce que tu as fait. La personne qui ouvrira le projet découvrira un `requirements.txt` modifié et aucune explication. Elle sera exactement dans ta situation du début de ce parcours : face à un héritage sans mode d'emploi.
+Dans un an, tu auras quitté l'équipe, ou simplement oublié ce que tu as fait. La personne qui ouvrira le projet découvrira un `requirements.txt` modifié et aucune explication. Elle sera exactement dans ta situation du début de ce cours : face à un héritage sans mode d'emploi.
 
 ## À quoi ça sert, et pourquoi à la fin ?
 

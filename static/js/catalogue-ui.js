@@ -17,8 +17,8 @@
     }
 
     function countLabel(shown, total) {
-        if (shown === total) return `${total} parcours`;
-        return `${shown} parcours sur ${total}`;
+        if (shown === total) return `${total} cours`;
+        return `${shown} cours sur ${total}`;
     }
 
     function init(doc) {

@@ -23,14 +23,14 @@ Quelques mots à connaître dès maintenant :
 
 - Un **cluster** (Kubernetes) est un groupe de machines qui font tourner les applications de l'équipe. Un **espace de noms** (*namespace*) y est un « dossier » qui regroupe les objets d'un service.
 - Un **secret** Kubernetes est un objet qui stocke un mot de passe ou une clé.
-- Un **chart Helm** est un paquet qui installe une application dans le cluster (parcours *Kubernetes et Helm*).
+- Un **chart Helm** est un paquet qui installe une application dans le cluster (cours *Kubernetes et Helm*).
 - Le **terminal** est la fenêtre où tu tapes des commandes ; un **dépôt** Git est le dossier versionné qui contient les fichiers.
-- Quelques services de l'équipe reviennent dans ce parcours : **MinIO** (un stockage de fichiers, compatible avec le service S3 d'Amazon), **PostgreSQL** (un système de bases de données), **KubeDB** (un outil installé dans le cluster qui crée et surveille des bases de données, détaillé à la leçon 5) et **Keycloak** (le service de connexion unique de l'équipe).
+- Quelques services de l'équipe reviennent dans ce cours : **MinIO** (un stockage de fichiers, compatible avec le service S3 d'Amazon), **PostgreSQL** (un système de bases de données), **KubeDB** (un outil installé dans le cluster qui crée et surveille des bases de données, détaillé à la leçon 5) et **Keycloak** (le service de connexion unique de l'équipe).
 
 Le cluster de l'équipe n'a pas été monté à la main : il est décrit dans des fichiers `.tf` du dépôt `cluster-configuration`. Ces fichiers disent **ce qu'on veut obtenir** (un espace de noms, un secret, un chart Helm) et Terraform se charge de le créer. Pour ne pas casser la production, la première compétence est de savoir **lire** ces fichiers.
 
 :::info Prérequis
-Ce parcours suppose acquises les bases de Kubernetes et de Helm (parcours *Kubernetes et Helm*) : espace de noms, secret, chart, release.
+Ce cours suppose acquises les bases de Kubernetes et de Helm (cours *Kubernetes et Helm*) : espace de noms, secret, chart, release.
 :::
 
 ## Les briques du langage
@@ -121,7 +121,7 @@ module "database" {
 }
 ```
 
-Lecture ligne à ligne : `module "backup-bucket"` appelle le dossier `../minio-bucket` et lui passe le nom du bucket voulu (`bucketName`) ; `module "database"` donne un nom à l'appel ; `source` est le dossier à réutiliser (`../postgres` signifie « le dossier voisin `postgres` ») ; les lignes suivantes (`name`, `replicas`, `size`) sont les paramètres : nom de la base, nombre de copies (2 pour résister à une panne), taille du disque (3 Gio). Un **bucket** est un « seau » de stockage d'objets, sorte de dossier géré par MinIO (service de stockage compatible S3, vu dans le parcours *Sauvegardes et stockage objet*).
+Lecture ligne à ligne : `module "backup-bucket"` appelle le dossier `../minio-bucket` et lui passe le nom du bucket voulu (`bucketName`) ; `module "database"` donne un nom à l'appel ; `source` est le dossier à réutiliser (`../postgres` signifie « le dossier voisin `postgres` ») ; les lignes suivantes (`name`, `replicas`, `size`) sont les paramètres : nom de la base, nombre de copies (2 pour résister à une panne), taille du disque (3 Gio). Un **bucket** est un « seau » de stockage d'objets, sorte de dossier géré par MinIO (service de stockage compatible S3, vu dans le cours *Sauvegardes et stockage objet*).
 
 Les sorties d'un module se lisent avec `module.<nom>.<sortie>`, par exemple `module.backup-bucket.access_token` dans le dépôt réel. C'est ainsi que l'identifiant du bucket arrive jusqu'à la base.
 

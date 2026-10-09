@@ -15,7 +15,7 @@ environment: environnement
 
 ## À qui s'adresse-t-il ?
 
-Aux membres de l'équipe Infra, et à toute personne qui doit comprendre ou modifier la configuration du cluster. Aucune connaissance de Terraform n'est nécessaire : chaque mot est défini quand il apparaît et chaque exemple de code est expliqué ligne par ligne. Le dépôt `cluster-configuration` date d'environ 2019 : le parcours signale ce qui est probablement dépassé et ce qu'il faut confirmer avec l'équipe Infra.
+Aux membres de l'équipe Infra, et à toute personne qui doit comprendre ou modifier la configuration du cluster. Aucune connaissance de Terraform n'est nécessaire : chaque mot est défini quand il apparaît et chaque exemple de code est expliqué ligne par ligne. Le dépôt `cluster-configuration` date d'environ 2019 : le cours signale ce qui est probablement dépassé et ce qu'il faut confirmer avec l'équipe Infra.
 
 ## Plan
 
@@ -34,4 +34,4 @@ Aux membres de l'équipe Infra, et à toute personne qui doit comprendre ou modi
 - Lancer `init`, `plan` et `apply` sur des ressources locales, et lire l'état
 - Modifier la configuration du cluster en sécurité
 
-**Prérequis :** parcours *Kubernetes et Helm*. **Durée estimée :** environ 4 h 15.
+**Prérequis :** cours *Kubernetes et Helm*. **Durée estimée :** environ 4 h 15.

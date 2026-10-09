@@ -1,4 +1,4 @@
-// Environnement réel du parcours Terraform (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours Terraform (voir catalogue/README.md §15 et doc/environnements.md).
 // Debian avec le binaire `terraform` et un miroir local de fournisseurs (local, random, null, time) :
 // les labos manipulent des fichiers locaux, jamais un vrai cluster.
 {

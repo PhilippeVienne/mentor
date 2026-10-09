@@ -1,4 +1,4 @@
-// Environnement réel du parcours Python (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours Python (voir catalogue/README.md §15 et doc/environnements.md).
 // Python 3.13 sur Debian, pytest préinstallé, les exercices des leçons sont copiés dans /workspace par chaque labo.
 {
     "name": "Python 3.13 de l'équipe",

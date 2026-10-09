@@ -24,7 +24,7 @@ Pour écrire du HTML, il te faut seulement trois choses.
 - **Un fichier** dont le nom finit par `.html` : c'est le **nom de fichier** qui dit au navigateur « ceci est une page web ».
 - **Un navigateur** pour afficher la page.
 
-Voici les quelques commandes dont tu auras besoin dans ce parcours :
+Voici les quelques commandes dont tu auras besoin dans ce cours :
 
 | Commande | Ce qu'elle fait |
 | --- | --- |
@@ -37,7 +37,7 @@ Voici les quelques commandes dont tu auras besoin dans ce parcours :
 Tape `nano index.html` : l'éditeur s'ouvre, tu écris ton texte. Enregistre avec `Ctrl+O` puis `Entrée` (nano te demande de confirmer le nom du fichier), quitte avec `Ctrl+X`. Si ton portail propose le mode « VS Code » dans le panneau, tu peux aussi utiliser cet éditeur plus confortable : la leçon s'affiche à côté du code. Tu peux enfin utiliser ton propre VS Code (section « Utiliser ton propre VS Code » du panneau).
 :::
 
-Sur ton ordinateur, tu ouvrirais une page en double-cliquant sur le fichier `.html` : ton navigateur la dessinerait. Dans le labo, il n'y a pas d'écran graphique. C'est donc `verifier-page` qui « ouvre » ta page : il en affiche le titre, la structure et, plus loin dans le parcours, il peut même cliquer sur des boutons pour toi. Si tu travailles dans ton propre VS Code, la commande `servir` publie le dossier sur le port 8000, que VS Code te propose d'ouvrir dans ton navigateur.
+Sur ton ordinateur, tu ouvrirais une page en double-cliquant sur le fichier `.html` : ton navigateur la dessinerait. Dans le labo, il n'y a pas d'écran graphique. C'est donc `verifier-page` qui « ouvre » ta page : il en affiche le titre, la structure et, plus loin dans le cours, il peut même cliquer sur des boutons pour toi. Si tu travailles dans ton propre VS Code, la commande `servir` publie le dossier sur le port 8000, que VS Code te propose d'ouvrir dans ton navigateur.
 
 ## Le squelette d'une page
 

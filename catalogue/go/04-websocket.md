@@ -283,7 +283,7 @@ Pourquoi un serveur WebSocket doit-il vérifier lui-même l'en-tête `Origin` 
 Pourquoi `Diffuse` garde-t-elle le verrou du mutex pendant toute la boucle d'écriture ?
 
 - [ ] Pour que les messages soient chiffrés
-- [x] Pour que la map ne soit pas modifiée pendant le parcours et qu'une seule goroutine écrive à la fois dans les connexions
+- [x] Pour que la map ne soit pas modifiée pendant le cours et qu'une seule goroutine écrive à la fois dans les connexions
 - [ ] Pour accélérer l'envoi des messages
 - [ ] Parce que `range` exige un verrou sur toutes les maps
 

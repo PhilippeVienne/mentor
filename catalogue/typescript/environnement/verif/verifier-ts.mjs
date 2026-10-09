@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// verifier-ts : vérifications « pristines » des labos du parcours TypeScript.
+// verifier-ts : vérifications « pristines » des labos du cours TypeScript.
 //
 // Usage : verifier-ts <leçon> <contrôle>      (lancé depuis /workspace ; ex. « verifier-ts 03 premier »)
 //

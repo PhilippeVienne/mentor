@@ -1,4 +1,4 @@
--- Schéma fictif du parcours : associations, adhérent·e·s, événements, inscriptions.
+-- Schéma fictif du cours : associations, adhérent·e·s, événements, inscriptions.
 CREATE TABLE assos (
     id       integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nom      text NOT NULL UNIQUE,

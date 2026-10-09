@@ -81,7 +81,7 @@ __pycache__/
 ```
 
 :::info Dans les projets de l'équipe
-Tu retrouveras ce schéma partout : `requirements.txt` ou `Pipfile` pour les dépendances, un dossier de tests, et des secrets (mots de passe, clés) dans un fichier `.env` **jamais** commité. Voir le parcours « Git basics » pour le `.gitignore`.
+Tu retrouveras ce schéma partout : `requirements.txt` ou `Pipfile` pour les dépendances, un dossier de tests, et des secrets (mots de passe, clés) dans un fichier `.env` **jamais** commité. Voir le cours « Git basics » pour le `.gitignore`.
 :::
 
 ## Entraîne-toi

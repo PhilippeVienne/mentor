@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Envoie un fichier ou un dossier vers un bucket S3.
 
-Version SIMPLIFIÉE écrite pour le parcours de formation, dans l'esprit de backup.py du dépôt
+Version SIMPLIFIÉE écrite pour la formation, dans l'esprit de backup.py du dépôt
 equipe/dev/backups3 (ce n'est pas une copie). Elle lit les variables URL, ACCESSKEY et SECRETKEY.
 
 Usage : backup.py [-v] [-c] BUCKET SOURCE OBJET

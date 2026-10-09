@@ -1,4 +1,4 @@
-# Environnement du parcours modèle : Debian, Git, Python et un serveur SSH pour VS Code (Remote-SSH).
+# Environnement du cours modèle : Debian, Git, Python et un serveur SSH pour VS Code (Remote-SSH).
 # Le réseau n'existe QU'AU BUILD : tout ce dont les leçons ont besoin est installé ici.
 # Règles (voir catalogue/README.md, « Environments ») :
 #   - image de base de la liste blanche, avec un tag explicite ;

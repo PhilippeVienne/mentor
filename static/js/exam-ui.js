@@ -1,4 +1,4 @@
-/* Examen de validation d'un parcours : intro → questions (modifiables) → récapitulatif → résultats détaillés.
+/* Examen de validation d'un cours : intro → questions (modifiables) → récapitulatif → résultats détaillés.
    Le serveur tire et mélange les questions, tient le chronomètre et note : ce script n'envoie que des positions. */
 (function (root) {
     'use strict';
@@ -397,10 +397,10 @@
 
         announce(res) {
             updateXp(res.level);
-            if (res.xp_gained) toast('xp', `+${res.xp_gained} XP`, 'Parcours validé par examen');
+            if (res.xp_gained) toast('xp', `+${res.xp_gained} XP`, 'Cours validé par examen');
             if (res.level_up && res.level) toast('level', `Niveau ${res.level.level} atteint !`, res.level.title);
             (res.new_badges || []).forEach((b) => toast('badge', `${b.emoji} Badge débloqué : ${b.name}`, b.description));
-            if (res.course_validated) toast('done', 'Parcours validé !', `${this.data.course.title} est validé : les parcours suivants sont débloqués.`);
+            if (res.course_validated) toast('done', 'Cours validé !', `${this.data.course.title} est validé : les cours suivants sont débloqués.`);
         }
 
         showResult(res, expired) {
@@ -418,9 +418,9 @@
                 card.append(score);
             }
             if (passed) {
-                card.append(el('p', 'exam__lead', `Le parcours « ${this.data.course.title} » est validé${res.lessons_validated ? ` (${res.lessons_validated} leçon${res.lessons_validated > 1 ? 's' : ''} validée${res.lessons_validated > 1 ? 's' : ''} sans labo)` : ''}.`));
+                card.append(el('p', 'exam__lead', `Le cours « ${this.data.course.title} » est validé${res.lessons_validated ? ` (${res.lessons_validated} leçon${res.lessons_validated > 1 ? 's' : ''} validée${res.lessons_validated > 1 ? 's' : ''} sans labo)` : ''}.`));
                 const actions = el('div', 'exam__actions');
-                const back = el('a', 'btn btn--primary', 'Retour au parcours');
+                const back = el('a', 'btn btn--primary', 'Retour au cours');
                 back.href = this.data.courseUrl;
                 const badges = el('a', 'btn btn--ghost', 'Voir mes badges');
                 badges.href = '/badges/';
@@ -430,7 +430,7 @@
             } else {
                 const label = el('p', 'exam__retry');
                 const retry = button('Retenter l\'examen', 'lab__btn--primary', () => root.location.reload());
-                const review = el('a', 'btn btn--ghost', 'Revoir le parcours');
+                const review = el('a', 'btn btn--ghost', 'Revoir le cours');
                 review.href = this.data.courseUrl;
                 const actions = el('div', 'exam__actions');
                 actions.append(retry, review);

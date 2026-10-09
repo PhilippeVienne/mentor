@@ -109,7 +109,7 @@ REST_FRAMEWORK = {
 La liste d'authentification est essayée dans l'ordre. Celle d'Adhésion en contient trois : `SyncedKeycloakAuthentication`, puis `SessionAuthentication` (pour l'interface web de Django) et `BasicAuthentication` (identifiant et mot de passe envoyés à chaque requête). `DEFAULT_PERMISSION_CLASSES` est la règle appliquée partout où la vue n'en précise pas ; la valeur par défaut de DRF est de **tout autoriser**, donc ce réglage est ton filet de sécurité.
 
 :::danger Ne mets jamais un secret dans le code
-Le `settings.py` d'Adhésion donne une valeur par défaut en clair à `OIDC_RP_CLIENT_SECRET`. Ne reproduis pas ce réflexe : un secret par défaut dans un dépôt est un secret public. Lis-les uniquement depuis l'environnement (`os.environ["..."]`), sans valeur de repli, comme le montre le parcours *CI GitLab* du portail (la CI, ou intégration continue, est un robot qui lance des scripts automatiquement à chaque modification du code ; on y range les secrets dans des variables).
+Le `settings.py` d'Adhésion donne une valeur par défaut en clair à `OIDC_RP_CLIENT_SECRET`. Ne reproduis pas ce réflexe : un secret par défaut dans un dépôt est un secret public. Lis-les uniquement depuis l'environnement (`os.environ["..."]`), sans valeur de repli, comme le montre le cours *CI GitLab* du portail (la CI, ou intégration continue, est un robot qui lance des scripts automatiquement à chaque modification du code ; on y range les secrets dans des variables).
 :::
 
 ## Les permissions par rôle

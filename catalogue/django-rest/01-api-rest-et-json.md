@@ -108,7 +108,7 @@ Django sait déjà recevoir une requête et renvoyer une réponse, mais il est p
 | Vérifier que tout marche | Tests d'API | 7 |
 
 :::info Versions utilisées dans l'équipe
-L'API d'Adhésion déclare `Django==3.1.13` et `djangorestframework==3.12.1` dans son `requirements.txt` ; [PlanningAPI](https://gitlab.example.org/equipe/dev/planning/planning-api) déclare `Django==3.1.1` et `djangorestframework==3.11.1`. Ce sont des versions anciennes. Les exemples de ce parcours ont été exécutés avec une version récente de Django et de DRF : ce qui change dans les anciennes versions est signalé.
+L'API d'Adhésion déclare `Django==3.1.13` et `djangorestframework==3.12.1` dans son `requirements.txt` ; [PlanningAPI](https://gitlab.example.org/equipe/dev/planning/planning-api) déclare `Django==3.1.1` et `djangorestframework==3.11.1`. Ce sont des versions anciennes. Les exemples de ce cours ont été exécutés avec une version récente de Django et de DRF : ce qui change dans les anciennes versions est signalé.
 :::
 
 :::tip Essaie avec ton navigateur

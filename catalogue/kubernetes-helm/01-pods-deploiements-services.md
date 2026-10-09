@@ -11,7 +11,7 @@ objectives:
 
 ## À quoi ça sert, et pourquoi ?
 
-Avec Docker (parcours précédents), tu lances un conteneur avec `docker run`. C'est parfait sur ton poste. Mais sur un serveur qui héberge les sites des associations, il faut plus : si un conteneur plante à 3 h du matin, quelqu'un doit le relancer ; si le site est très visité, il faut en lancer plusieurs copies ; si on met à jour, il ne faut pas tout casser.
+Avec Docker (cours précédents), tu lances un conteneur avec `docker run`. C'est parfait sur ton poste. Mais sur un serveur qui héberge les sites des associations, il faut plus : si un conteneur plante à 3 h du matin, quelqu'un doit le relancer ; si le site est très visité, il faut en lancer plusieurs copies ; si on met à jour, il ne faut pas tout casser.
 
 **Kubernetes** (on écrit souvent « K8s ») est un logiciel qui s'occupe de tout cela à ta place. Pense à un **chef d'orchestre** : tu lui donnes la partition (ce que tu veux), et il fait jouer les musiciens (les conteneurs), remplace celui qui s'arrête et vérifie que l'ensemble reste juste.
 

@@ -1,4 +1,4 @@
-# Environnement réel du parcours « React et Next.js » : Node.js 24 (LTS) avec React 19, Next.js 16, TypeScript 6, tsx,
+# Environnement réel du cours « React et Next.js » : Node.js 24 (LTS) avec React 19, Next.js 16, TypeScript 6, tsx,
 # Vitest + Testing Library + jsdom (pas de navigateur dans le conteneur : jsdom reconstruit la page en mémoire),
 # Tailwind CSS 4 (CLI), Kysely, nano et un serveur SSH pour VS Code (Remote-SSH).
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :

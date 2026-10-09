@@ -110,7 +110,7 @@ Les données conformes passent, les autres déclenchent une **erreur claire à l
 ![Une réponse d'API arrive en `unknown`, traverse le type guard, puis devient un `Evenement` sûr](images/validation-api.svg)
 
 :::info Et si le projet est gros ?
-Écrire un type guard à la main devient fastidieux avec de grosses structures. Des bibliothèques de validation (Zod, Valibot…) génèrent à la fois la vérification et le type. Choisis celle de ton projet plutôt que d'en ajouter une : ce parcours ne dépend d'aucune.
+Écrire un type guard à la main devient fastidieux avec de grosses structures. Des bibliothèques de validation (Zod, Valibot…) génèrent à la fois la vérification et le type. Choisis celle de ton projet plutôt que d'en ajouter une : ce cours ne dépend d'aucune.
 :::
 
 ## Quand les types viennent d'ailleurs

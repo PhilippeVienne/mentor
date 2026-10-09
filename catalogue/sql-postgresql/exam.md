@@ -6,7 +6,7 @@ minutes: 10
 shuffle: true
 ---
 
-Cet examen valide les bases de SQL et de PostgreSQL : schéma et clés, `SELECT`, jointures, transactions, index, migrations et sauvegardes. Les exemples reprennent le schéma fictif du parcours (`assos`, `adherents`, `evenements`, `inscriptions`).
+Cet examen valide les bases de SQL et de PostgreSQL : schéma et clés, `SELECT`, jointures, transactions, index, migrations et sauvegardes. Les exemples reprennent le schéma fictif du cours (`assos`, `adherents`, `evenements`, `inscriptions`).
 
 :::quiz
 Quelle contrainte garantit qu'aucune valeur n'apparaît deux fois dans la colonne `email` ?

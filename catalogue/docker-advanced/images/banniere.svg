@@ -25,7 +25,7 @@
 <rect x="921" y="140" width="52" height="36" rx="4" fill="#38bdf8" opacity=".95"/><line x1="931" y1="146" x2="931" y2="170" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/><line x1="947" y1="146" x2="947" y2="170" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/><line x1="963" y1="146" x2="963" y2="170" stroke="#0b1220" stroke-opacity=".35" stroke-width="2"/>
 <path d="M0 372 C150 350 300 394 450 372 S750 350 900 372 S1100 392 1200 368 V400 H0Z" fill="#1D63ED" opacity=".12"/>
 <rect x="60" y="86" width="8" height="64" rx="4" fill="#6366F1"/>
-<text x="90" y="118" font-size="20" fill="#94a3b8" font-weight="600" letter-spacing="3">PARCOURS · MENTOR</text>
+<text x="90" y="118" font-size="20" fill="#94a3b8" font-weight="600" letter-spacing="3">COURS · MENTOR</text>
 <text x="60" y="206" font-size="64" fill="#e2e8f0" font-weight="800">Docker advanced</text>
 <text x="62" y="252" font-size="24" fill="#94a3b8">Dockerfile, volumes, réseaux, Compose</text>
 <rect x="62" y="290" width="140" height="6" rx="3" fill="#1D63ED"/>

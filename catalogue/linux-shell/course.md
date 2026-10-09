@@ -9,7 +9,7 @@ banner: images/banniere.svg
 environment: environnement
 ---
 
-Les serveurs et les conteneurs de l'équipe tournent sous Linux, et beaucoup de tâches passent par le terminal. Ce parcours donne les bases pour s'y sentir à l'aise, **en pratiquant dans un vrai terminal Linux** : chaque labo te prête un conteneur Debian jetable, et c'est le serveur qui vérifie ton travail.
+Les serveurs et les conteneurs de l'équipe tournent sous Linux, et beaucoup de tâches passent par le terminal. Ce cours donne les bases pour s'y sentir à l'aise, **en pratiquant dans un vrai terminal Linux** : chaque labo te prête un conteneur Debian jetable, et c'est le serveur qui vérifie ton travail.
 
 ## À qui s'adresse-t-il ?
 

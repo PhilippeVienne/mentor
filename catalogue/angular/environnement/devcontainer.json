@@ -1,4 +1,4 @@
-// Environnement réel du parcours « Angular » (voir catalogue/README.md §15 et doc/environnements.md).
+// Environnement réel du cours « Angular » (voir catalogue/README.md §15 et doc/environnements.md).
 // Node.js 24 sur Debian, Angular 20 préinstallé (pas de navigateur dans le conteneur), nano et un serveur SSH pour VS Code.
 {
     "name": "Angular de l'équipe",

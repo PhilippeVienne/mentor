@@ -1,4 +1,4 @@
-# Environnement réel du parcours TypeScript : Node.js 24 (LTS), TypeScript 6, tsx, ESLint + typescript-eslint, Prettier, nano
+# Environnement réel du cours TypeScript : Node.js 24 (LTS), TypeScript 6, tsx, ESLint + typescript-eslint, Prettier, nano
 # et un serveur SSH pour VS Code (Remote-SSH).
 # Règles (vérifiées à la compilation du catalogue, voir catalogue/README.md §15) :
 #   - image de base de la liste blanche, avec un tag explicite et épinglé (version de Node.js + distribution) ;

@@ -1,4 +1,4 @@
-/* Training paths (« cursus »): path cards, the map of a path, and the chips on a course page.
+/* Training paths (« parcours de formation »): path cards, the map of a path, and the chips on a course page.
    The dimensions of the map (--pm-*) are computed by crates/mentor-web/src/path_map.rs and set on .path-map:
    cards and the SVG links drawn behind them only line up when both follow them. */
 

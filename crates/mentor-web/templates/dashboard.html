@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Mes parcours{% endblock %}
+{% block title %}Mes cours{% endblock %}
 {% block head %}<link rel="stylesheet" href="/static/css/paths.css">{% endblock %}
 
 {% block content %}
 <section class="page-head">
     <div class="container dash-head">
         <div>
-            <p class="eyebrow">Mes parcours</p>
+            <p class="eyebrow">Mes cours</p>
             <h1>Salut {{ me.learner.username }} 👋</h1>
             <p class="lead">Tu es <strong>{{ me.level.title }}</strong> (niveau {{ me.level.level }}). {% if let Some(to_next) = to_next %}Encore {{ to_next }} XP pour devenir <strong>{% if let Some(title) = me.level.next_title %}{{ title }}{% endif %}</strong>.{% else %}Tu as atteint le niveau maximum : bravo !{% endif %}</p>
         </div>
@@ -36,10 +36,10 @@
     {% endif %}
 
     {% if !paths.is_empty() %}
-    <section aria-labelledby="cursus-title">
+    <section aria-labelledby="paths-title">
         <div class="section__head section__head--row">
-            <h2 id="cursus-title" class="section-title">Cursus</h2>
-            <a href="/paths/">Voir tous les cursus →</a>
+            <h2 id="paths-title" class="section-title">Parcours de formation</h2>
+            <a href="/paths/">Voir tous les parcours de formation →</a>
         </div>
         <div class="grid grid--paths">
             {% for card in paths %}{% include "_path_card.html" %}{% endfor %}
@@ -47,9 +47,9 @@
     </section>
     {% endif %}
 
-    <section aria-labelledby="parcours-title">
+    <section aria-labelledby="courses-title">
         <div class="section__head section__head--row">
-            <h2 id="parcours-title" class="section-title">Parcours</h2>
+            <h2 id="courses-title" class="section-title">Cours</h2>
             <a href="/catalogue/">Voir le catalogue →</a>
         </div>
         <div class="grid grid--courses">

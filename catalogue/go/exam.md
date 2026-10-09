@@ -6,7 +6,7 @@ minutes: 10
 shuffle: true
 ---
 
-Cet examen valide les bases de Go vues dans le parcours : syntaxe, erreurs et interfaces, serveur HTTP et JSON, WebSocket, JWT, base de données, tests et image Docker.
+Cet examen valide les bases de Go vues dans le cours : syntaxe, erreurs et interfaces, serveur HTTP et JSON, WebSocket, JWT, base de données, tests et image Docker.
 
 :::quiz
 Tu veux livrer un service Go sur un serveur qui n'a rien d'installé. Quel avantage de Go t'aide ici ?

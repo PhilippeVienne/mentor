@@ -18,16 +18,16 @@
             </ul>
             {% if !paths.is_empty() %}
             <p class="course-paths">
-                <span class="course-paths__label">{% if paths.len() > 1 %}Fait partie des cursus{% else %}Fait partie du cursus{% endif %}</span>
+                <span class="course-paths__label">{% if paths.len() > 1 %}Fait partie des parcours de formation{% else %}Fait partie du parcours de formation{% endif %}</span>
                 {% for path in paths %}<a class="path-chip" href="/paths/{{ path.id }}/#course-{{ course.slug }}"><span aria-hidden="true">{{ path.icon }}</span> {{ path.title }}</a>{% endfor %}
             </p>
             {% endif %}
             {% if let Some(progress) = progress %}
             {% if progress.unlocked %}
-            <div class="progress progress--lg" role="progressbar" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le parcours">
+            <div class="progress progress--lg" role="progressbar" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression dans le cours">
                 <span style="width: {{ progress.percent }}%"></span>
             </div>
-            <p class="progress__label">{{ progress.done }} / {{ lessons_label }} · {{ progress.percent }} %{% if progress.completed %} · ✓ Parcours terminé{% endif %}</p>
+            <p class="progress__label">{{ progress.done }} / {{ lessons_label }} · {{ progress.percent }} %{% if progress.completed %} · ✓ Cours terminé{% endif %}</p>
             {% else %}
             <p class="course-card__lock">🔒 À débloquer en terminant : <strong>{{ progress.missing|join(", ") }}</strong></p>
             {% endif %}
@@ -41,7 +41,7 @@
     <div class="course-main">
         {% if let Some(progress) = progress %}{% if !progress.unlocked %}
         <aside class="callout callout--warning">
-            <p class="callout__title">🔒 Parcours verrouillé</p>
+            <p class="callout__title">🔒 Cours verrouillé</p>
             <p>Termine d'abord : <strong>{{ progress.missing|join(", ") }}</strong>.</p>
         </aside>
         {% endif %}{% endif %}
@@ -49,16 +49,16 @@
         {% if let Some(exam) = exam %}
         <aside class="exam-cta{% if exam.validated %} exam-cta--done{% endif %}" aria-labelledby="exam-cta-title">
             {% if exam.validated %}
-            <h2 id="exam-cta-title">✓ Parcours validé{% if exam.validated_by_exam %} par examen{% endif %}</h2>
-            <p>Tu as validé ce parcours : les parcours qui en dépendent sont débloqués.</p>
+            <h2 id="exam-cta-title">✓ Cours validé{% if exam.validated_by_exam %} par examen{% endif %}</h2>
+            <p>Tu as validé ce cours : les cours qui en dépendent sont débloqués.</p>
             {% else if exam.available() %}
-            <h2 id="exam-cta-title">🎓 Déjà à l'aise ? Valide le parcours par examen</h2>
+            <h2 id="exam-cta-title">🎓 Déjà à l'aise ? Valide le cours par examen</h2>
             <p>{{ exam.count }} question{% if exam.count > 1 %}s{% endif %} tirées au sort · réussite à {{ exam.pass_mark }} % · {{ exam.minutes }} min.
-               Réussis-le et tout le parcours est validé, sans passer par les labos ni les quiz de chaque leçon. Tu peux aussi suivre les leçons normalement.</p>
+               Réussis-le et tout le cours est validé, sans passer par les labos ni les quiz de chaque leçon. Tu peux aussi suivre les leçons normalement.</p>
             <a class="btn btn--primary" href="/courses/{{ course.slug }}/exam/">Passer l'examen de validation</a>
             {% else %}
             <h2 id="exam-cta-title">🎓 Examen de validation</h2>
-            <p>Il se débloque avec ce parcours : termine d'abord les parcours prérequis.</p>
+            <p>Il se débloque avec ce cours : termine d'abord les cours prérequis.</p>
             {% endif %}
         </aside>
         {% endif %}

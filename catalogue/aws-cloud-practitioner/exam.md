@@ -6,9 +6,9 @@ minutes: 30
 shuffle: true
 ---
 
-Cet examen valide le parcours : concepts du cloud, sécurité et conformité, services essentiels, facturation et support. Vingt questions sont tirées au sort dans une réserve de soixante-dix, réparties comme les quatre domaines du guide de l'examen CLF-C02.
+Cet examen valide le cours : concepts du cloud, sécurité et conformité, services essentiels, facturation et support. Vingt questions sont tirées au sort dans une réserve de soixante-dix, réparties comme les quatre domaines du guide de l'examen CLF-C02.
 
-Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce parcours. Le vrai examen comporte 65 questions, dont certaines à réponses multiples, alors que celles-ci n'ont toutes qu'une bonne réponse. Réussir ici montre que tu maîtrises le contenu du parcours ; cela ne garantit pas le résultat le jour de la certification.
+Ce n'est **pas** l'examen d'AWS, et ces questions n'en proviennent pas : elles ont été écrites pour ce cours. Le vrai examen comporte 65 questions, dont certaines à réponses multiples, alors que celles-ci n'ont toutes qu'une bonne réponse. Réussir ici montre que tu maîtrises le contenu du cours ; cela ne garantit pas le résultat le jour de la certification.
 
 :::quiz
 Une jeune entreprise ne sait pas si son application aura cent ou cent mille utilisateur·rice·s dans six mois. Quel avantage du cloud lui évite de trancher aujourd'hui ?

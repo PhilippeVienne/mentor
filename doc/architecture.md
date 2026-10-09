@@ -229,9 +229,9 @@ Still open:
 
 1. **Hosting**: which Kubernetes cluster with KVM nodes (physical machines, nested virtualisation at a
    provider); this drives network design and CI.
-2. **Shared catalogue**: are the 19 current courses offered to every tenant, or does each tenant bring its own?
-   How a tenant brings its own is designed in [course-packages.md](course-packages.md): courses are distributed
-   as Git repositories that are packages; the question that remains is its §11, point 1.
+2. **Shared catalogue**: decided on 9 October 2026. A tenant sees only the course packages installed for it; the
+   courses of this repository are a package that is offered, never installed by default
+   ([course-packages.md](course-packages.md)). Not implemented yet: every tenant still sees `catalogue/`.
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
 4. **Running labs on Atelier**: validated on 6 October 2026 by replaying real labs in Atelier microVMs

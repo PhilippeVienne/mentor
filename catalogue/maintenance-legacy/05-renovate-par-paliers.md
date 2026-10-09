@@ -15,7 +15,7 @@ Tu viens de passer trois semaines à monter un projet de Django 3.1 à 5.2. Dans
 
 **Renovate** est un robot qui surveille les fichiers de dépendances d'un dépôt (`requirements.txt`, `package.json`, `Dockerfile`), repère les nouvelles versions et ouvre une **merge request** (une proposition de modification que l'équipe relit avant de la fusionner dans la branche principale) pour chacune. Au lieu d'un retard de cinq ans, tu as chaque semaine quelques petits changements à relire.
 
-Cette leçon ne répète pas les bases. Elle suppose que tu connais le principe, expliqué dans la leçon « Mises à jour automatiques avec Renovate » du parcours *CI/CD avec GitLab* : lis-la d'abord si besoin. Ici, on traite le cas particulier d'un projet **hérité**.
+Cette leçon ne répète pas les bases. Elle suppose que tu connais le principe, expliqué dans la leçon « Mises à jour automatiques avec Renovate » du cours *CI/CD avec GitLab* : lis-la d'abord si besoin. Ici, on traite le cas particulier d'un projet **hérité**.
 
 ## Le problème d'un projet en retard
 

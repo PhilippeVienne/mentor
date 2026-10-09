@@ -6,19 +6,19 @@
     <div class="container">
         <p class="eyebrow">Catalogue</p>
         <h1>Toutes les formations</h1>
-        <p class="lead">Des parcours courts et progressifs, à suivre à ton rythme.</p>
+        <p class="lead">Des cours courts et progressifs, à suivre à ton rythme.</p>
     </div>
 </section>
 
 <div class="container catalogue" id="catalogue-root">
     <div class="cat-tools" hidden>
         <label class="cat-search">
-            <span class="sr-only">Rechercher un parcours</span>
+            <span class="sr-only">Rechercher un cours</span>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <input type="search" id="cat-search" placeholder="Rechercher un parcours…" autocomplete="off">
+            <input type="search" id="cat-search" placeholder="Rechercher un cours…" autocomplete="off">
         </label>
         <fieldset class="cat-filters">
-            <legend>Filtrer les parcours</legend>
+            <legend>Filtrer les cours</legend>
             <button type="button" class="cat-filter" data-filter="tous" aria-pressed="true">Tous</button>
             {% if viewer.is_some() %}
             <button type="button" class="cat-filter" data-filter="en-cours" aria-pressed="false">En cours</button>
@@ -47,7 +47,7 @@
     {% endif %}
 
     <div class="cat-empty" id="cat-empty" hidden>
-        <strong>Aucun parcours ne correspond.</strong>
+        <strong>Aucun cours ne correspond.</strong>
         Essaie un autre mot-clé ou <button type="button" class="link-btn" id="cat-reset">réinitialise les filtres</button>.
     </div>
 </div>
