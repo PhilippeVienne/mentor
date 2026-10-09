@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Paquets de cours · Gestion{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/manage.css">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Gestion</p>
+        <h1>Paquets de cours</h1>
+        <p class="lead">Le catalogue de {{ brand.name }} est fait des paquets installés ici. Un paquet est un dépôt de cours, installé à une version précise.</p>
+    </div>
+</section>
+
+<div class="container manage">
+    {% if packages.is_empty() %}
+    <aside class="callout callout--info" role="note">
+        <p class="callout__title">Aucun paquet installé</p>
+        <p>Le catalogue est vide : aucun cours n'est proposé d'office. La personne qui exploite la plateforme installe un paquet avec :</p>
+        <pre class="code"><code>mentor package-install &lt;dépôt ou dossier&gt; --tenant &lt;organisation&gt;</code></pre>
+    </aside>
+    {% endif %}
+
+    {% for package in packages %}
+    <section class="package" aria-labelledby="package-{{ loop.index }}">
+        <header class="package__head">
+            <div>
+                <h2 id="package-{{ loop.index }}">{{ package.details.title }}</h2>
+                <p class="package__id"><code>{{ package.details.name }}</code> · version <strong>{{ package.details.version }}</strong> · installé le {{ package.installed }}</p>
+            </div>
+            <ul class="package__figures" aria-label="Contenu du paquet">
+                <li><strong>{{ package.courses.len() }}</strong> cours</li>
+                <li><strong>{{ package.lessons }}</strong> leçons</li>
+                <li><strong>{{ package.details.paths }}</strong> parcours de formation</li>
+                <li><strong>{{ package.details.pictures }}</strong> images</li>
+            </ul>
+        </header>
+
+        <dl class="package__source">
+            {% if let Some(repository) = package.repository %}
+            <dt>Dépôt</dt>
+            <dd><a href="{{ repository }}" rel="noopener noreferrer">{{ repository }}</a>{% if let Some(folder) = package.folder %}, dossier <code>{{ folder }}</code>{% endif %}</dd>
+            {% if let Some(commit) = package.commit %}
+            <dt>Commit</dt>
+            <dd><code title="{{ commit }}">{{ commit }}</code></dd>
+            {% endif %}
+            {% else %}
+            <dt>Source</dt>
+            <dd>Un dossier, installé par la personne qui exploite la plateforme.</dd>
+            {% endif %}
+            <dt>Version précédente</dt>
+            <dd>{% if let Some(previous) = package.details.previous_version %}<strong>{{ previous }}</strong> est conservée : la dernière mise à jour peut être annulée.{% else %}Aucune : ce paquet n'a pas été mis à jour depuis son installation.{% endif %}</dd>
+        </dl>
+
+        <div class="table-scroll">
+            <table class="package__courses">
+                <caption class="sr-only">Cours du paquet {{ package.details.title }}</caption>
+                <thead>
+                    <tr><th scope="col">Cours</th><th scope="col">Leçons</th><th scope="col">Labos</th><th scope="col">Examen</th><th scope="col">En cours</th><th scope="col">Terminé</th></tr>
+                </thead>
+                <tbody>
+                    {% for course in package.courses %}
+                    <tr>
+                        <th scope="row"><span aria-hidden="true">{{ course.icon }}</span> {% if course.published %}<a href="/courses/{{ course.slug }}/">{{ course.title }}</a>{% else %}{{ course.title }} <span class="muted">(non publié)</span>{% endif %}</th>
+                        <td>{{ course.lessons }}</td>
+                        <td>{{ course.labs }}</td>
+                        <td>{% if course.has_exam %}oui{% else %}non{% endif %}</td>
+                        <td>{{ course.activity.active }}</td>
+                        <td>{{ course.activity.finished }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">« En cours » : personnes ayant fait quelque chose dans le cours. « Terminé » : personnes ayant terminé toutes ses leçons actuelles.</p>
+
+        <details class="package__update">
+            <summary>Mettre à jour ou retirer ce paquet</summary>
+            <p>Ces opérations sont faites par la personne qui exploite la plateforme. La première commande dit ce qui changerait pour les apprenant·e·s, sans rien modifier ; sans <code>--dry-run</code>, elle installe.</p>
+            <pre class="code"><code>{{ package.update_command }}
+mentor package-rollback {{ package.details.name }} --tenant &lt;organisation&gt;
+mentor package-remove {{ package.details.name }} --tenant &lt;organisation&gt;</code></pre>
+            <p>Une mise à jour qui retire un cours ou une leçon demande une confirmation, et rien de ce qu'une personne a fait n'est supprimé.</p>
+        </details>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

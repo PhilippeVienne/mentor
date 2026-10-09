@@ -14,6 +14,7 @@ mod assets;
 pub mod brand;
 mod dev;
 mod learning;
+mod manage;
 mod pages;
 mod path_map;
 mod paths;
@@ -78,6 +79,7 @@ pub fn router(state: AppState, static_dir: &Path) -> Router {
         .route("/paths/{path}/", get(paths::path))
         .route("/dashboard/", get(pages::dashboard))
         .route("/badges/", get(pages::badges))
+        .route("/manage/packages/", get(manage::packages))
         .route("/healthz", get(pages::health))
         .route("/courses/{course}/exam/", get(pages::exam))
         .route("/api/progress", post(api::progress))

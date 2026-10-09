@@ -1,0 +1,22 @@
+/* Management pages. */
+.manage { padding-bottom: 56px; display: grid; gap: 28px; }
+.package { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: clamp(18px, 3vw, 28px); box-shadow: var(--shadow); min-width: 0; }
+.package__head { display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; align-items: flex-start; }
+.package__head h2 { margin: 0 0 .2em; }
+.package__id { margin: 0; color: var(--muted); }
+.package__figures { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.package__figures li { padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); font-size: .9rem; white-space: nowrap; }
+.package__source { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 20px 0; }
+.package__source dt { color: var(--muted); }
+.package__source dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .package__source { grid-template-columns: 1fr; gap: 2px; } .package__source dd { margin-bottom: 8px; } }
+.table-scroll { overflow-x: auto; }
+.package__courses { width: 100%; border-collapse: collapse; font-size: .94rem; }
+.package__courses th, .package__courses td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.package__courses thead th { color: var(--muted); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; }
+.package__courses tbody th { font-weight: 600; white-space: normal; min-width: 12rem; }
+.package__courses td { font-variant-numeric: tabular-nums; }
+.package__courses tbody tr:last-child th, .package__courses tbody tr:last-child td { border-bottom: 0; }
+.package__update { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.package__update summary { cursor: pointer; font-weight: 600; }
+.package__update pre { overflow-x: auto; }

@@ -358,7 +358,8 @@ What phase C added (9 October 2026), and how it differs from §5:
   closed). `mentor package-rollback` swaps the installed version with the previous one.
 - **Pictures are stored in the database**, not in object storage: 53 pictures for the built-in courses.
 - **The application role only reads** these tables; installing is done by the owning role, through the
-  `mentor` command. There is no page to manage packages.
+  `mentor` command. Administrators of a tenant have a page that shows its packages (`/manage/packages/`)
+  and gives the commands; it changes nothing.
 - **`mentor-web` no longer has a catalogue of its own.** It reads each tenant's catalogue from the database
   and keeps it in memory; a stamp compared at each request tells when the packages changed, so an
   installation is seen without restarting the server. A tenant without a package has an empty catalogue.

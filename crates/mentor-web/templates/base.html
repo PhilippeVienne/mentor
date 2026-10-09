@@ -45,6 +45,9 @@
                 <li><a href="/dashboard/"{% if section == "dashboard" %} aria-current="page"{% endif %}>Mes cours</a></li>
                 <li><a href="/badges/"{% if section == "badges" %} aria-current="page"{% endif %}>Badges</a></li>
                 {% endif %}
+                {% if let Some(viewer) = viewer %}{% if viewer.learner.is_admin %}
+                <li><a href="/manage/packages/"{% if section == "manage" %} aria-current="page"{% endif %}>Gestion</a></li>
+                {% endif %}{% endif %}
             </ul>
             <div class="navbar__end">
                 {% if let Some(viewer) = viewer %}

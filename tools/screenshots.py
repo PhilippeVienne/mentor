@@ -28,7 +28,7 @@ import websockets
 DESKTOP = (1280, 800)
 PHONE = (400, 820)
 
-# (file name, path, size, dark theme, signed in, full page)
+# (file name, path, size, dark theme, signed in: False, True for the learner or "admin", full page)
 SHOTS = [
     ("home", "/", DESKTOP, False, False, False),
     ("catalogue", "/catalogue/", DESKTOP, False, True, False),
@@ -42,6 +42,8 @@ SHOTS = [
     ("path-map", "/paths/devops-infrastructure/#map-title", DESKTOP, False, True, False),
     ("path-map-phone", "/paths/devops-infrastructure/", PHONE, True, True, True),
     ("lesson-phone", "/courses/git-basics/premier-commit/", PHONE, True, True, False),
+    # Taken last: it signs in again, as an administrator of the tenant.
+    ("packages", "/manage/packages/", DESKTOP, False, "admin", True),
 ]
 
 # What the demonstration learner has done: every lesson of the first course, and part of the second.
@@ -148,7 +150,12 @@ async def main():
 
             signed_in = False
             for name, path, (width, height), dark, needs_learner, full_page in SHOTS:
-                if needs_learner and not signed_in:
+                if needs_learner == "admin":
+                    await page.open(base + "/dev/login")
+                    await page.evaluate(
+                        "fetch('/dev/login', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'username=admin&admin=1'}).then(r => r.status)"
+                    )
+                elif needs_learner and not signed_in:
                     await page.open(base + "/dev/login")
                     await page.evaluate(
                         f"fetch('/dev/login', {{method: 'POST', headers: {{'Content-Type': 'application/x-www-form-urlencoded'}}, body: 'username={options.learner}'}}).then(r => r.status)"

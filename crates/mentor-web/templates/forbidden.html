@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Accès réservé{% endblock %}
+
+{% block content %}
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Gestion</p>
+        <h1>Accès réservé</h1>
+        <p class="lead">Cette page est réservée aux administrateur·rice·s de {{ brand.name }}.</p>
+        <p><a class="btn btn--primary" href="/dashboard/">Retour à mes cours</a></p>
+    </div>
+</section>
+{% endblock %}

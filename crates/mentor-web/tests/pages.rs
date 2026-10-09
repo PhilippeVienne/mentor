@@ -825,3 +825,83 @@ async fn post_json_on(app: &Router, host: &str, cookie: Option<&str>, path: &str
     let answer = call(app, Call { host, path, cookie, body: Some(("application/json", json)), origin: None }).await;
     (answer.status, serde_json::from_str(&answer.body).unwrap_or(serde_json::Value::Null))
 }
+
+async fn sign_in_as_admin(app: &Router, host: &str, username: &str) -> String {
+    let form = format!("username={username}&admin=1");
+    let answer =
+        call(app, Call { host, path: "/dev/login", cookie: None, body: Some(("application/x-www-form-urlencoded", &form)), origin: None })
+            .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    answer.session.expect("signing in sets the session cookie")
+}
+
+#[tokio::test]
+async fn the_packages_page_is_for_administrators_and_shows_their_tenant_only() {
+    let Some(server) = server(true, true).await else { return };
+    let app = &server.app;
+    let visit = |host: &'static str, cookie: Option<String>| async move {
+        call(app, Call { host, path: "/manage/packages/", cookie: cookie.as_deref(), body: None, origin: None }).await
+    };
+
+    // A visitor is sent to sign in; a learner is told the page is not for them, and sees no link to it.
+    assert_eq!(visit("acme.test", None).await.status, StatusCode::SEE_OTHER);
+    let learner = sign_in(app, "acme.test", "alice").await;
+    let refused = visit("acme.test", Some(learner.clone())).await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN);
+    assert!(
+        refused.body.contains("Accès réservé") && !refused.body.contains("mentor-courses") && !refused.body.contains("/manage/packages/")
+    );
+
+    assert_eq!(progress(app, "acme.test", Some(&learner), QUIZ).await.0, StatusCode::OK);
+
+    let admin = sign_in_as_admin(app, "acme.test", "root").await;
+    let page = visit("acme.test", Some(admin.clone())).await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(page.body.contains("<code>mentor-courses</code>") && page.body.contains(r#"href="/manage/packages/" aria-current="page""#));
+    assert!(page.body.contains("Aucune : ce paquet n'a pas été mis à jour"));
+    // Alice did one lesson of git-basics: one learner in the course, nobody has finished it.
+    let row = page.body.split("<tr>").find(|row| row.contains(r#"href="/courses/git-basics/""#)).expect("a row for git-basics");
+    let cells: Vec<&str> = row.split("<td>").skip(1).map(|cell| cell.split("</td>").next().unwrap()).collect();
+    assert_eq!(cells, ["7", "7", "oui", "1", "0"]);
+    // The directory it was installed from is the operator's business, not shown.
+    assert!(!page.body.contains("/catalogue</"));
+
+    // An administrator of another tenant sees that tenant's packages and learners, not these.
+    let other = sign_in_as_admin(app, "plain.test", "root").await;
+    let elsewhere = visit("plain.test", Some(other)).await;
+    let row = elsewhere.body.split("<tr>").find(|row| row.contains(r#"href="/courses/git-basics/""#)).unwrap();
+    assert!(row.contains("<td>0</td>\n                        <td>0</td>") || row.matches("<td>0</td>").count() == 2, "{row}");
+    assert_eq!(visit("plain.test", Some(admin.clone())).await.status, StatusCode::SEE_OTHER, "a session of acme is nobody on plain");
+
+    // No package: the page says so, and how one gets installed.
+    let nobody = sign_in_as_admin(app, "empty.test", "root").await;
+    let empty = visit("empty.test", Some(nobody)).await;
+    assert!(empty.body.contains("Aucun paquet installé") && empty.body.contains("mentor package-install"));
+
+    // After an update, the page says that the previous version is kept.
+    let (mut package, images) = built_in(true);
+    package.manifest.version = "2.0.0".into();
+    let acme: Uuid = sqlx::query_scalar("SELECT id FROM tenant WHERE slug = 'acme'").fetch_one(&server.owner).await.unwrap();
+    mentor_db::packages::install(
+        &server.owner,
+        acme,
+        &package,
+        &images,
+        "https://git.example.org/acme/courses@3e841648344b678c3bc291ffa0812886915cf9ee#cours",
+        mentor_db::packages::Removals::Refuse,
+    )
+    .await
+    .unwrap();
+    let page = visit("acme.test", Some(admin)).await.body;
+    assert!(page.contains("version <strong>2.0.0</strong>") && page.contains("<strong>1.0.0</strong> est conservée"));
+    assert!(
+        page.contains(r#"href="https://git.example.org/acme/courses""#)
+            && page.contains("3e841648344b678c3bc291ffa0812886915cf9ee")
+            && page.contains("dossier <code>cours</code>")
+    );
+    assert!(
+        page.contains("mentor package-install https://git.example.org/acme/courses --ref ") && page.contains(" --path cours --tenant ")
+    );
+    // The placeholders of the command are text, not markup.
+    assert!(!page.contains("<version>") && !page.contains("<organisation>"));
+}

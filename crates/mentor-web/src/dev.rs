@@ -55,6 +55,8 @@ pub async fn form(site: Site) -> Response {
 #[derive(Deserialize)]
 pub struct Credentials {
     username: String,
+    /// Ticked to sign in as an administrator of the tenant. Like the rest of this page: development only.
+    admin: Option<String>,
 }
 
 /// A user name that is safe to show and to store: short, and made of letters, digits, dots, dashes, underscores.
@@ -72,7 +74,7 @@ pub async fn sign_in(site: Site, State(state): State<AppState>, parts: Parts, Fo
     }
     let learner = async {
         let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
-        let learner = tx.upsert_learner(&format!("dev:{username}"), username, false).await?;
+        let learner = tx.upsert_learner(&format!("dev:{username}"), username, credentials.admin.is_some()).await?;
         tx.commit().await?;
         Ok::<_, mentor_db::Error>(learner)
     }

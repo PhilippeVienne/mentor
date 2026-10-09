@@ -65,6 +65,15 @@ course.
 
 ![Badges and levels](screenshots/badges.png)
 
+## Managing course packages
+
+An administrator of the organisation sees which course packages make its catalogue: version, repository and
+commit, whether the previous version is kept, and for each course how many learners are in it and how many
+finished it. The page only shows; installing and updating is done by the platform's operator, and the page
+gives the commands.
+
+![Course packages of an organisation](screenshots/packages.png)
+
 ## Training paths
 
 A training path (« parcours de formation » in the interface, where a course is a « cours ») chains courses

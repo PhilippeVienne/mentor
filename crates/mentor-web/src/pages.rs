@@ -351,7 +351,7 @@ const MONTHS: [&str; 12] =
     ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 /// « 5 octobre 2026 »: the day of an instant, in the tenant's time zone.
-fn french_date(epoch: i64, utc_offset_minutes: i32) -> String {
+pub(crate) fn french_date(epoch: i64, utc_offset_minutes: i32) -> String {
     // Civil date from a day count (Howard Hinnant's algorithm), proleptic Gregorian calendar.
     let days = (epoch + i64::from(utc_offset_minutes) * 60).div_euclid(86_400) + 719_468;
     let era = days.div_euclid(146_097);
@@ -390,7 +390,7 @@ fn badge_items(content: &Content, progress: &Progress) -> Vec<BadgeItem> {
 }
 
 /// Where a visitor is sent when a page needs a learner.
-fn sign_in_first(site: &Site) -> Response {
+pub(crate) fn sign_in_first(site: &Site) -> Response {
     let to = if site.dev_login { "/dev/login" } else { "/" };
     (StatusCode::SEE_OTHER, [(LOCATION, to)]).into_response()
 }

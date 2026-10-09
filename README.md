@@ -42,8 +42,8 @@ the course format are in English.
   lesson is its text and its quiz. See [doc/atelier-lab-validation.md](doc/atelier-lab-validation.md).
 - **Real sign-in.** There is no OIDC yet, only a password-less development sign-in (`--dev-login`) that must
   never be enabled on a reachable deployment.
-- Private package repositories, a page to manage packages, the management area for tutors, the help pages,
-  and the catalogue linter of v1.
+- Private package repositories, the management area for tutors (only the page of course packages exists),
+  the help pages, and the catalogue linter of v1.
 
 ## Quick start
 

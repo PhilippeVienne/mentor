@@ -348,7 +348,86 @@ pub async fn list(owner: &PgPool, tenant: Uuid) -> Result<Vec<Installed>> {
         .collect())
 }
 
+/// A package of the tenant, as its management page shows it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Details {
+    pub name: String,
+    pub version: String,
+    pub title: String,
+    /// Where it was installed from: a directory, or `url@commit#path`.
+    pub source: String,
+    /// Seconds since the Unix epoch.
+    pub installed_at: i64,
+    pub courses: Vec<Course>,
+    pub paths: usize,
+    pub pictures: i64,
+    /// Version kept from before the last update, if any.
+    pub previous_version: Option<String>,
+}
+
+/// How many learners of the tenant are in a course.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Activity {
+    /// Learners who did something in it.
+    pub active: i64,
+    /// Learners who completed every lesson it has today.
+    pub finished: i64,
+}
+
 impl TenantTx {
+    /// The packages of the tenant with what they hold, in the order of its catalogue.
+    pub async fn packages(&mut self) -> Result<Vec<Details>> {
+        let rows = sqlx::query(
+            "SELECT p.name, p.version, p.title, p.source, extract(epoch FROM p.installed_at)::bigint AS installed_at, p.courses, \
+                    jsonb_array_length(p.paths) AS paths, \
+                    (SELECT count(*) FROM package_image i WHERE i.package = p.name) AS pictures, \
+                    (SELECT version FROM package_previous v WHERE v.name = p.name) AS previous_version \
+             FROM package p ORDER BY p.position, p.name",
+        )
+        .fetch_all(&mut *self.tx)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|row| Details {
+                name: row.get("name"),
+                version: row.get("version"),
+                title: row.get("title"),
+                source: row.get("source"),
+                installed_at: row.get("installed_at"),
+                courses: row.get::<Json<Vec<Course>>, _>("courses").0,
+                paths: row.get::<i32, _>("paths") as usize,
+                pictures: row.get("pictures"),
+                previous_version: row.get("previous_version"),
+            })
+            .collect())
+    }
+
+    /// Learners in a course, given the lessons it has today.
+    pub async fn course_activity(&mut self, course: &str, lessons: &[String]) -> Result<Activity> {
+        let active = sqlx::query_scalar(
+            "SELECT count(DISTINCT learner_id) FROM lesson_progress \
+             WHERE course = $1 AND (cardinality(tasks_done) > 0 OR quiz_best > 0 OR completed_at IS NOT NULL)",
+        )
+        .bind(course)
+        .fetch_one(&mut *self.tx)
+        .await?;
+        let finished = if lessons.is_empty() {
+            0
+        } else {
+            sqlx::query_scalar(
+                "SELECT count(*) FROM (SELECT learner_id FROM lesson_progress \
+                 WHERE course = $1 AND lesson = ANY($2) AND completed_at IS NOT NULL \
+                 GROUP BY learner_id HAVING count(*) = $3) AS finished",
+            )
+            .bind(course)
+            .bind(lessons)
+            .bind(lessons.len() as i64)
+            .fetch_one(&mut *self.tx)
+            .await?
+        };
+        Ok(Activity { active, finished })
+    }
+
     /// A value that changes whenever the tenant's packages do: cheap to read at each request, to know
     /// whether a catalogue kept in memory is still the tenant's.
     pub async fn catalogue_stamp(&mut self) -> Result<String> {

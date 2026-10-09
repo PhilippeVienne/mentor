@@ -55,7 +55,8 @@ MENTOR_APP_DATABASE_URL=postgres://mentor_web:mentor@127.0.0.1:5432/postgres \
     cargo run -p mentor-web -- --dev-login
 ```
 
-Open <http://localhost:8300>, choose « Connexion » and type any user name.
+Open <http://localhost:8300>, choose « Connexion » and type any user name. Tick « Administrateur·rice » to
+also get the management page of the organisation (`/manage/packages/`).
 
 | Option | Environment variable | Default | Meaning |
 | --- | --- | --- | --- |
