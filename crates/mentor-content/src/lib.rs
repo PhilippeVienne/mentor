@@ -13,6 +13,7 @@
 //! rendered from it is filtered (see `markdown`).
 
 mod catalogue;
+mod diff;
 mod document;
 mod environment;
 mod error;
@@ -25,6 +26,7 @@ mod tree;
 mod yaml;
 
 pub use catalogue::{load_catalogue, Catalogue, Course, Exam, ExamQuestion, Lesson};
+pub use diff::{package_diff, CourseDiff, LessonDiff, PackageDiff};
 pub use document::{Quiz, QuizOption};
 pub use error::ContentError;
 pub use lab::{Check, Lab, Step};

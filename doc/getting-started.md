@@ -100,9 +100,18 @@ docker exec mentor-pg psql -U postgres -c \
 ```shell
 mentor package-check ./my-courses                    # validate and compile, without a database
 mentor package-install ./my-courses --tenant acme    # install, or replace the installed package of that name
+mentor package-install ./my-courses --tenant acme --dry-run     # only say what it would change for learners
+mentor package-rollback my-courses --tenant acme     # bring back the version it had before the last update
 mentor package-list --tenant acme
 mentor package-remove my-courses --tenant acme       # learners' progress on its courses is kept
 ```
+
+Replacing an installed package is an update that learners live through. The command first says what changes
+for them: courses and lessons added or removed, lab steps and quizzes that changed, how many learners did
+something in what is removed, how many had completed a course that gains lessons. An update that **takes away
+a course or a lesson is refused** unless you pass `--confirm-removals`; nothing a learner did is ever deleted,
+and it shows again if the lesson comes back. The replaced version is kept, one version back, for
+`package-rollback`.
 
 A package is a directory holding a `mentor.yml` manifest, one folder per course and, optionally, a
 `paths.yml` of training paths: see [course-packages.md](course-packages.md) and the

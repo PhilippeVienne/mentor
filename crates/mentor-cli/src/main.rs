@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use mentor_db::import_v1::{import, Dump, Names};
-use mentor_db::packages::{self, Outcome};
+use mentor_db::packages::{self, Impact, Outcome, Removals};
 use mentor_db::platform;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
@@ -58,6 +58,20 @@ enum Command {
         /// Directory of the package (the one holding `mentor.yml`).
         directory: PathBuf,
         /// Slug of the tenant that gets the package.
+        #[arg(long)]
+        tenant: String,
+        /// Only say what the installation would change for learners; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+        /// Accept that the new version takes away courses or lessons of the installed one. Learners' progress
+        /// on them is kept, and shows again if they come back.
+        #[arg(long)]
+        confirm_removals: bool,
+    },
+    /// Brings back the version a package had before it was last replaced. Running it again undoes that.
+    PackageRollback {
+        /// Name of the package (the `name` of its manifest).
+        name: String,
         #[arg(long)]
         tenant: String,
     },
@@ -129,6 +143,67 @@ fn question_ids(v1_catalogue: &Path, catalogue: &Path) -> Result<BTreeMap<String
 
 fn plural(count: usize, noun: &str) -> String {
     format!("{count} {noun}{}", if count == 1 { "" } else { "s" })
+}
+
+/// Prints what replacing a package changes for learners, most serious first.
+fn print_impact(impact: &Impact) {
+    let diff = &impact.diff;
+    if diff.is_empty() {
+        println!("  nothing changes for learners: no course, lesson, lab step, quiz or exam question is added or removed");
+        return;
+    }
+    let list = |names: &[String]| names.join(", ");
+    if !diff.courses_removed.is_empty() {
+        println!("  REMOVED {}: {}", plural(diff.courses_removed.len(), "course"), list(&diff.courses_removed));
+    }
+    for course in diff.courses_changed.iter().filter(|course| !course.lessons_removed.is_empty()) {
+        println!("  REMOVED from {}: {} ({})", course.slug, plural(course.lessons_removed.len(), "lesson"), list(&course.lessons_removed));
+    }
+    if diff.removes_progress() {
+        println!(
+            "    {} did something there; their progress is kept but no longer shown",
+            plural(impact.learners_on_removed as usize, "learner")
+        );
+    }
+    if !diff.courses_added.is_empty() {
+        println!("  added {}: {}", plural(diff.courses_added.len(), "course"), list(&diff.courses_added));
+    }
+    for course in &diff.courses_changed {
+        if !course.lessons_added.is_empty() {
+            println!("  added to {}: {} ({})", course.slug, plural(course.lessons_added.len(), "lesson"), list(&course.lessons_added));
+        }
+        for lesson in &course.lessons_changed {
+            let mut changes = Vec::new();
+            if lesson.steps_added > 0 || lesson.steps_removed > 0 {
+                changes.push(format!("lab steps +{} -{}", lesson.steps_added, lesson.steps_removed));
+            }
+            if lesson.questions_before != lesson.questions_after {
+                changes.push(format!("quiz {} -> {} questions", lesson.questions_before, lesson.questions_after));
+            }
+            println!("  changed {}/{}: {}", course.slug, lesson.slug, changes.join(", "));
+        }
+        if course.exam_changed() {
+            println!("  exam of {}: +{} -{} questions", course.slug, course.exam_questions_added, course.exam_questions_removed);
+        }
+        if course.published_before != course.published_after {
+            println!("  {} is {}", course.slug, if course.published_after { "now published" } else { "no longer published" });
+        }
+    }
+    if impact.completions_lost > 0 {
+        println!(
+            "    {} had completed a course that gains lessons: it will count as unfinished",
+            plural(impact.completions_lost as usize, "learner")
+        );
+    }
+    if impact.open_attempts > 0 {
+        println!(
+            "    {} in progress on a changed exam: questions that left the pool will be ignored",
+            plural(impact.open_attempts as usize, "attempt")
+        );
+    }
+    if !diff.paths_added.is_empty() || !diff.paths_removed.is_empty() {
+        println!("  training paths: added [{}], removed [{}]", list(&diff.paths_added), list(&diff.paths_removed));
+    }
 }
 
 /// Compiles a package and prints what it holds; the first error stops it and names the file.
@@ -207,25 +282,51 @@ async fn run(cli: Cli) -> Result<(), Failure> {
                 eprintln!("warning: {warning}");
             }
         }
-        Command::PackageInstall { directory, tenant } => {
+        Command::PackageInstall { directory, tenant, dry_run, confirm_removals } => {
             let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
             // Validated and compiled before anything is written: a package that does not compile changes nothing.
             let package = mentor_content::load_package(&directory)?;
             let images = mentor_content::package_images(&directory, &package)?;
+            let (name, version) = (&package.manifest.name, &package.manifest.version);
+            let impact = packages::preview(&owner, id, &package).await?;
+            match &impact {
+                Some(impact) => {
+                    println!("package {name}: {} is installed for {tenant}, {version} would replace it", impact.installed_version);
+                    print_impact(impact);
+                }
+                None => println!("package {name} {version} is not installed for {tenant} yet"),
+            }
+            if dry_run {
+                println!("dry run: nothing was written");
+                return Ok(());
+            }
+            let removals = if confirm_removals { Removals::Confirmed } else { Removals::Refuse };
             let source = directory.canonicalize().unwrap_or(directory).display().to_string();
-            let outcome = packages::install(&owner, id, &package, &images, &source).await?;
+            let outcome = match packages::install(&owner, id, &package, &images, &source, removals).await {
+                Err(mentor_db::Error::RemovalsNotConfirmed(_)) => {
+                    return Err("this version removes courses or lessons (see above): nothing was written. \
+                                Run again with --confirm-removals to install it; learners keep their progress on what is removed"
+                        .into());
+                }
+                other => other?,
+            };
             println!(
-                "package {} {} {} for {tenant}: {}, {}, {}",
-                package.manifest.name,
-                package.manifest.version,
+                "package {name} {version} {} for {tenant}: {}, {}, {}",
                 match outcome {
                     Outcome::Installed => "installed",
-                    Outcome::Replaced => "replaced",
+                    Outcome::Replaced => "replaced the installed version (undo with package-rollback)",
                 },
                 plural(package.catalogue.courses.len(), "course"),
                 plural(package.paths.len(), "training path"),
                 plural(images.len(), "picture")
             );
+        }
+        Command::PackageRollback { name, tenant } => {
+            let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
+            match packages::rollback(&owner, id, &name).await? {
+                Some(version) => println!("package {name}: version {version} is back for {tenant} (run again to undo)"),
+                None => return Err(format!("no previous version of {name} is kept for {tenant}").into()),
+            }
         }
         Command::PackageList { tenant } => {
             let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;

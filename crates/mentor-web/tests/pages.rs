@@ -88,7 +88,7 @@ async fn server(dev_login: bool, with_paths: bool) -> Option<Server> {
     let empty = platform::create_tenant(&owner, "empty", "Empty", &["empty.test"]).await.unwrap();
     let (package, images) = built_in(with_paths);
     for tenant in [acme, plain, hostile] {
-        mentor_db::packages::install(&owner, tenant, &package, &images, "catalogue").await.unwrap();
+        mentor_db::packages::install(&owner, tenant, &package, &images, "catalogue", mentor_db::packages::Removals::Refuse).await.unwrap();
     }
 
     let db = PgPoolOptions::new().max_connections(4).connect_with(connect("mentor_test_app")).await.unwrap();
@@ -799,7 +799,9 @@ async fn a_tenant_without_a_package_has_an_empty_catalogue_until_one_is_installe
 
     // Installed while the server runs, as the `mentor` command does: the next request sees it.
     let (package, images) = built_in(true);
-    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue").await.unwrap();
+    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue", mentor_db::packages::Removals::Refuse)
+        .await
+        .unwrap();
     assert!(get(app, "empty.test", "/catalogue/").await.1.contains(r#"data-course="git-basics""#));
     assert_eq!(get(app, "empty.test", "/courses/git-basics/introduction/").await.0, StatusCode::OK);
     assert_eq!(get(app, "empty.test", "/static/catalogue/git-basics/images/banniere.svg").await.0, StatusCode::OK);
@@ -811,7 +813,9 @@ async fn a_tenant_without_a_package_has_an_empty_catalogue_until_one_is_installe
     assert_eq!(get(app, "empty.test", "/courses/git-basics/").await.0, StatusCode::NOT_FOUND);
     let dashboard = call(app, Call { host: "empty.test", path: "/dashboard/", cookie: Some(&learner), body: None, origin: None }).await;
     assert!(dashboard.body.contains("74 XP"), "the XP earned stays");
-    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue").await.unwrap();
+    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue", mentor_db::packages::Removals::Refuse)
+        .await
+        .unwrap();
     let course =
         call(app, Call { host: "empty.test", path: "/courses/git-basics/", cookie: Some(&learner), body: None, origin: None }).await;
     assert!(course.body.contains("timeline__item--done"), "and so does the completed lesson");

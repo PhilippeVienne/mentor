@@ -332,10 +332,15 @@ without any network code, and an operator can already serve a tenant's package b
 
 What phase C added (9 October 2026), and how it differs from §5:
 
-- **One table per package, no revisions.** `package` holds the compiled courses and paths of the installed
-  version; `package_item` makes course and path names unique per tenant; `package_image` holds the pictures.
-  There is no `package_revision`: installing again **replaces** the package, without a diff report, without
-  the rules of §4 on removed lessons, and without rollback other than installing the previous directory again.
+- **One table per package, one version back.** `package` holds the compiled courses and paths of the
+  installed version; `package_item` makes course and path names unique per tenant; `package_image` holds the
+  pictures; `package_previous` keeps the version that was last replaced. There is no `package_revision`
+  history and no state machine.
+- **An update reports before it writes** (`mentor_content::package_diff`, `packages::preview`): what is
+  added and removed, how many learners did something in what is removed, how many lose a completed course,
+  how many exam attempts are open on a changed pool. Taking away a course or a lesson is refused without
+  `--confirm-removals`, as §4 asks; the other rules of §4 are reported, not enforced (open attempts are not
+  closed). `mentor package-rollback` swaps the installed version with the previous one.
 - **Pictures are stored in the database**, not in object storage: 53 pictures for the built-in courses.
 - **The application role only reads** these tables; installing is done by the owning role, through the
   `mentor` command. There is no page to manage packages.

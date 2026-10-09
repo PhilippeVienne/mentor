@@ -35,6 +35,10 @@ pub enum Error {
     /// The package cannot be installed next to the tenant's other packages; nothing was written.
     #[error("package refused: {0}")]
     PackageConflict(String),
+    /// The new version of a package takes away courses or lessons, and that was not confirmed; nothing was
+    /// written.
+    #[error("the new version removes courses or lessons that learners may have progress on")]
+    RemovalsNotConfirmed(mentor_content::PackageDiff),
     /// The event was refused by the progress rules; nothing was written.
     #[error("event refused: {0:?}")]
     Refused(mentor_core::progress::RecordError),
