@@ -24,8 +24,19 @@ cargo run -p mentor-cli -- migrate
 cargo run -p mentor-cli -- tenant-create demo "Mentor" --host localhost --host 127.0.0.1
 ```
 
-A tenant is an organisation: its learners, their progress, its brand. It is served on the host names given
-with `--host`; a request for a host name that belongs to no tenant gets a bare 404.
+A tenant is an organisation: its learners, their progress, its brand, its courses. It is served on the host
+names given with `--host`; a request for a host name that belongs to no tenant gets a bare 404.
+
+A new tenant has **no course**: nothing is offered by default. Install a course package for it, here the
+courses of this repository:
+
+```shell
+cargo run -p mentor-cli -- package-install catalogue --tenant demo
+```
+
+The package is validated and compiled first, then stored for the tenant; a running server shows it at the next
+request. Installing again replaces it (a new version, an edited lesson). See [Course packages](#course-packages)
+below.
 
 ## 3. A role for the web server
 
@@ -50,7 +61,6 @@ Open <http://localhost:8300>, choose « Connexion » and type any user name.
 | --- | --- | --- | --- |
 | `--database-url` | `MENTOR_APP_DATABASE_URL` | none, required | Connection of the application role |
 | `--listen` | `MENTOR_LISTEN` | `127.0.0.1:8300` | Address the server listens on |
-| `--catalogue` | `MENTOR_CATALOGUE` | `catalogue` | Directory of the courses, compiled at start-up |
 | `--static-dir` | `MENTOR_STATIC` | `static` | Style sheets, scripts and default brand images |
 | `--session-secret` | `MENTOR_SESSION_SECRET` | random | Key that signs session cookies, 32 characters at least |
 | `--dev-login` | | off | Mounts `/dev/login`: a user name, no password |
@@ -67,9 +77,10 @@ Requests that change something are accepted only from the site's own origin.
 
 ```shell
 cargo run -p mentor-cli -- tenant-create acme "Acme Academy" --host acme.localhost
+cargo run -p mentor-cli -- package-install catalogue --tenant acme
 ```
 
-<http://acme.localhost:8300> now shows the same catalogue under another name, with its own learners. Colours
+<http://acme.localhost:8300> now shows these courses under another name, with its own learners. Colours
 and texts are a JSON object in the `branding` column of the `tenant` table; the keys are read in
 [`crates/mentor-web/src/brand.rs`](../crates/mentor-web/src/brand.rs). There is no command to edit it yet:
 
@@ -82,7 +93,22 @@ docker exec mentor-pg psql -U postgres -c \
 
 - **Labs.** Lessons show their lab as "to come": environments run as microVMs on a separate execution plane
   that the web server is not connected to yet. See [atelier-lab-validation.md](atelier-lab-validation.md).
-- **One catalogue per tenant.** Every tenant sees the courses of `catalogue/`.
+- **Installing from a Git URL.** A package is installed from a directory: clone the repository yourself.
+
+## Course packages
+
+```shell
+mentor package-check ./my-courses                    # validate and compile, without a database
+mentor package-install ./my-courses --tenant acme    # install, or replace the installed package of that name
+mentor package-list --tenant acme
+mentor package-remove my-courses --tenant acme       # learners' progress on its courses is kept
+```
+
+A package is a directory holding a `mentor.yml` manifest, one folder per course and, optionally, a
+`paths.yml` of training paths: see [course-packages.md](course-packages.md) and the
+[authoring guide](../catalogue/README.md). Two packages of a tenant cannot bring a course or a training path
+of the same name. Only the compiled courses and the pictures of their `images/` folders are stored: lesson
+sources, lab solutions and exam answers are never served.
 
 ## Bringing the data of a v1 portal
 

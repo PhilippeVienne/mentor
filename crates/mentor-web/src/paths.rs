@@ -13,7 +13,7 @@ use crate::brand::Brand;
 use crate::pages::{lessons_label, load_progress, minutes, missing, render, unavailable, CourseProgress, Progress};
 use crate::path_map::{layout, Layout, Slot};
 use crate::site::{Site, Viewer};
-use crate::AppState;
+use crate::{AppState, Content};
 
 /// Where a learner stands with one course of a path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,12 +95,12 @@ struct Entry<'a> {
 
 /// The courses of a path, in order. A course the catalogue does not hold is left out: the compiler refuses
 /// such a path, so this only happens when paths and catalogue were loaded apart.
-fn entries<'a>(state: &'a AppState, path: &'a LearningPath, progress: Option<&Progress>) -> Vec<Entry<'a>> {
+fn entries<'a>(content: &'a Content, path: &'a LearningPath, progress: Option<&Progress>) -> Vec<Entry<'a>> {
     let mut entries = Vec::new();
     for (stage, group) in path.stages.iter().enumerate() {
         for listed in &group.courses {
-            let Some(course) = state.catalogue.courses.iter().find(|course| course.slug == listed.course) else { continue };
-            let advancement = progress.map(|progress| CourseProgress::new(state, course, progress));
+            let Some(course) = content.catalogue.courses.iter().find(|course| course.slug == listed.course) else { continue };
+            let advancement = progress.map(|progress| CourseProgress::new(content, course, progress));
             let standing = progress.zip(advancement.as_ref()).map(|(progress, advancement)| Standing {
                 published: course.published,
                 unlocked: advancement.unlocked,
@@ -164,8 +164,8 @@ pub(crate) struct PathCard<'a> {
 }
 
 impl<'a> PathCard<'a> {
-    fn new(state: &'a AppState, path: &'a LearningPath, progress: Option<&Progress>) -> Self {
-        let entries = entries(state, path, progress);
+    fn new(content: &'a Content, path: &'a LearningPath, progress: Option<&Progress>) -> Self {
+        let entries = entries(content, path, progress);
         let mut strip: Vec<Vec<Dot>> = path.stages.iter().map(|_| Vec::new()).collect();
         for entry in &entries {
             strip[entry.stage].push(Dot { icon: &entry.course.icon, state: state_class(entry) });
@@ -185,13 +185,13 @@ impl<'a> PathCard<'a> {
 }
 
 /// Every path as a card, in catalogue order.
-pub(crate) fn path_cards<'a>(state: &'a AppState, progress: Option<&Progress>) -> Vec<PathCard<'a>> {
-    state.paths.iter().map(|path| PathCard::new(state, path, progress)).collect()
+pub(crate) fn path_cards<'a>(content: &'a Content, progress: Option<&Progress>) -> Vec<PathCard<'a>> {
+    content.paths.iter().map(|path| PathCard::new(content, path, progress)).collect()
 }
 
 /// The cards of the dashboard: paths the learner is in first, then those not started, then completed ones.
-pub(crate) fn dashboard_cards<'a>(state: &'a AppState, progress: &Progress) -> Vec<PathCard<'a>> {
-    let mut cards = path_cards(state, Some(progress));
+pub(crate) fn dashboard_cards<'a>(content: &'a Content, progress: &Progress) -> Vec<PathCard<'a>> {
+    let mut cards = path_cards(content, Some(progress));
     cards.sort_by_key(|card| match card.advancement {
         Some(Advancement { completed: true, .. }) => 2,
         Some(Advancement { started: true, .. }) => 0,
@@ -201,8 +201,8 @@ pub(crate) fn dashboard_cards<'a>(state: &'a AppState, progress: &Progress) -> V
 }
 
 /// The paths a course belongs to, in catalogue order.
-pub(crate) fn paths_of<'a>(state: &'a AppState, course: &str) -> Vec<&'a LearningPath> {
-    state.paths.iter().filter(|path| path.courses().any(|listed| listed.course == course)).collect()
+pub(crate) fn paths_of<'a>(content: &'a Content, course: &str) -> Vec<&'a LearningPath> {
+    content.paths.iter().filter(|path| path.courses().any(|listed| listed.course == course)).collect()
 }
 
 #[derive(Template)]
@@ -301,6 +301,7 @@ fn node<'a>(entry: &Entry<'a>, prerequisites: Vec<&'a str>, next: bool, slot: Sl
 }
 
 pub async fn index(site: Site, State(state): State<AppState>) -> Response {
+    let content = &*site.content;
     let progress = match load_progress(&state, &site).await {
         Ok(progress) => progress,
         Err(err) => return unavailable(err),
@@ -311,18 +312,19 @@ pub async fn index(site: Site, State(state): State<AppState>) -> Response {
         viewer: site.viewer.as_ref(),
         dev_login: site.dev_login,
         has_paths: site.has_paths,
-        cards: path_cards(&state, progress.as_ref()),
+        cards: path_cards(content, progress.as_ref()),
     };
     render(StatusCode::OK, page)
 }
 
 pub async fn path(site: Site, State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let Some(path) = state.paths.iter().find(|path| path.id == id) else { return missing(&site) };
+    let content = &*site.content;
+    let Some(path) = content.paths.iter().find(|path| path.id == id) else { return missing(&site) };
     let progress = match load_progress(&state, &site).await {
         Ok(progress) => progress,
         Err(err) => return unavailable(err),
     };
-    let entries = entries(&state, path, progress.as_ref());
+    let entries = entries(content, path, progress.as_ref());
     let advancement = advancement_of(&entries);
     let position = |slug: &str| entries.iter().position(|entry| entry.course.slug == slug);
 
@@ -380,7 +382,7 @@ pub async fn path(site: Site, State(state): State<AppState>, Path(id): Path<Stri
         dev_login: site.dev_login,
         has_paths: site.has_paths,
         path,
-        card: PathCard::new(&state, path, progress.as_ref()),
+        card: PathCard::new(content, path, progress.as_ref()),
         titled,
         stages,
         map: &map,

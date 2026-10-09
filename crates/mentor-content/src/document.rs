@@ -3,7 +3,7 @@
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
 use crate::lab::{parse_lab, Lab, LabContext};
@@ -31,7 +31,7 @@ pub enum Segment {
 }
 
 /// Single-choice question of a lesson quiz or an exam pool.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Quiz {
     /// The question and its answers as the author wrote them, in order: what identifies an exam question.
     /// Which answer is ticked is not part of it, so correcting the key does not make another question.
@@ -42,7 +42,7 @@ pub struct Quiz {
     pub explanation: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct QuizOption {
     pub html: String,
     pub correct: bool,

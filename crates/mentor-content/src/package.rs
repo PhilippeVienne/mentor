@@ -17,6 +17,7 @@ use serde_yaml::Value as Yaml;
 use crate::catalogue::{load_courses, Catalogue, COURSE_FILE};
 use crate::error::{ContentError, Result};
 use crate::lab::platform_checks;
+use crate::paths::{load_paths, LearningPath};
 use crate::tree::{verify_tree, Limits, TreeSummary};
 
 /// Name of the manifest, at the root of a package.
@@ -83,6 +84,8 @@ pub struct Package {
     pub manifest: Manifest,
     /// The courses of the manifest, compiled, in its order.
     pub catalogue: Catalogue,
+    /// The training paths of the package (`paths.yml`, optional), over its own courses.
+    pub paths: Vec<LearningPath>,
     /// What the directory holds, as counted before compiling.
     pub tree: TreeSummary,
 }
@@ -219,5 +222,64 @@ pub fn load_package_with(directory: &Path, limits: &Limits) -> Result<Package> {
             ));
         }
     }
-    Ok(Package { manifest, catalogue, tree })
+    let paths = load_paths(directory, &catalogue.courses)?;
+    Ok(Package { manifest, catalogue, paths, tree })
+}
+
+/// Folder of a course whose content is public: its pictures. Everything else in a package (lesson sources
+/// with lab solutions, exam pools with their answers, environments) is never given out.
+pub const IMAGES_FOLDER: &str = "images";
+
+/// The media type of a picture, by its extension; `None` for any other file.
+pub fn image_media_type(name: &str) -> Option<&'static str> {
+    let (_, extension) = name.rsplit_once('.')?;
+    Some(match extension.to_ascii_lowercase().as_str() {
+        "svg" => "image/svg+xml",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "avif" => "image/avif",
+        _ => return None,
+    })
+}
+
+/// A picture of a course, as it is stored and served.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Image {
+    pub course: String,
+    /// Path under the course's `images/` folder, with `/` separators.
+    pub path: String,
+    pub media_type: &'static str,
+    pub content: Vec<u8>,
+}
+
+/// Reads the pictures of every course of a package whose tree was verified (no link, bounded sizes): the
+/// files of its `images/` folders that have the extension of a picture.
+pub fn package_images(directory: &Path, package: &Package) -> Result<Vec<Image>> {
+    fn walk(course: &str, folder: &Path, prefix: &str, images: &mut Vec<Image>) -> Result<()> {
+        let unreadable = |err: std::io::Error| ContentError::new(folder, format!("cannot be read: {err}"));
+        let mut entries: Vec<_> = std::fs::read_dir(folder).map_err(unreadable)?.filter_map(|entry| entry.ok()).collect();
+        entries.sort_by_key(|entry| entry.file_name());
+        for entry in entries {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let path = entry.path();
+            let relative = if prefix.is_empty() { name.clone() } else { format!("{prefix}/{name}") };
+            if path.is_dir() {
+                walk(course, &path, &relative, images)?;
+            } else if let Some(media_type) = image_media_type(&name) {
+                let content = std::fs::read(&path).map_err(|err| ContentError::new(&path, format!("cannot be read: {err}")))?;
+                images.push(Image { course: course.to_string(), path: relative, media_type, content });
+            }
+        }
+        Ok(())
+    }
+    let mut images = Vec::new();
+    for course in &package.catalogue.courses {
+        let folder = directory.join(&course.slug).join(IMAGES_FOLDER);
+        if folder.is_dir() {
+            walk(&course.slug, &folder, "", &mut images)?;
+        }
+    }
+    Ok(images)
 }

@@ -72,7 +72,7 @@ pub struct LabContext<'a> {
     pub resolver: Option<Resolver<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Lab {
     /// Folder of the course holding the environment the lab runs in.
     pub environment: String,
@@ -84,7 +84,7 @@ pub struct Lab {
     pub steps: Vec<Step>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Step {
     /// What progress refers to: the `id` the author gave, or else a digest of the step's text. Reordering
     /// the steps of a lab keeps what learners validated; rewording a step without an `id` makes it a new one.
@@ -97,7 +97,7 @@ pub struct Step {
     pub solution: Vec<Json>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Check {
     pub name: String,
     pub args: Vec<Json>,

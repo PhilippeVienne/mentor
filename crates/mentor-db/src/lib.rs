@@ -4,6 +4,8 @@
 //! on a transaction setting, not by remembering to filter in each query: see the first migration for the model.
 //!
 //! - [`migrate`] and [`platform`] are for the owning role: schema changes and tenant administration.
+//! - [`packages`] installs course packages for a tenant (owning role) and lets the application read the
+//!   catalogue they make.
 //! - [`TenantTx`] is the only way the application reads or writes tenant data: it opens a transaction bound
 //!   to one tenant. It must be used with a connection whose role is a member of `mentor_app`; a superuser or
 //!   the owning role would bypass the policies.
@@ -12,6 +14,7 @@ pub mod badges;
 pub mod cohorts;
 pub mod exam;
 pub mod import_v1;
+pub mod packages;
 pub mod platform;
 pub mod progress;
 mod tenant;
@@ -29,6 +32,9 @@ pub enum Error {
     /// The v1 export could not be read.
     #[error("invalid v1 export: {0}")]
     InvalidExport(String),
+    /// The package cannot be installed next to the tenant's other packages; nothing was written.
+    #[error("package refused: {0}")]
+    PackageConflict(String),
     /// The event was refused by the progress rules; nothing was written.
     #[error("event refused: {0:?}")]
     Refused(mentor_core::progress::RecordError),

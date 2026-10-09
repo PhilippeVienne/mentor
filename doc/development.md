@@ -80,11 +80,14 @@ cargo run -p mentor-content --example export      # the compiled catalogue, as J
 python tools/screenshots.py --url http://localhost:8300
 ```
 
-`tools/screenshots.py` drives a headless Chrome against a server started with `--dev-login`, signs in as a
+`tools/screenshots.py` drives a headless Chrome against a server started with `--dev-login`, on a tenant
+that has the built-in courses installed, signs in as a
 demonstration learner, records some progress and writes the pictures of [screenshots/](screenshots/). Run it
 after a change of the interface and look at the pictures before committing them.
 
 ## Adding a course
 
-Follow [the authoring guide](../catalogue/README.md). A new course must be listed in `catalogue/catalogue.yml`
+Follow [the authoring guide](../catalogue/README.md). The web server shows a course once its package is
+installed for a tenant (`mentor package-install catalogue --tenant demo`, again after each change). A new
+course must be listed in `catalogue/catalogue.yml`
 and `catalogue/mentor.yml`, and, since v1 never had it, in `ADDED_SINCE_V1` of the conformance test.

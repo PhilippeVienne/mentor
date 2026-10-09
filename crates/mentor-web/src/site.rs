@@ -13,7 +13,9 @@ use mentor_db::{Learner, TenantTx};
 use uuid::Uuid;
 
 use crate::brand::Brand;
-use crate::{session, AppState};
+use std::sync::Arc;
+
+use crate::{session, AppState, Content};
 
 /// A signed-in learner and where they stand.
 pub struct Viewer {
@@ -26,6 +28,8 @@ pub struct Site {
     pub tenant: Uuid,
     pub brand: Brand,
     pub viewer: Option<Viewer>,
+    /// The tenant's catalogue: the courses and training paths of its packages.
+    pub content: Arc<Content>,
     /// The development sign-in page exists on this server.
     pub dev_login: bool,
     /// The catalogue has training paths: the navigation links to them.
@@ -82,6 +86,23 @@ pub fn same_origin(parts: &Parts) -> bool {
     }
 }
 
+/// The tenant's catalogue, read from the database only when its packages changed since it was last read:
+/// a stamp is compared at each request, which is one small query, and an installation done by the `mentor`
+/// command is seen by a running server without restarting it.
+async fn content_of(state: &AppState, tenant: Uuid, tx: &mut TenantTx) -> Result<Arc<Content>, SiteError> {
+    let stamp = tx.catalogue_stamp().await?;
+    let kept = state.contents.read().ok().and_then(|contents| contents.get(&tenant).cloned());
+    if let Some((_, content)) = kept.filter(|(read_at, _)| *read_at == stamp) {
+        return Ok(content);
+    }
+    let (catalogue, paths) = tx.catalogue().await?;
+    let content = Arc::new(Content::new(catalogue, paths));
+    if let Ok(mut contents) = state.contents.write() {
+        contents.insert(tenant, (stamp, content.clone()));
+    }
+    Ok(content)
+}
+
 impl FromRequestParts<AppState> for Site {
     type Rejection = SiteError;
 
@@ -105,12 +126,14 @@ impl FromRequestParts<AppState> for Site {
             },
             None => None,
         };
+        let content = content_of(state, tenant, &mut tx).await?;
         Ok(Site {
             tenant,
             brand: Brand::from_settings(&name, &settings),
             viewer,
+            has_paths: !content.paths.is_empty(),
+            content,
             dev_login: state.dev_login,
-            has_paths: !state.paths.is_empty(),
         })
     }
 }

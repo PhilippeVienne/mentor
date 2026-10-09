@@ -5,8 +5,9 @@
 //! badges, follows them on a dashboard, and can validate a course through its exam. Training paths, which
 //! arrange courses towards a goal, are drawn as maps (see [`path_map`]). Sign-in is a development one for now (see [`dev`]); labs are not run yet.
 //!
-//! One catalogue is loaded at start-up and shown to every tenant; per-tenant catalogues come later. Lesson
-//! HTML is inserted as compiled: `mentor-content` filters what authors wrote when it compiles the catalogue.
+//! Each tenant has its own catalogue: the courses of the packages installed for it, read from the database
+//! (see [`Content`]); nothing is offered by default. Lesson HTML is inserted as compiled: `mentor-content`
+//! filters what authors wrote when it compiles a package.
 
 mod api;
 mod assets;
@@ -19,8 +20,9 @@ mod paths;
 pub mod session;
 mod site;
 
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::{Arc, RwLock};
 
 use axum::routing::{get, post};
 use axum::Router;
@@ -28,50 +30,45 @@ use mentor_content::{Catalogue, LearningPath};
 use mentor_db::badges::CatalogueView;
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
+use uuid::Uuid;
+
+/// What a tenant's learners can follow: the courses and training paths of the packages installed for it.
+pub struct Content {
+    pub catalogue: Catalogue,
+    /// The catalogue as the progress rules see it.
+    pub view: CatalogueView,
+    pub paths: Vec<LearningPath>,
+}
+
+impl Content {
+    pub fn new(catalogue: Catalogue, paths: Vec<LearningPath>) -> Self {
+        Self { view: learning::view(&catalogue), catalogue, paths }
+    }
+}
+
+/// The catalogue of each tenant, kept in memory with the stamp it was read at (see `site`).
+pub(crate) type Contents = Arc<RwLock<HashMap<Uuid, (String, Arc<Content>)>>>;
 
 /// What every request handler needs.
 #[derive(Clone)]
 pub struct AppState {
     /// Pool of the application role, subject to row-level security.
     pub db: PgPool,
-    pub catalogue: Arc<Catalogue>,
-    /// Training paths over the courses of the catalogue; none unless [`AppState::with_paths`] gave some.
-    pub paths: Arc<Vec<LearningPath>>,
-    /// The catalogue as the progress rules see it.
-    pub view: Arc<CatalogueView>,
     /// Key that signs session cookies.
     pub secret: Arc<Vec<u8>>,
     /// Whether the password-less development sign-in is offered. Never on a reachable deployment.
     pub dev_login: bool,
-    /// Where the catalogue is on disk, for the pictures of its courses; set by [`router`].
-    pub catalogue_dir: Arc<PathBuf>,
+    pub(crate) contents: Contents,
 }
 
 impl AppState {
-    pub fn new(db: PgPool, catalogue: Catalogue, secret: Vec<u8>, dev_login: bool) -> Self {
-        let view = Arc::new(learning::view(&catalogue));
-        Self {
-            db,
-            catalogue: Arc::new(catalogue),
-            paths: Arc::default(),
-            view,
-            secret: Arc::new(secret),
-            dev_login,
-            catalogue_dir: Arc::default(),
-        }
-    }
-
-    /// Adds the training paths of the catalogue, as validated by `mentor_content::load_paths`.
-    pub fn with_paths(mut self, paths: Vec<LearningPath>) -> Self {
-        self.paths = Arc::new(paths);
-        self
+    pub fn new(db: PgPool, secret: Vec<u8>, dev_login: bool) -> Self {
+        Self { db, secret: Arc::new(secret), dev_login, contents: Contents::default() }
     }
 }
 
-/// Builds the application. `static_dir` holds the style sheets, scripts and default brand images;
-/// `catalogue_dir` is served for the images that lessons refer to.
-pub fn router(mut state: AppState, static_dir: &Path, catalogue_dir: &Path) -> Router {
-    state.catalogue_dir = Arc::new(catalogue_dir.to_path_buf());
+/// Builds the application. `static_dir` holds the style sheets, scripts and default brand images.
+pub fn router(state: AppState, static_dir: &Path) -> Router {
     let mut app = Router::new()
         .route("/", get(pages::landing))
         .route("/catalogue/", get(pages::catalogue))

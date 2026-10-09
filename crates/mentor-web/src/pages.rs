@@ -20,7 +20,7 @@ use crate::learning::{done_positions, rules, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_M
 use crate::paths::{dashboard_cards, paths_of, PathCard};
 use crate::site::now;
 use crate::site::{Site, Viewer};
-use crate::AppState;
+use crate::{AppState, Content};
 
 /// Number of courses shown on the home page.
 const HOME_COURSES: usize = 8;
@@ -51,7 +51,7 @@ pub(crate) async fn load_progress(state: &AppState, site: &Site) -> Result<Optio
     let badges = tx.badge_dates(viewer.learner.id).await?;
     tx.commit().await?;
     let done = lessons.iter().filter(|(_, state)| state.completed).map(|(reference, _)| reference.clone()).collect();
-    Ok(Some(Progress { courses_done: completed_courses(&state.view.courses, &done), lessons, badges }))
+    Ok(Some(Progress { courses_done: completed_courses(&site.content.view.courses, &done), lessons, badges }))
 }
 
 pub(crate) fn unavailable(err: mentor_db::Error) -> Response {
@@ -80,14 +80,14 @@ pub(crate) struct CourseProgress<'a> {
 }
 
 impl<'a> CourseProgress<'a> {
-    pub(crate) fn new(state: &'a AppState, course: &'a Course, progress: &Progress) -> Self {
+    pub(crate) fn new(content: &'a Content, course: &'a Course, progress: &Progress) -> Self {
         let total = course.lessons.len();
         let done = course.lessons.iter().filter(|lesson| progress.lesson(course, lesson).completed).count();
         let missing: Vec<&str> = course
             .requires
             .iter()
             .filter(|required| !progress.courses_done.contains(*required))
-            .map(|required| state.catalogue.courses.iter().find(|c| &c.slug == required).map_or(required.as_str(), |c| c.title.as_str()))
+            .map(|required| content.catalogue.courses.iter().find(|c| &c.slug == required).map_or(required.as_str(), |c| c.title.as_str()))
             .collect();
         Self {
             done,
@@ -131,8 +131,8 @@ pub(crate) fn minutes(course: &Course) -> u32 {
 }
 
 impl<'a> Card<'a> {
-    fn new(state: &'a AppState, course: &'a Course, progress: Option<&Progress>) -> Self {
-        let progress = progress.map(|progress| CourseProgress::new(state, course, progress));
+    fn new(content: &'a Content, course: &'a Course, progress: Option<&Progress>) -> Self {
+        let progress = progress.map(|progress| CourseProgress::new(content, course, progress));
         let filter = match &progress {
             _ if !course.published => "bientot",
             Some(progress) if progress.completed => "termines",
@@ -221,9 +221,9 @@ struct ExamInfo<'a> {
 }
 
 impl<'a> ExamInfo<'a> {
-    fn new(state: &'a AppState, course: &'a Course, progress: &Progress) -> Option<Self> {
+    fn new(content: &'a Content, course: &'a Course, progress: &Progress) -> Option<Self> {
         let exam = course.exam.as_ref()?;
-        let advancement = CourseProgress::new(state, course, progress);
+        let advancement = CourseProgress::new(content, course, progress);
         Some(Self {
             title: &exam.title,
             count: (exam.draw as usize).min(exam.questions.len()),
@@ -366,7 +366,7 @@ fn french_date(epoch: i64, utc_offset_minutes: i32) -> String {
 }
 
 /// Every badge of the site, rule badges first, then one per published course; owned ones carry their date.
-fn badge_items(state: &AppState, progress: &Progress) -> Vec<BadgeItem> {
+fn badge_items(content: &Content, progress: &Progress) -> Vec<BadgeItem> {
     let awarded = |slug: &str| progress.badges.get(slug).map(|&at| french_date(at, UTC_OFFSET_MINUTES));
     let rules = default_badges().into_iter().map(|badge| BadgeItem {
         awarded: awarded(&badge.slug),
@@ -379,7 +379,7 @@ fn badge_items(state: &AppState, progress: &Progress) -> Vec<BadgeItem> {
             Tier::Gold => "gold",
         },
     });
-    let courses = state.catalogue.courses.iter().filter(|course| course.published).map(|course| BadgeItem {
+    let courses = content.catalogue.courses.iter().filter(|course| course.published).map(|course| BadgeItem {
         awarded: awarded(&format!("{COURSE_BADGE_PREFIX}{}", course.slug)),
         name: course.title.clone(),
         description: format!("Termine le cours « {} ».", course.title),
@@ -481,18 +481,19 @@ pub(crate) fn missing(site: &Site) -> Response {
 }
 
 /// Published courses come first: the home page only shows the first few.
-fn cards<'a>(state: &'a AppState, progress: Option<&Progress>) -> Vec<Card<'a>> {
-    let courses = &state.catalogue.courses;
+fn cards<'a>(content: &'a Content, progress: Option<&Progress>) -> Vec<Card<'a>> {
+    let courses = &content.catalogue.courses;
     courses
         .iter()
         .filter(|course| course.published)
         .chain(courses.iter().filter(|course| !course.published))
-        .map(|course| Card::new(state, course, progress))
+        .map(|course| Card::new(content, course, progress))
         .collect()
 }
 
 pub async fn landing(site: Site, State(state): State<AppState>) -> Response {
-    let published: Vec<&Course> = state.catalogue.courses.iter().filter(|course| course.published).collect();
+    let content = &*site.content;
+    let published: Vec<&Course> = content.catalogue.courses.iter().filter(|course| course.published).collect();
     let stats = Stats {
         courses: published.len(),
         lessons: published.iter().map(|course| course.lessons.len()).sum(),
@@ -503,7 +504,7 @@ pub async fn landing(site: Site, State(state): State<AppState>) -> Response {
         Ok(progress) => progress,
         Err(err) => return unavailable(err),
     };
-    let mut cards = cards(&state, progress.as_ref());
+    let mut cards = cards(content, progress.as_ref());
     cards.truncate(HOME_COURSES);
     render(
         StatusCode::OK,
@@ -520,11 +521,12 @@ pub async fn landing(site: Site, State(state): State<AppState>) -> Response {
 }
 
 pub async fn catalogue(site: Site, State(state): State<AppState>) -> Response {
+    let content = &*site.content;
     let progress = match load_progress(&state, &site).await {
         Ok(progress) => progress,
         Err(err) => return unavailable(err),
     };
-    let cards = cards(&state, progress.as_ref());
+    let cards = cards(content, progress.as_ref());
     let has_upcoming = cards.iter().any(|card| !card.published);
     render(
         StatusCode::OK,
@@ -541,12 +543,13 @@ pub async fn catalogue(site: Site, State(state): State<AppState>) -> Response {
 }
 
 /// A course that can be read: unpublished ones do not exist as far as visitors are concerned.
-fn published_course<'a>(state: &'a AppState, slug: &str) -> Option<&'a Course> {
-    state.catalogue.courses.iter().find(|course| course.slug == slug && course.published)
+fn published_course<'a>(content: &'a Content, slug: &str) -> Option<&'a Course> {
+    content.catalogue.courses.iter().find(|course| course.slug == slug && course.published)
 }
 
 pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<String>) -> Response {
-    let Some(course) = published_course(&state, &slug) else { return missing(&site) };
+    let content = &*site.content;
+    let Some(course) = published_course(content, &slug) else { return missing(&site) };
     let progress = match load_progress(&state, &site).await {
         Ok(progress) => progress,
         Err(err) => return unavailable(err),
@@ -575,16 +578,17 @@ pub async fn course(site: Site, State(state): State<AppState>, Path(slug): Path<
         banner: banner_url(course),
         lessons_label: lessons_label(course.lessons.len()),
         minutes: minutes(course),
-        exam: progress.as_ref().and_then(|progress| ExamInfo::new(&state, course, progress)),
-        progress: progress.as_ref().map(|progress| CourseProgress::new(&state, course, progress)),
+        exam: progress.as_ref().and_then(|progress| ExamInfo::new(content, course, progress)),
+        progress: progress.as_ref().map(|progress| CourseProgress::new(content, course, progress)),
         lessons,
-        paths: paths_of(&state, &course.slug),
+        paths: paths_of(content, &course.slug),
     };
     render(StatusCode::OK, page)
 }
 
 pub async fn lesson(site: Site, State(state): State<AppState>, Path((course_slug, lesson_slug)): Path<(String, String)>) -> Response {
-    let Some(course) = published_course(&state, &course_slug) else { return missing(&site) };
+    let content = &*site.content;
+    let Some(course) = published_course(content, &course_slug) else { return missing(&site) };
     let Some(position) = course.lessons.iter().position(|lesson| lesson.slug == lesson_slug) else { return missing(&site) };
     let lesson = &course.lessons[position];
     let next = course.lessons.get(position + 1).map(|next| next.slug.as_str());
@@ -640,25 +644,26 @@ pub async fn lesson(site: Site, State(state): State<AppState>, Path((course_slug
 }
 
 pub async fn dashboard(site: Site, State(state): State<AppState>) -> Response {
+    let content = &*site.content;
     let (Some(me), Ok(progress)) = (&site.viewer, load_progress(&state, &site).await) else {
         return if site.viewer.is_none() { sign_in_first(&site) } else { StatusCode::SERVICE_UNAVAILABLE.into_response() };
     };
     let Some(progress) = progress else { return sign_in_first(&site) };
     // The first lesson not completed of the first course that is open and unfinished, in catalogue order.
-    let resume = state
+    let resume = content
         .catalogue
         .courses
         .iter()
         .filter(|course| course.published)
         .filter(|course| {
-            let advancement = CourseProgress::new(&state, course, &progress);
+            let advancement = CourseProgress::new(content, course, &progress);
             advancement.unlocked && !advancement.completed
         })
         .find_map(|course| {
             let lesson = course.lessons.iter().find(|lesson| !progress.lesson(course, lesson).completed)?;
             Some(Resume { course, lesson, started: progress.lesson(course, lesson).started() })
         });
-    let mut badges = badge_items(&state, &progress);
+    let mut badges = badge_items(content, &progress);
     let (badges_owned, badges_total) = (badges.iter().filter(|badge| badge.awarded.is_some()).count(), badges.len());
     badges.truncate(DASHBOARD_BADGES);
     let page = DashboardPage {
@@ -670,8 +675,8 @@ pub async fn dashboard(site: Site, State(state): State<AppState>) -> Response {
         me,
         to_next: me.level.next.map(|next| next - me.level.xp),
         resume,
-        paths: dashboard_cards(&state, &progress),
-        cards: cards(&state, Some(&progress)).into_iter().filter(|card| card.published).collect(),
+        paths: dashboard_cards(content, &progress),
+        cards: cards(content, Some(&progress)).into_iter().filter(|card| card.published).collect(),
         badges,
         badges_owned,
         badges_total,
@@ -680,13 +685,14 @@ pub async fn dashboard(site: Site, State(state): State<AppState>) -> Response {
 }
 
 pub async fn badges(site: Site, State(state): State<AppState>) -> Response {
+    let content = &*site.content;
     let Some(me) = &site.viewer else { return sign_in_first(&site) };
     let progress = match load_progress(&state, &site).await {
         Ok(Some(progress)) => progress,
         Ok(None) => return sign_in_first(&site),
         Err(err) => return unavailable(err),
     };
-    let items = badge_items(&state, &progress);
+    let items = badge_items(content, &progress);
     let levels = LEVEL_THRESHOLDS
         .iter()
         .zip(DEFAULT_LEVEL_TITLES)
@@ -709,7 +715,8 @@ pub async fn badges(site: Site, State(state): State<AppState>) -> Response {
 
 /// The validation exam of a course: its rules, then the attempt itself, run by the page script.
 pub async fn exam(site: Site, State(state): State<AppState>, Path(slug): Path<String>) -> Response {
-    let Some(course) = published_course(&state, &slug) else { return missing(&site) };
+    let content = &*site.content;
+    let Some(course) = published_course(content, &slug) else { return missing(&site) };
     let Some(exam) = &course.exam else { return missing(&site) };
     let Some(viewer) = &site.viewer else { return sign_in_first(&site) };
     let progress = match load_progress(&state, &site).await {
@@ -717,7 +724,7 @@ pub async fn exam(site: Site, State(state): State<AppState>, Path(slug): Path<St
         Ok(None) => return sign_in_first(&site),
         Err(err) => return unavailable(err),
     };
-    let Some(info) = ExamInfo::new(&state, course, &progress) else { return missing(&site) };
+    let Some(info) = ExamInfo::new(content, course, &progress) else { return missing(&site) };
     let status = async {
         let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
         let status = tx.exam_status(viewer.learner.id, &course.slug, EXAM_COOLDOWN_SECONDS, now()).await?;

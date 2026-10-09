@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use serde_yaml::{Mapping, Value as Yaml};
 
@@ -28,12 +28,12 @@ const EXAM_FILE: &str = "exam.md";
 /// `exam` is the URL segment of a course's validation exam.
 const RESERVED_LESSON_IDS: [&str; 1] = ["exam"];
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Catalogue {
     pub courses: Vec<Course>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Course {
     pub slug: String,
     pub title: String,
@@ -52,7 +52,7 @@ pub struct Course {
     pub lessons: Vec<Lesson>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Lesson {
     pub slug: String,
     /// `course--folder` identifier of the real environment, or empty.
@@ -68,7 +68,7 @@ pub struct Lesson {
 }
 
 /// Validation exam of a course: a pool of questions, `draw` of which are picked at random.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Exam {
     pub title: String,
     /// Number of questions drawn from the pool.
@@ -84,7 +84,7 @@ pub struct Exam {
     pub warnings: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExamQuestion {
     /// Digest of the question and its answers as written: stable when other questions are added or removed,
     /// when the pool is reordered and when the renderer changes.

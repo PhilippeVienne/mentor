@@ -28,6 +28,9 @@ pub use catalogue::{load_catalogue, Catalogue, Course, Exam, ExamQuestion, Lesso
 pub use document::{Quiz, QuizOption};
 pub use error::ContentError;
 pub use lab::{Check, Lab, Step};
-pub use package::{load_manifest, load_package, load_package_with, Feature, Manifest, Package, MANIFEST_FILE, PACKAGE_FORMAT};
+pub use package::{
+    image_media_type, load_manifest, load_package, load_package_with, package_images, Feature, Image, Manifest, Package, IMAGES_FOLDER,
+    MANIFEST_FILE, PACKAGE_FORMAT,
+};
 pub use paths::{load_paths, parse_paths, LearningPath, PathCourse, PathStage, PATHS_FILE};
 pub use tree::{verify_tree, Limits, TreeSummary};

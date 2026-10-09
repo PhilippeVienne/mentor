@@ -9,6 +9,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use mentor_db::import_v1::{import, Dump, Names};
+use mentor_db::packages::{self, Outcome};
 use mentor_db::platform;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
@@ -50,6 +51,27 @@ enum Command {
         /// v2 catalogue directory matching `--v1-catalogue`.
         #[arg(long, requires = "v1_catalogue")]
         catalogue: Option<PathBuf>,
+    },
+    /// Installs a course package for a tenant from a directory, or replaces the installed package of the same
+    /// name. The package is validated and compiled first; the tenant's catalogue changes all at once.
+    PackageInstall {
+        /// Directory of the package (the one holding `mentor.yml`).
+        directory: PathBuf,
+        /// Slug of the tenant that gets the package.
+        #[arg(long)]
+        tenant: String,
+    },
+    /// Lists the packages installed for a tenant, in the order of its catalogue.
+    PackageList {
+        #[arg(long)]
+        tenant: String,
+    },
+    /// Removes a package from a tenant. Learners' progress on its courses is kept.
+    PackageRemove {
+        /// Name of the package (the `name` of its manifest).
+        name: String,
+        #[arg(long)]
+        tenant: String,
     },
     /// Validates a course package: its `mentor.yml` manifest, its files and its courses. Needs no database.
     PackageCheck {
@@ -184,6 +206,51 @@ async fn run(cli: Cli) -> Result<(), Failure> {
             for warning in &report.warnings {
                 eprintln!("warning: {warning}");
             }
+        }
+        Command::PackageInstall { directory, tenant } => {
+            let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
+            // Validated and compiled before anything is written: a package that does not compile changes nothing.
+            let package = mentor_content::load_package(&directory)?;
+            let images = mentor_content::package_images(&directory, &package)?;
+            let source = directory.canonicalize().unwrap_or(directory).display().to_string();
+            let outcome = packages::install(&owner, id, &package, &images, &source).await?;
+            println!(
+                "package {} {} {} for {tenant}: {}, {}, {}",
+                package.manifest.name,
+                package.manifest.version,
+                match outcome {
+                    Outcome::Installed => "installed",
+                    Outcome::Replaced => "replaced",
+                },
+                plural(package.catalogue.courses.len(), "course"),
+                plural(package.paths.len(), "training path"),
+                plural(images.len(), "picture")
+            );
+        }
+        Command::PackageList { tenant } => {
+            let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
+            let installed = packages::list(&owner, id).await?;
+            if installed.is_empty() {
+                println!("no package is installed for {tenant}: its catalogue is empty");
+            }
+            for package in installed {
+                println!(
+                    "{} {} ({}): {}, {}, from {}",
+                    package.name,
+                    package.version,
+                    package.title,
+                    plural(package.courses, "course"),
+                    plural(package.paths, "training path"),
+                    package.source
+                );
+            }
+        }
+        Command::PackageRemove { name, tenant } => {
+            let id = platform::tenant_by_slug(&owner, &tenant).await?.ok_or_else(|| format!("no tenant with slug {tenant}"))?;
+            if !packages::remove(&owner, id, &name).await? {
+                return Err(format!("no package named {name} is installed for {tenant}").into());
+            }
+            println!("package {name} removed from {tenant}");
         }
         Command::PackageCheck { .. } => unreachable!("handled before connecting to the database"),
     }

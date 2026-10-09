@@ -28,14 +28,39 @@ async fn ensure_role(admin: &PgPool, definition: &str) {
     }
 }
 
-/// A server with three tenants: `acme.test` with its own brand, `plain.test` with none, and `hostile.test`
-/// whose brand texts contain markup.
+/// A server with four tenants: `acme.test` with its own brand, `plain.test` with none, `hostile.test` whose
+/// brand texts contain markup, all three with the courses of the repository installed, and `empty.test` for
+/// which no package is installed.
 async fn app_with(dev_login: bool) -> Option<Router> {
     app_built(dev_login, true).await
 }
 
 /// Same, with or without the training paths of the catalogue.
 async fn app_built(dev_login: bool, with_paths: bool) -> Option<Router> {
+    Some(server(dev_login, with_paths).await?.app)
+}
+
+/// The server, and what a test needs to administer it the way the `mentor` command does.
+struct Server {
+    app: Router,
+    /// Pool of the owning role.
+    owner: PgPool,
+    /// The tenant without any package.
+    empty: Uuid,
+}
+
+/// The courses shipped with the repository, as a package with its pictures.
+fn built_in(with_paths: bool) -> (mentor_content::Package, Vec<mentor_content::Image>) {
+    let directory = root().join("catalogue");
+    let mut package = mentor_content::load_package(&directory).expect("the built-in catalogue is a valid package");
+    let images = mentor_content::package_images(&directory, &package).expect("its pictures can be read");
+    if !with_paths {
+        package.paths.clear();
+    }
+    (package, images)
+}
+
+async fn server(dev_login: bool, with_paths: bool) -> Option<Server> {
     let Ok(url) = std::env::var("MENTOR_TEST_DATABASE_URL") else {
         eprintln!("skipped: MENTOR_TEST_DATABASE_URL is not set");
         return None;
@@ -54,19 +79,21 @@ async fn app_built(dev_login: bool, with_paths: bool) -> Option<Router> {
     let brand =
         serde_json::json!({"name": "Acme Academy", "organisation": "Acme Corp", "contact_email": "help@acme.test", "primary": "#112233"});
     platform::set_branding(&owner, acme, &brand).await.unwrap();
-    platform::create_tenant(&owner, "plain", "Plain", &["plain.test"]).await.unwrap();
+    let plain = platform::create_tenant(&owner, "plain", "Plain", &["plain.test"]).await.unwrap();
     // A tenant whose administrator typed markup everywhere a brand accepts text.
     let hostile = platform::create_tenant(&owner, "hostile", "<script>alert(1)</script>", &["hostile.test"]).await.unwrap();
     let markup = serde_json::json!({"tagline": "<img src=x onerror=alert(2)>", "organisation": "\"><script>alert(3)</script>", "contact_email": "x\" onclick=\"alert(4)"});
     platform::set_branding(&owner, hostile, &markup).await.unwrap();
 
+    let empty = platform::create_tenant(&owner, "empty", "Empty", &["empty.test"]).await.unwrap();
+    let (package, images) = built_in(with_paths);
+    for tenant in [acme, plain, hostile] {
+        mentor_db::packages::install(&owner, tenant, &package, &images, "catalogue").await.unwrap();
+    }
+
     let db = PgPoolOptions::new().max_connections(4).connect_with(connect("mentor_test_app")).await.unwrap();
-    let catalogue_dir = root().join("catalogue");
-    let catalogue = mentor_content::load_catalogue(&catalogue_dir).expect("the catalogue compiles");
-    let paths =
-        if with_paths { mentor_content::load_paths(&catalogue_dir, &catalogue.courses).expect("the paths are valid") } else { Vec::new() };
-    let state = AppState::new(db, catalogue, b"a secret that only these tests know".to_vec(), dev_login).with_paths(paths);
-    Some(router(state, &root().join("static"), &catalogue_dir))
+    let state = AppState::new(db, b"a secret that only these tests know".to_vec(), dev_login);
+    Some(Server { app: router(state, &root().join("static")), owner, empty })
 }
 
 async fn app() -> Option<Router> {
@@ -743,4 +770,54 @@ async fn only_the_pictures_of_the_catalogue_can_be_downloaded() {
     }
     // The style sheets and scripts of the site are still served.
     assert_eq!(get(&app, "acme.test", "/static/css/portail.css").await.0, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_tenant_without_a_package_has_an_empty_catalogue_until_one_is_installed() {
+    let Some(server) = server(true, true).await else { return };
+    let app = &server.app;
+    // Nothing is offered by default: no course, no training path, no picture, and no link to paths.
+    let (status, home) = get(app, "empty.test", "/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(!home.contains("course-card") && !home.contains(r#"href="/paths/""#));
+    let catalogue = get(app, "empty.test", "/catalogue/").await.1;
+    assert!(!catalogue.contains(r#"data-course="#));
+    for path in [
+        "/courses/git-basics/",
+        "/courses/git-basics/introduction/",
+        "/paths/socle-commun/",
+        "/static/catalogue/git-basics/images/banniere.svg",
+    ] {
+        assert_eq!(get(app, "empty.test", path).await.0, StatusCode::NOT_FOUND, "{path}");
+    }
+    let learner = sign_in(app, "empty.test", "alice").await;
+    let (status, _) = post_json_on(app, "empty.test", Some(&learner), "/api/progress", QUIZ).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // The other tenants are untouched by that emptiness.
+    assert!(get(app, "acme.test", "/catalogue/").await.1.contains(r#"data-course="git-basics""#));
+
+    // Installed while the server runs, as the `mentor` command does: the next request sees it.
+    let (package, images) = built_in(true);
+    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue").await.unwrap();
+    assert!(get(app, "empty.test", "/catalogue/").await.1.contains(r#"data-course="git-basics""#));
+    assert_eq!(get(app, "empty.test", "/courses/git-basics/introduction/").await.0, StatusCode::OK);
+    assert_eq!(get(app, "empty.test", "/static/catalogue/git-basics/images/banniere.svg").await.0, StatusCode::OK);
+    assert_eq!(get(app, "empty.test", "/paths/socle-commun/").await.0, StatusCode::OK);
+    assert_eq!(post_json_on(app, "empty.test", Some(&learner), "/api/progress", QUIZ).await.0, StatusCode::OK);
+
+    // Removed: the courses are gone, the learner's progress is kept for the day they come back.
+    assert!(mentor_db::packages::remove(&server.owner, server.empty, "mentor-courses").await.unwrap());
+    assert_eq!(get(app, "empty.test", "/courses/git-basics/").await.0, StatusCode::NOT_FOUND);
+    let dashboard = call(app, Call { host: "empty.test", path: "/dashboard/", cookie: Some(&learner), body: None, origin: None }).await;
+    assert!(dashboard.body.contains("74 XP"), "the XP earned stays");
+    mentor_db::packages::install(&server.owner, server.empty, &package, &images, "catalogue").await.unwrap();
+    let course =
+        call(app, Call { host: "empty.test", path: "/courses/git-basics/", cookie: Some(&learner), body: None, origin: None }).await;
+    assert!(course.body.contains("timeline__item--done"), "and so does the completed lesson");
+}
+
+async fn post_json_on(app: &Router, host: &str, cookie: Option<&str>, path: &str, json: &str) -> (StatusCode, serde_json::Value) {
+    let answer = call(app, Call { host, path, cookie, body: Some(("application/json", json)), origin: None }).await;
+    (answer.status, serde_json::from_str(&answer.body).unwrap_or(serde_json::Value::Null))
 }

@@ -96,9 +96,8 @@ package that does not declare `docker` must become an error); that comes with th
 Not in format 1, on purpose: `depends` (§7), a content `locale` (architecture §10, open point 3: the place
 for it is here), per-course metadata (it stays in `course.md`).
 
-Training paths (`paths.yml`, being added to the compiler by another workstream while this was written) sit
-next to the course folders, so a package can carry them at its root; `load_package` does not read that file
-yet.
+Training paths (`paths.yml`) sit next to the course folders, at the root of the package: `load_package`
+reads and validates them against the package's own courses, and they are installed with it.
 
 ## 4. Identity and versioning
 
@@ -323,7 +322,7 @@ a preview of the rendered lessons without a database, and a `package-init` that 
 | --- | --- | --- |
 | **A. Format** | `mentor.yml`, strict validation, tree checks, `load_package`, `mentor package-check`, the built-in catalogue as a package, the replay tool reading a manifest | **Done** (this increment) |
 | **B. One loader** | `mentor-web` and `import-v1` load `catalogue/` through `load_package`; `catalogue.yml` and `_checks.yml` removed; `/static/catalogue/` restricted to images; `features` cross-checked with `devcontainer.json` | Next; no owner decision needed |
-| **C. Per-tenant catalogues** | `package` and `package_revision` tables, publish and roll back from a **local directory** (`mentor package-install ./dir --tenant acme`), one catalogue per tenant in `mentor-web` | Needs §11, points 1 and 2 |
+| **C. Per-tenant catalogues** | Install, replace, list and remove from a **local directory** (`mentor package-install ./dir --tenant acme`), one catalogue per tenant in `mentor-web`, nothing offered by default | **Done**, in a simpler form than designed in §5: see below |
 | **D. Fetch** | The fetch job (§6.1), install from a public HTTPS URL, the update diff and its rules | Needs §11, points 3 and 4 |
 | **E. Environments** | Package sources handed to the execution plane, builds before publication | Blocked on Atelier (§8) |
 | **F. Later** | Private repositories, `depends`, a management page for packages, sharing compiled packages | — |
@@ -331,7 +330,21 @@ a preview of the rendered lessons without a database, and a `package-init` that 
 Phase C before D on purpose: installing from a directory exercises storage, publication, diff and rollback
 without any network code, and an operator can already serve a tenant's package by cloning it by hand.
 
-What this increment added:
+What phase C added (9 October 2026), and how it differs from §5:
+
+- **One table per package, no revisions.** `package` holds the compiled courses and paths of the installed
+  version; `package_item` makes course and path names unique per tenant; `package_image` holds the pictures.
+  There is no `package_revision`: installing again **replaces** the package, without a diff report, without
+  the rules of §4 on removed lessons, and without rollback other than installing the previous directory again.
+- **Pictures are stored in the database**, not in object storage: 53 pictures for the built-in courses.
+- **The application role only reads** these tables; installing is done by the owning role, through the
+  `mentor` command. There is no page to manage packages.
+- **`mentor-web` no longer has a catalogue of its own.** It reads each tenant's catalogue from the database
+  and keeps it in memory; a stamp compared at each request tells when the packages changed, so an
+  installation is seen without restarting the server. A tenant without a package has an empty catalogue.
+- Removing a package keeps learners' progress on its courses; it shows again if the package comes back.
+
+What the first increment added:
 
 | Where | What |
 | --- | --- |

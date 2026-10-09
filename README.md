@@ -29,8 +29,9 @@ the course format are in English.
   isolated by PostgreSQL row-level security.
 - **Labs proven by replay**: every lab of the catalogue is replayed in its environment, without network, by
   [`tools/replay_labs.py`](tools/replay_labs.py): each check must fail before the solution and hold after it.
-- **Course packages**: a course, or a set of courses, as a Git repository with a `mentor.yml` manifest, which
-  can be validated and replayed on its own.
+- **Course packages**: a course, or a set of courses, as a directory (meant to be a Git repository) with a
+  `mentor.yml` manifest, which can be validated and replayed on its own. Each organisation has its own
+  catalogue, made of the packages installed for it; none is offered by default.
 
 ## What does not work yet
 
@@ -40,8 +41,8 @@ the course format are in English.
   lesson is its text and its quiz. See [doc/atelier-lab-validation.md](doc/atelier-lab-validation.md).
 - **Real sign-in.** There is no OIDC yet, only a password-less development sign-in (`--dev-login`) that must
   never be enabled on a reachable deployment.
-- Installing course packages per tenant, the management area for tutors, the help pages, and the catalogue
-  linter of v1.
+- Installing a package straight from a Git URL (it is installed from a directory for now), the management
+  area for tutors, the help pages, and the catalogue linter of v1.
 
 ## Quick start
 
@@ -53,6 +54,7 @@ docker run -d --name mentor-pg -e POSTGRES_PASSWORD=mentor -p 127.0.0.1:5432:543
 export MENTOR_DATABASE_URL=postgres://postgres:mentor@127.0.0.1:5432/postgres
 cargo run -p mentor-cli -- migrate
 cargo run -p mentor-cli -- tenant-create demo "Mentor" --host localhost --host 127.0.0.1
+cargo run -p mentor-cli -- package-install catalogue --tenant demo    # the courses of this repository
 docker exec mentor-pg psql -U postgres -c "CREATE ROLE mentor_web LOGIN PASSWORD 'mentor' IN ROLE mentor_app"
 
 MENTOR_APP_DATABASE_URL=postgres://mentor_web:mentor@127.0.0.1:5432/postgres \

@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::learning::{done_positions, exam_pool, exam_settings, rules, OsRandom, EXAM_COOLDOWN_SECONDS, UTC_OFFSET_MINUTES};
 use crate::site::{now, same_origin, Site};
-use crate::AppState;
+use crate::{AppState, Content};
 
 #[derive(Deserialize)]
 pub struct ProgressRequest {
@@ -37,11 +37,11 @@ fn refuse(status: StatusCode, message: &str) -> Response {
 }
 
 /// What to show for a badge: one of the platform's, or the badge of a completed course.
-fn describe_badge(slug: &str, definitions: &[BadgeDef], state: &AppState) -> serde_json::Value {
+fn describe_badge(slug: &str, definitions: &[BadgeDef], content: &Content) -> serde_json::Value {
     if let Some(badge) = definitions.iter().find(|badge| badge.slug == slug) {
         return json!({ "slug": slug, "name": badge.name, "emoji": badge.emoji, "tier": badge.tier, "description": badge.description });
     }
-    let course = slug.strip_prefix(COURSE_BADGE_PREFIX).and_then(|course| state.catalogue.courses.iter().find(|c| c.slug == course));
+    let course = slug.strip_prefix(COURSE_BADGE_PREFIX).and_then(|course| content.catalogue.courses.iter().find(|c| c.slug == course));
     match course {
         Some(course) => {
             json!({ "slug": slug, "name": course.title, "emoji": course.icon, "tier": "gold", "description": format!("Termine le cours « {} ».", course.title) })
@@ -53,12 +53,13 @@ fn describe_badge(slug: &str, definitions: &[BadgeDef], state: &AppState) -> ser
 /// `POST /api/progress`: a validated lab step or a quiz score. Answers with what it changed: XP, level,
 /// badges, completion.
 pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, Json(request): Json<ProgressRequest>) -> Response {
+    let content = &*site.content;
     if !same_origin(&parts) {
         return refuse(StatusCode::FORBIDDEN, "Requête refusée : origine inattendue.");
     }
     let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour enregistrer ta progression.") };
     let learner = viewer.learner.id;
-    let found = state.catalogue.courses.iter().find(|course| course.slug == request.course && course.published);
+    let found = content.catalogue.courses.iter().find(|course| course.slug == request.course && course.published);
     let Some(course) = found else { return refuse(StatusCode::NOT_FOUND, "Leçon inconnue.") };
     let Some(lesson) = course.lessons.iter().find(|lesson| lesson.slug == request.lesson) else {
         return refuse(StatusCode::NOT_FOUND, "Leçon inconnue.");
@@ -73,8 +74,8 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
     let outcome: Result<Response, Error> = async {
         let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
         let lessons_before = tx.completed_lessons(learner).await?;
-        let courses_before = completed_courses(&state.view.courses, &lessons_before);
-        let shape = state.view.courses.iter().find(|shape| shape.slug == course.slug);
+        let courses_before = completed_courses(&content.view.courses, &lessons_before);
+        let shape = content.view.courses.iter().find(|shape| shape.slug == course.slug);
         if !shape.is_some_and(|shape| shape.is_unlocked(&courses_before)) {
             return Ok(refuse(StatusCode::FORBIDDEN, "Ce cours n'est pas encore débloqué."));
         }
@@ -109,10 +110,10 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
         }
         let definitions = default_badges();
         let new_badges: Vec<serde_json::Value> = tx
-            .award_badges(learner, &definitions, &state.view, UTC_OFFSET_MINUTES)
+            .award_badges(learner, &definitions, &content.view, UTC_OFFSET_MINUTES)
             .await?
             .iter()
-            .map(|slug| describe_badge(slug, &definitions, &state))
+            .map(|slug| describe_badge(slug, &definitions, content))
             .collect();
         let level = level_info(tx.total_xp(learner).await?, &DEFAULT_LEVEL_TITLES);
         tx.commit().await?;
@@ -140,8 +141,8 @@ pub async fn progress(site: Site, State(state): State<AppState>, parts: Parts, J
 }
 
 /// A published course and its exam.
-fn course_with_exam<'a>(state: &'a AppState, slug: &str) -> Option<(&'a Course, &'a Exam)> {
-    let course = state.catalogue.courses.iter().find(|course| course.slug == slug && course.published)?;
+fn course_with_exam<'a>(content: &'a Content, slug: &str) -> Option<(&'a Course, &'a Exam)> {
+    let course = content.catalogue.courses.iter().find(|course| course.slug == slug && course.published)?;
     Some((course, course.exam.as_ref()?))
 }
 
@@ -153,19 +154,20 @@ fn unavailable(err: Error) -> Response {
 /// `POST /api/exam/{course}/start`: starts an attempt or resumes the open one. The answer carries the drawn
 /// questions in the order they are shown, without correct answers or explanations.
 pub async fn exam_start(site: Site, State(state): State<AppState>, parts: Parts, Path(slug): Path<String>) -> Response {
+    let content = &*site.content;
     if !same_origin(&parts) {
         return refuse(StatusCode::FORBIDDEN, "Requête refusée : origine inattendue.");
     }
     let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
     let learner = viewer.learner.id;
-    let Some((course, exam)) = course_with_exam(&state, &slug) else {
+    let Some((course, exam)) = course_with_exam(content, &slug) else {
         return refuse(StatusCode::NOT_FOUND, "Ce cours n'a pas d'examen de validation.");
     };
     let at = now();
     let outcome: Result<Response, Error> = async {
         let mut tx = TenantTx::begin(&state.db, site.tenant).await?;
-        let courses_done = completed_courses(&state.view.courses, &tx.completed_lessons(learner).await?);
-        let shape = state.view.courses.iter().find(|shape| shape.slug == course.slug);
+        let courses_done = completed_courses(&content.view.courses, &tx.completed_lessons(learner).await?);
+        let shape = content.view.courses.iter().find(|shape| shape.slug == course.slug);
         if !shape.is_some_and(|shape| shape.is_unlocked(&courses_done)) {
             return Ok(refuse(StatusCode::FORBIDDEN, "Ce cours n'est pas encore débloqué."));
         }
@@ -224,12 +226,13 @@ pub async fn exam_submit(
     Path(slug): Path<String>,
     Json(submission): Json<ExamSubmission>,
 ) -> Response {
+    let content = &*site.content;
     if !same_origin(&parts) {
         return refuse(StatusCode::FORBIDDEN, "Requête refusée : origine inattendue.");
     }
     let Some(viewer) = &site.viewer else { return refuse(StatusCode::UNAUTHORIZED, "Connecte-toi pour passer l'examen.") };
     let learner = viewer.learner.id;
-    let Some((course, exam)) = course_with_exam(&state, &slug) else {
+    let Some((course, exam)) = course_with_exam(content, &slug) else {
         return refuse(StatusCode::NOT_FOUND, "Ce cours n'a pas d'examen de validation.");
     };
     let Ok(attempt) = Uuid::parse_str(&submission.attempt) else { return refuse(StatusCode::NOT_FOUND, "Tentative inconnue.") };
@@ -286,10 +289,10 @@ pub async fn exam_submit(
         if grade.passed {
             let definitions = default_badges();
             let new_badges: Vec<serde_json::Value> = tx
-                .award_badges(learner, &definitions, &state.view, UTC_OFFSET_MINUTES)
+                .award_badges(learner, &definitions, &content.view, UTC_OFFSET_MINUTES)
                 .await?
                 .iter()
-                .map(|slug| describe_badge(slug, &definitions, &state))
+                .map(|slug| describe_badge(slug, &definitions, content))
                 .collect();
             let level = level_info(tx.total_xp(learner).await?, &DEFAULT_LEVEL_TITLES);
             body["course_validated"] = json!(true);

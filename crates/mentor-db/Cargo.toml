@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+mentor-content = { path = "../mentor-content" }
 mentor-core = { path = "../mentor-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }

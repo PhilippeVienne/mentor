@@ -231,7 +231,7 @@ Still open:
    provider); this drives network design and CI.
 2. **Shared catalogue**: decided on 9 October 2026. A tenant sees only the course packages installed for it; the
    courses of this repository are a package that is offered, never installed by default
-   ([course-packages.md](course-packages.md)). Not implemented yet: every tenant still sees `catalogue/`.
+   ([course-packages.md](course-packages.md)). Implemented: `mentor package-install <directory> --tenant <slug>`.
 3. **Content locale**: default callout titles and generated button labels are French, like the shipped
    courses; a per-catalogue locale will be needed once a tenant writes courses in another language.
 4. **Running labs on Atelier**: validated on 6 October 2026 by replaying real labs in Atelier microVMs

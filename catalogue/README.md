@@ -596,7 +596,7 @@ A **training path** arranges existing courses towards a goal: "to work on the in
 
 > The French interface calls a path « parcours de formation » and a course « cours ». Write titles and summaries accordingly, and in lessons keep « parcours » for a path (or for its other meanings: a table scan, a journey), never for a course.
 
-Paths are declared in one file, `paths.yml`, at the root of the catalogue. They are not in `catalogue.yml` (that index is being replaced by the package manifest, which accepts no other key) nor in one file each (a path is ten lines, and they are easier to keep coherent side by side). The file is optional: without it the portal shows no path.
+Paths are declared in one file, `paths.yml`, at the root of the package (next to `mentor.yml`); they are installed with it and can only list its own courses. They are not in `catalogue.yml` (that index is being replaced by the package manifest, which accepts no other key) nor in one file each (a path is ten lines, and they are easier to keep coherent side by side). The file is optional: without it the portal shows no path.
 
 ```yaml
 paths:

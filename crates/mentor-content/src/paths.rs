@@ -15,7 +15,7 @@ use std::path::Path;
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value as Yaml};
 
 use crate::catalogue::Course;
@@ -34,7 +34,7 @@ const STAGE_KEYS: [&str; 2] = ["title", "courses"];
 const ENTRY_KEYS: [&str; 2] = ["course", "optional"];
 
 /// A training path.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LearningPath {
     /// Stable identifier, used in URLs.
     pub id: String,
@@ -55,14 +55,14 @@ impl LearningPath {
 }
 
 /// A group of courses followed together ("Fundamentals", "Specialisation").
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PathStage {
     /// Empty for the single stage of a flat path.
     pub title: String,
     pub courses: Vec<PathCourse>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PathCourse {
     /// Slug of the course.
     pub course: String,

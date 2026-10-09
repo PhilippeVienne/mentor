@@ -1050,6 +1050,7 @@ dependencies = [
 name = "mentor-db"
 version = "0.1.0"
 dependencies = [
+ "mentor-content",
  "mentor-core",
  "serde",
  "serde_json",

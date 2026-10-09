@@ -14,9 +14,6 @@ struct Options {
     /// Connection URL of the application role (a member of `mentor_app`, never the owning role).
     #[arg(long, env = "MENTOR_APP_DATABASE_URL", hide_env_values = true)]
     database_url: String,
-    /// Catalogue directory, compiled at start-up.
-    #[arg(long, env = "MENTOR_CATALOGUE", default_value = "catalogue")]
-    catalogue: PathBuf,
     /// Directory of style sheets, scripts and default brand images.
     #[arg(long, env = "MENTOR_STATIC", default_value = "static")]
     static_dir: PathBuf,
@@ -32,14 +29,6 @@ struct Options {
 }
 
 async fn run(options: Options) -> Result<(), Box<dyn std::error::Error>> {
-    let catalogue = mentor_content::load_catalogue(&options.catalogue)?;
-    let paths = mentor_content::load_paths(&options.catalogue, &catalogue.courses)?;
-    eprintln!(
-        "mentor-web: {} courses and {} training paths compiled from {}",
-        catalogue.courses.len(),
-        paths.len(),
-        options.catalogue.display()
-    );
     let db = PgPoolOptions::new().max_connections(10).connect(&options.database_url).await?;
     let secret = match options.session_secret {
         Some(secret) if secret.len() >= 32 => secret.into_bytes(),
@@ -52,7 +41,7 @@ async fn run(options: Options) -> Result<(), Box<dyn std::error::Error>> {
     if options.dev_login {
         eprintln!("mentor-web: WARNING: development sign-in is enabled, anyone can sign in as anyone");
     }
-    let app = router(AppState::new(db, catalogue, secret, options.dev_login).with_paths(paths), &options.static_dir, &options.catalogue);
+    let app = router(AppState::new(db, secret, options.dev_login), &options.static_dir);
     let listener = tokio::net::TcpListener::bind(options.listen).await?;
     eprintln!("mentor-web: listening on http://{}", options.listen);
     axum::serve(listener, app).await?;
